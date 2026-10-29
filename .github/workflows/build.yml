@@ -141,6 +141,15 @@ jobs:
       - name: Android availability
         if: needs.android.result == 'skipped'
         run: printf '\nAndroid APK is not included because release signing is not configured.\n' >> notes.md
+      - name: Normalize asset names
+        working-directory: artifacts
+        shell: bash
+        run: |
+          for file in *; do
+            if [[ "$file" == *" "* ]]; then
+              mv -- "$file" "${file// /.}"
+            fi
+          done
       - name: Checksums
         working-directory: artifacts
         run: find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
