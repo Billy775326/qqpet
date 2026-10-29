@@ -1,3 +1,5 @@
+import './paths'
+import { portable } from './paths'
 import { app, clipboard, dialog, ipcMain, net, session } from 'electron'
 import { IPC, type MessageBoxOptions, type TrayState } from '../shared/ipc'
 import type { SavePatch, Sex } from '../shared/save'
@@ -17,6 +19,7 @@ app.whenReady().then(() => {
   handleScheme()
   app.dock?.hide()
   loadSave()
+  if (portable) patchSave({ settings: { autoStart: false } })
   // CSS keeps decoded images per stylesheet, so @2x bitmaps follow the hd setting as of launch only.
   if (getSave().settings.hd) {
     session.defaultSession.webRequest.onBeforeSendHeaders((d, cb) => cb({ requestHeaders: { ...d.requestHeaders, 'X-HD': '1' } }))
@@ -30,9 +33,10 @@ app.whenReady().then(() => {
   app.on('before-quit', () => tray.destroy())
 
   let copied = ''
-  void clipboard.readText().then((t) => (copied = t))
   setInterval(async () => {
+    if (!getSave().settings.clip) { copied = ''; return }
     const text = await clipboard.readText()
+    if (!getSave().settings.clip) return
     if (text === copied) return
     copied = text
     if (text.trim() && getSave().settings.clip) win.webContents.send(IPC.clipboard, text)
@@ -40,7 +44,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle(IPC.load, () => getSave())
   ipcMain.on(IPC.save, (_e, patch: SavePatch) => {
-    patchSave(patch)
+    if (_e.sender !== win.webContents || _e.senderFrame !== win.webContents.mainFrame) { _e.returnValue = 'Invalid sender'; return }
+    try { patchSave(patch); _e.returnValue = null } catch (error) { _e.returnValue = String(error); return }
     if (patch.petInfo) tray.retip(getSave().petInfo)
     if (patch.settings?.hd !== undefined) tray.setState(getSave())
   })
@@ -86,7 +91,7 @@ app.whenReady().then(() => {
   ipcMain.on(IPC.setClickThrough, (_e, on: boolean) => win.setIgnoreMouseEvents(on))
   ipcMain.on(IPC.setAlwaysOnTop, (_e, on: boolean) => win.setAlwaysOnTop(on, 'screen-saver'))
   ipcMain.on(IPC.setFocusable, (_e, on: boolean) => win.setFocusable(on))
-  ipcMain.on(IPC.setAutoStart, (_e, on: boolean) => app.setLoginItemSettings({ openAtLogin: on }))
+  ipcMain.on(IPC.setAutoStart, (_e, on: boolean) => !portable && app.setLoginItemSettings({ openAtLogin: on }))
   ipcMain.on(IPC.setTrayState, (_e, state: TrayState) => tray.setState(getSave(), state))
 })
 

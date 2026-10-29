@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build and publish
         required: true
-        default: v0.1.0
+        default: v0.1.2
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -30,6 +30,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm test
       - run: npm version "${RELEASE_TAG#v}" --no-git-tag-version --allow-same-version
         shell: bash
       - run: npm run dist
@@ -71,6 +72,9 @@ jobs:
                       digest = hashlib.file_digest(stream, 'sha256').hexdigest()
                   assert digest == entry['oid'], f'Resource hash mismatch: {file}'
           print(f'Verified {len(manifest)} resources in {len(roots)} packaged application(s)')
+      - name: Smoke test packaged portable application
+        if: runner.os == 'Windows'
+        run: node tools/smoke-portable.mjs
       - name: Repack verified Windows resources
         if: runner.os == 'Windows'
         run: npx electron-builder --prepackaged dist/win-unpacked --publish never
@@ -79,6 +83,7 @@ jobs:
           name: qqpet-${{ matrix.os }}
           path: |
             dist/*.exe
+            dist/*.zip
             dist/*.dmg
             dist/*.AppImage
             dist/*.deb
@@ -123,6 +128,7 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
+      - run: npm test
       - run: npm version "${RELEASE_TAG#v}" --no-git-tag-version --allow-same-version
       - run: npm run typecheck && npm run build:android-web
       - run: |

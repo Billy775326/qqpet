@@ -282,16 +282,24 @@ class PetService : Service() {
         startActivity(Intent(this, FileActivity::class.java).putExtra(Intent.EXTRA_INTENT, intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
+    private fun saveFile(name: String): File {
+        require(Regex("save\\.json(?:\\.bak|\\.corrupt-[0-9]+)?").matches(name)) { "Invalid save filename" }
+        val file = File(filesDir, name).canonicalFile
+        require(file.parentFile == filesDir.canonicalFile) { "Invalid save path" }
+        return file
+    }
+
     /** window.QQPetNative; see the Native interface in src/android/bridge.ts. Called on a WebView thread. */
     private inner class Bridge {
         @JavascriptInterface
-        fun read(name: String): String? = File(filesDir, name).takeIf { it.exists() }?.readText()
+        fun read(name: String): String? = saveFile(name).takeIf { it.exists() }?.readText()
 
         @JavascriptInterface
         fun write(name: String, text: String) {
+            val target = saveFile(name)
             val tmp = File(filesDir, "$name.tmp")
             tmp.writeText(text)
-            tmp.renameTo(File(filesDir, name))
+            check(tmp.renameTo(target)) { "Unable to commit save" }
         }
 
         @JavascriptInterface

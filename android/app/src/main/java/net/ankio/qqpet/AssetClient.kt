@@ -29,11 +29,14 @@ private val TYPES = mapOf(
  * like src/main/hidpi.ts; it is read when a page starts loading.
  */
 open class AssetClient(private val context: Context, private val hd: () -> Boolean = { false }) : WebViewClient() {
+    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+        request.url.scheme != "https" || request.url.host != "appassets.androidplatform.net"
+
     private var hdOn = false
 
     override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
         val url = request.url
-        if ("${url.scheme}://${url.host}" != ORIGIN) return null
+        if ("${url.scheme}://${url.host}" != ORIGIN) return WebResourceResponse(null, null, 403, "Forbidden", null, null)
         // SWF configs write paths with backslashes (pet\\fishing\\…), which URLs turn into empty segments; assets.open wants none.
         val path = url.path!!.split('/').filter { it.isNotEmpty() }.joinToString("/")
         if (path == "index.html") return indexHtml()

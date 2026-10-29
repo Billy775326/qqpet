@@ -1,13 +1,14 @@
 {
   "name": "qqpet",
   "productName": "QQPet",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "QQ 宠物跨平台复刻版（基于 Arctic Penguin T800 逆向重建）",
   "license": "GPL-3.0-only",
   "private": true,
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",

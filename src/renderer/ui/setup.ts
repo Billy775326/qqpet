@@ -41,13 +41,6 @@ function homing(): void {
   speak({ s: '[host],我在这里~', now: true }, 'appear', { start: () => setHidden(false) })
 }
 
-function toggleAutoStart(): void {
-  const on = !save.settings.autoStart
-  window.qqpet.setAutoStart(on)
-  update('settings', { autoStart: on })
-  speak({ c: 'startupSelf', s: on ? 'startupSelfOn' : 'startupSelfOff', now: true }, 'appear')
-}
-
 async function exportSave(): Promise<void> {
   if (await window.qqpet.exportSave()) speak({ s: '[host],存档导出成功啦~', now: true }, 'speak')
 }
@@ -123,7 +116,7 @@ const setAi = (patch: { aiUrl?: string; aiKey?: string }): void => {
 
 const aiOptions = (): Option[] => [
   { type: 'input', label: '接口地址（OpenAI 兼容，以 /v1 结尾）', value: () => s.aiUrl, set: (v) => setAi({ aiUrl: v.trim() }) },
-  { type: 'input', label: 'API Key（本地服务可不填）', value: () => s.aiKey, set: (v) => setAi({ aiKey: v.trim() }) },
+  { type: 'input', label: 'API Key（仅本次运行保存）', value: () => s.aiKey, set: (v) => setAi({ aiKey: v.trim() }) },
   { type: 'button', label: '获取模型列表', run: () => void loadModels() },
   ...models.map((m): Option => ({ type: 'radio', label: m, on: () => s.aiModel === m, run: () => void testModel(m) })),
   { type: 'see', label: '状态', value: aiStatus || (s.aiModel ? `已启用：${s.aiModel}` : '未启用') },
@@ -141,7 +134,7 @@ const TABS: { label: string; options: Option[] }[] = [
       { type: 'button', label: '重生为另一个性别~~~（注意数据丢失）', run: rebornAsOther },
       { type: 'button', label: '宠物不见了？点我试试', run: homing },
       { type: 'slider', label: '透明度', value: () => s.opacity, step: (d) => setOpacity(s.opacity + d) },
-      { type: 'radio', label: '开机自启', on: () => s.autoStart, run: toggleAutoStart },
+
       { type: 'input', label: '天气城市（留空按网络位置自动定位）', value: () => s.weatherCity, set: setCity },
       {
         type: 'radio',
@@ -231,7 +224,7 @@ function option(o: Option, redraw: () => void): HTMLElement {
   } else if (o.type === 'button') {
     inner = div('childrenIn fcc', div('label f1 w100 por butsLabel fcc tc', `${o.label} `, div('butsButs f1 w100 fcc', button('butsButs_submit', o.run))))
   } else if (o.type === 'input') {
-    const input = typeable(Object.assign(document.createElement('input'), { className: 'textInput', value: o.value() }))
+    const input = typeable(Object.assign(document.createElement('input'), { className: 'textInput', type: o.label.startsWith('API Key') ? 'password' : 'text', value: o.value() }))
     input.addEventListener(
       'change',
       act(() => o.set(input.value)),
