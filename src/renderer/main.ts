@@ -6,7 +6,7 @@ import { adopt } from './ui/adopt'
 import { scheduleHide, showControl } from './ui/control'
 import { div, touch } from './ui/dom'
 import './ui/face'
-import { closeMenu, openMenu } from './ui/menu'
+import { closeMenu, openMenu, trackMenuPointer } from './ui/menu'
 import { openState } from './ui/state'
 
 const petEl = document.getElementById('pet')!
@@ -55,10 +55,9 @@ let dragging = false
 window.qqpet.onCursor((p) => {
   cursor.x = p.x
   cursor.y = p.y
-  const hit = dragging || document.elementFromPoint(p.x, p.y)?.closest('[data-hit]') != null
-  // The menu closes once the cursor rests on the desktop; it may still be on the tray, outside the window.
-  const inside = p.x >= 0 && p.y >= 0 && p.x < innerWidth && p.y < innerHeight
-  if (!hit && inside) closeMenu()
+  const target = document.elementFromPoint(p.x, p.y)
+  trackMenuPointer(target)
+  const hit = dragging || target?.isConnected === true && target.closest('[data-hit]') != null
   if (hit === interactive) return
   interactive = hit
   window.qqpet.setClickThrough(!hit)
