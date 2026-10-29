@@ -36,6 +36,44 @@ jobs:
         env:
           # No Apple signing identity in CI: produce unsigned dmgs.
           CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Verify packaged pet resources
+        shell: python
+        run: |
+          import hashlib, json, os, shutil, subprocess
+          from pathlib import Path
+          source = Path('resources/pet').resolve()
+          if os.name == 'nt':
+              packaged = Path('dist/win-unpacked/resources/pet').resolve()
+              assert packaged.is_relative_to(Path('dist').resolve())
+              packaged.rename(Path('dist/first-copy-pet'))
+              def copy_tree(src, dst):
+                  dst.mkdir(parents=True, exist_ok=True)
+                  for item in sorted(src.iterdir(), key=lambda p: ('~' not in p.name, p.name)):
+                      target = dst / item.name
+                      if item.is_dir():
+                          copy_tree(item, target)
+                      else:
+                          shutil.copy2(item, target)
+              copy_tree(source, packaged)
+              roots = [Path('dist/win-unpacked/resources')]
+          elif os.sys.platform == 'darwin':
+              roots = list(Path('dist').glob('mac*/QQPet.app/Contents/Resources'))
+          else:
+              roots = [Path('dist/linux-unpacked/resources')]
+          assert roots, 'No packaged resource directories found'
+          result = subprocess.run(['git', 'lfs', 'ls-files', '--json'], capture_output=True, check=True)
+          manifest = json.loads(result.stdout)['files']
+          for root in roots:
+              for entry in manifest:
+                  file = root / Path(entry['name']).relative_to('resources')
+                  assert file.is_file(), f'Missing resource: {file}'
+                  with file.open('rb') as stream:
+                      digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+                  assert digest == entry['oid'], f'Resource hash mismatch: {file}'
+          print(f'Verified {len(manifest)} resources in {len(roots)} packaged application(s)')
+      - name: Repack verified Windows resources
+        if: runner.os == 'Windows'
+        run: npx electron-builder --prepackaged dist/win-unpacked --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: qqpet-${{ matrix.os }}
