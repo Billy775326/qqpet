@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { build } from 'esbuild'
-import { mkdtempSync, existsSync } from 'node:fs'
+import { mkdtempSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 
 test('portable bootstrap contains every configured storage path beside the executable', async () => {
+  mkdirSync(resolve('dist'), { recursive: true })
   const root = mkdtempSync(resolve('dist/portable-path-test-'))
   const result = await build({ entryPoints: ['src/main/paths.ts'], bundle: true, write: false, platform: 'node', format: 'esm', define: { 'process.platform': '"win32"', 'process.execPath': JSON.stringify(join(root, 'QQPet.exe')) }, plugins: [{ name: 'mock-electron', setup(b) {
     b.onResolve({ filter: /^electron$/ }, () => ({ path: 'electron', namespace: 'mock' }))
