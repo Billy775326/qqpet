@@ -201,6 +201,7 @@ listeners.outside.push(() => {
 
 const api: QQPetApi = {
   load: async () => structuredClone(save),
+  keyStorage: async () => 'Android 当前仅在本次运行保存 API Key，重启后需重新输入。',
   save(patch) {
     if (leaving) return
     applyPatch(save, structuredClone(patch))

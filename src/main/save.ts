@@ -1,9 +1,17 @@
 import { portable } from './paths'
-import { app } from 'electron'
+import { app, safeStorage } from 'electron'
+import { createKeyStore } from './key-store'
 import { copyFileSync, statSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SaveData, SavePatch, Sex } from '../shared/save'
 import { applyPatch, buried, petOf, startSave, publicSave, validatedImport } from '../shared/save-logic'
+
+const keys = createKeyStore(join(app.getPath('userData'), 'credentials.bin'), {
+  available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || !['basic_text', 'unknown'].includes(safeStorage.getSelectedStorageBackend())),
+  encrypt: value => safeStorage.encryptString(value),
+  decrypt: value => safeStorage.decryptString(value),
+})
+export const keyStorageStatus = (): string => keys.status()
 
 const FILE = join(app.getPath('userData'), 'save.json')
 // Arctic Penguin T800 kept the same data under `petInfoData` in electron-store.
@@ -43,6 +51,12 @@ let save: SaveData
 
 export function loadSave(): SaveData {
   save = startSave(read())
+  const legacy = save.settings.aiKey
+  save.settings.aiKey = keys.load(save.settings.aiUrl)
+  if (!save.settings.aiKey && legacy) {
+    keys.save(legacy, save.settings.aiUrl)
+    save.settings.aiKey = legacy
+  }
   write(save)
   return save
 }
@@ -52,8 +66,12 @@ export function getSave(): SaveData {
 }
 
 export function patchSave(patch: SavePatch): void {
-  applyPatch(save, patch)
-  write(save)
+  const next = structuredClone(save)
+  applyPatch(next, patch)
+  if (patch.settings && Object.hasOwn(patch.settings, 'aiKey')) keys.save(next.settings.aiKey, next.settings.aiUrl)
+  else if (next.settings.aiUrl !== save.settings.aiUrl) next.settings.aiKey = keys.load(next.settings.aiUrl)
+  write(next)
+  save = next
 }
 
 export function exportSave(file: string): void {

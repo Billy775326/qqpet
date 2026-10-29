@@ -8,6 +8,7 @@ const send =
 
 const api: QQPetApi = {
   load: () => ipcRenderer.invoke(IPC.load),
+  keyStorage: () => ipcRenderer.invoke(IPC.keyStorage),
   save: (patch) => { const error = ipcRenderer.sendSync(IPC.save, patch); if (error) throw new Error(error) },
   resetPet: send(IPC.resetPet),
   exportSave: () => ipcRenderer.invoke(IPC.exportSave),

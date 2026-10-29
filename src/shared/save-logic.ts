@@ -260,7 +260,7 @@ export function validatedImport(value: unknown): SaveData {
   return startSave(pet)
 }
 
-/** Credentials are session-only and never included in saves, backups or exports. */
+/** Credentials never enter ordinary saves, backups or exports. */
 export function publicSave(save: SaveData): SaveData {
   return { ...save, settings: { ...save.settings, aiKey: '' } }
 }

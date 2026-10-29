@@ -7,7 +7,7 @@ import { aiChat, aiModels } from '../shared/ai'
 import { calendar } from '../shared/calendar'
 import { weather } from '../shared/weather'
 import { handleScheme, registerScheme } from './protocol'
-import { exportSave, getSave, importSave, loadSave, patchSave, resetSave } from './save'
+import { exportSave, getSave, importSave, loadSave, keyStorageStatus, patchSave, resetSave } from './save'
 import { createPetTray } from './tray'
 import { createPetWindow, openGameWindow } from './window'
 
@@ -43,6 +43,7 @@ app.whenReady().then(() => {
   }, 500)
 
   ipcMain.handle(IPC.load, () => getSave())
+  ipcMain.handle(IPC.keyStorage, () => keyStorageStatus())
   ipcMain.on(IPC.save, (_e, patch: SavePatch) => {
     if (_e.sender !== win.webContents || _e.senderFrame !== win.webContents.mainFrame) { _e.returnValue = 'Invalid sender'; return }
     try { patchSave(patch); _e.returnValue = null } catch (error) { _e.returnValue = String(error); return }
