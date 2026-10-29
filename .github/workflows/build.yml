@@ -36,7 +36,29 @@ jobs:
             dist/*.deb
           if-no-files-found: error
 
+  android-signing:
+    runs-on: ubuntu-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - id: check
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Android signing is not configured; publishing desktop installers only."
+          fi
+
   android:
+    needs: android-signing
+    if: needs.android-signing.outputs.available == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +97,7 @@ jobs:
 
   release:
     needs: [build, android]
+    if: always() && needs.build.result == 'success' && (needs.android.result == 'success' || needs.android.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
