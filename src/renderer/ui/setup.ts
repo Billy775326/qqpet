@@ -75,6 +75,7 @@ function setCity(v: string): void {
 /** The AI tab's model list and last result; `redraw` repaints the open panel once a request finishes. */
 let models: string[] = []
 let aiStatus = ''
+let keyStorage = await window.qqpet.keyStorage()
 let redraw = (): void => {}
 
 const reason = (e: unknown): string => String(e instanceof Error ? e.message : e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
@@ -109,14 +110,19 @@ async function testModel(model: string): Promise<void> {
 
 /** Changing where to connect turns AI off until a model passes the test again. */
 const setAi = (patch: { aiUrl?: string; aiKey?: string }): void => {
-  update('settings', { ...patch, aiModel: '' })
+  const changedUrl = patch.aiUrl !== undefined && patch.aiUrl !== s.aiUrl
+  update('settings', { ...patch, ...(changedUrl ? { aiKey: '' } : {}), aiModel: '' })
+  void window.qqpet.keyStorage().then(status => { keyStorage = status; redraw() })
   models = []
   aiStatus = ''
 }
 
 const aiOptions = (): Option[] => [
   { type: 'input', label: '接口地址（OpenAI 兼容，以 /v1 结尾）', value: () => s.aiUrl, set: (v) => setAi({ aiUrl: v.trim() }) },
-  { type: 'input', label: 'API Key（仅本次运行保存）', value: () => s.aiKey, set: (v) => setAi({ aiKey: v.trim() }) },
+  { type: 'input', label: 'API Key', value: () => s.aiKey, set: (v) => setAi({ aiKey: v.trim() }) },
+  { type: 'button', label: '清除已保存密钥', run: () => setAi({ aiKey: '' }) },
+  { type: 'see', label: '密钥保存', value: keyStorage },
+  { type: 'see', label: '更换接口', value: '更换接口地址会清除密钥，请重新填写。' },
   { type: 'button', label: '获取模型列表', run: () => void loadModels() },
   ...models.map((m): Option => ({ type: 'radio', label: m, on: () => s.aiModel === m, run: () => void testModel(m) })),
   { type: 'see', label: '状态', value: aiStatus || (s.aiModel ? `已启用：${s.aiModel}` : '未启用') },

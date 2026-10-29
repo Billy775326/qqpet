@@ -2,6 +2,7 @@ import type { SaveData, SavePatch, Sex } from './save'
 
 export const IPC = {
   load: 'pet:load',
+  keyStorage: 'ai:key-storage',
   save: 'pet:save',
   resetPet: 'pet:reset',
   exportSave: 'pet:export',
@@ -100,6 +101,7 @@ export interface AiMessage {
 /** Exposed to the renderer as `window.qqpet` by the preload script. */
 export interface QQPetApi {
   load(): Promise<SaveData>
+  keyStorage(): Promise<string>
   /** Merges object groups field by field, replaces other keys, then persists. */
   save(patch: SavePatch): void
   /** Buries the pet and relaunches into egg selection, or straight into a newborn of `sex`. */
