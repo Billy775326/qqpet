@@ -24,11 +24,25 @@ interface Item {
 }
 
 let current: HTMLElement | null = null
+let entered = false
 
 export function closeMenu(): void {
   current?.remove()
   current = null
+  entered = false
 }
+
+/** Allow travel from the tray (including its overflow popup) before dismissing on exit. */
+export function trackMenuPointer(target: Element | null): void {
+  if (entered && (!target || !current?.contains(target))) closeMenu()
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (current && !current.contains(e.target as Node)) closeMenu()
+}, true)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMenu()
+})
 
 function quit(): void {
   closeMenu()
@@ -127,6 +141,8 @@ export function openMenu(at: { x: number; y: number; pet: boolean }, adopt: () =
   const { x, y } = at
   const left = Math.min(Math.max(at.pet ? x : x - WIDTH / 2, 0), innerWidth - WIDTH)
   const menu = div('rightMenu focusPress', frame(list(items(adopt), left + 2 * WIDTH > innerWidth), ditu, [12, 21]))
+  // Use real entry events: coordinate hit tests can see through the Windows tray popup.
+  menu.addEventListener('pointerenter', () => { entered = true })
   menu.dataset.hit = ''
   menu.style.width = `${WIDTH}px`
   menu.style.left = `${left}px`
