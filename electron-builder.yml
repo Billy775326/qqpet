@@ -16,7 +16,8 @@ asar: true
 publish: []
 
 win:
-  target: [nsis]
+  target: [zip]
+  artifactName: QQPet-${version}-win-${arch}-portable.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

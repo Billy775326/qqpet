@@ -6,7 +6,7 @@ import { aiChat, aiModels } from '../shared/ai'
 import { calendar } from '../shared/calendar'
 import type { Fetch, Point, QQPetApi, TrayClick, TrayState } from '../shared/ipc'
 import type { SaveData } from '../shared/save'
-import { applyPatch, buried, petOf, startSave } from '../shared/save-logic'
+import { applyPatch, buried, startSave, publicSave, validatedImport } from '../shared/save-logic'
 import { TRAY_STATES, trayTip } from '../shared/tray'
 import { weather } from '../shared/weather'
 
@@ -95,7 +95,7 @@ function readSave(): Record<string, any> | null {
   const text = native.read(FILE)
   if (text === undefined) return null
   try {
-    return JSON.parse(text)
+    return startSave(JSON.parse(text))
   } catch (e) {
     // Keep the broken file for manual recovery instead of silently losing the pet.
     native.write(`${FILE}.corrupt-${Date.now()}`, text)
@@ -107,7 +107,7 @@ function readSave(): Record<string, any> | null {
 let save: SaveData = startSave(readSave())
 // Set while reloading into another save: the renderer's pending write must not land on it.
 let leaving = false
-const write = (): void => native.write(FILE, JSON.stringify(save))
+const write = (): void => native.write(FILE, JSON.stringify(publicSave(save)))
 write()
 
 // The notification shows the first frame only: reposting it for every frame of the animation would be throttled.
@@ -214,16 +214,16 @@ const api: QQPetApi = {
   },
   async exportSave() {
     const day = new Date().toISOString().slice(0, 10)
-    return (await call((id) => native.exportSave(id, `QQPet-${day}.json`, JSON.stringify(save, null, 2)))) !== null
+    return (await call((id) => native.exportSave(id, `QQPet-${day}.json`, JSON.stringify(publicSave(save), null, 2)))) !== null
   },
   async importSave() {
     const text = await call((id) => native.importSave(id))
     if (text === null) return
     try {
-      const pet = petOf(JSON.parse(text))
-      if (pet.havePet !== true) throw new Error('no pet in this file')
-      native.write(`${FILE}.bak`, JSON.stringify(save))
-      native.write(FILE, JSON.stringify(pet))
+      if (text.length > 10 * 1024 * 1024) throw new Error('存档超过 10 MiB 限制')
+      const pet = validatedImport(JSON.parse(text))
+      native.write(`${FILE}.bak`, JSON.stringify(publicSave(save)))
+      native.write(FILE, JSON.stringify(publicSave(pet)))
     } catch (e) {
       await api.messageBox({ type: 'error', message: `这不是有效的QQ宠物存档\n${e}`, buttons: ['确定'] })
       return

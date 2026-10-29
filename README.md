@@ -35,7 +35,11 @@ QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic 
 - **AI（可选）**：接入任意 OpenAI 兼容接口，宠物闲聊、改写台词、点评或翻译剪贴板文字。
 - **其他**：天气播报、节日问候、免打扰、透明度、开机自启、全屏应用（看视频、玩游戏）在前台时自动隐藏宠物、高清画质（重绘的 @2x 素材，适配高分屏，重启后生效）、存档导入导出（兼容原版 `config.json`，首次启动的选蛋页也可直接导入）。
 
-存档位于 `userData/save.json`，导入时旧存档备份为 `save.json.bak`。
+Windows ZIP 便携版直接解压运行，应用自身数据存放在 `QQPet.exe` 同目录的 `data/`：存档 `save.json`、浏览器存储与缓存 `browser/`、临时文件 `temp/`、日志 `logs/` 和崩溃目录 `crashes/`。目录不可写时会明确报错，不回退到系统用户目录。移动或备份时请复制整个解压目录；升级时保留 `data/`，不要在运行中覆盖程序。
+
+便携版不设置开机自启，也不自动读取旧安装版的用户目录。旧宠物请在旧版导出后手动导入；导入前会验证存档并备份为 `save.json.bak`。小游戏本地存储与按键设置包含在 `data/browser/` 中，单独导出宠物 JSON 不包含这些浏览器设置。
+
+API Key 仅在本次运行的内存中保留，重启后需要重新输入；不会进入新写出的存档、备份和导出文件。旧版已存在的外部存档或备份不会被自动删除或清理。便携模式只约束应用自身数据，不保证 Windows、驱动或安全软件不留下系统运行记录。其他平台仍使用其系统应用数据目录。
 
 ### Android
 
@@ -52,7 +56,7 @@ QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic 
 
 | 平台 | 文件 |
 |---|---|
-| Windows | `QQPet.Setup.<版本>.exe` |
+| Windows | `QQPet-<版本>-win-x64-portable.zip`（解压运行 `QQPet.exe`） |
 | macOS（Apple 芯片） | `QQPet-<版本>-arm64.dmg` |
 | macOS（Intel） | `QQPet-<版本>.dmg` |
 | Linux | `QQPet-<版本>.AppImage` 或 `qqpet_<版本>_amd64.deb` |

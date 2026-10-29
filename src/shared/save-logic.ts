@@ -4,7 +4,7 @@ const now = (): number => Math.floor(Date.now() / 1000)
 const rand = (min: number, max: number) => (): number => Math.round(Math.random() * (max - min) + min)
 
 type Rule = (v: unknown) => unknown
-const isNum = (v: unknown): v is number => typeof v === 'number' && !Number.isNaN(v)
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 const num =
   (min: number, max: number, fallback: number | (() => number)): Rule =>
   (v) =>
@@ -23,8 +23,8 @@ const AI_URL = 'http://127.0.0.1:8000/v1'
 // replaced by the same fallback the original used.
 const RULES: Record<string, Record<string, Rule>> = {
   petInfo: {
-    name: (v) => v || '宠宝~',
-    host: (v) => v || '主人~',
+    name: (v) => v || '瀹犲疂~',
+    host: (v) => v || '涓讳汉~',
     sex: (v) => (v === 'GG' || v === 'MM' ? v : 'GG'),
     growth: num(-ANY, ANY, 0),
     hunger: num(0, ANY, 0),
@@ -105,8 +105,8 @@ function fresh(): SaveData {
     saveNum: 0,
     nowTimeLine: 0,
     petInfo: {
-      name: '宠宝~',
-      host: '主人~',
+      name: '瀹犲疂~',
+      host: '涓讳汉~',
       sex: 'GG',
       growth: 0,
       hunger: 1100,
@@ -172,7 +172,7 @@ function fresh(): SaveData {
 function repair(data: Record<string, any>): string[] {
   const fixed: string[] = []
   for (const [group, rules] of Object.entries(RULES)) {
-    data[group] ??= {}
+    if (!record(data[group])) data[group] = {}
     for (const [field, rule] of Object.entries(rules)) {
       const v = rule(data[group][field])
       if (v === data[group][field]) continue
@@ -180,14 +180,36 @@ function repair(data: Record<string, any>): string[] {
       fixed.push(`${group}.${field}`)
     }
   }
-  data.illustrated ??= []
-  data.saveJsonData ??= {}
+  if (!Array.isArray(data.illustrated)) data.illustrated = []
+  if (!record(data.saveJsonData)) data.saveJsonData = {}
+  for (const [key, value] of Object.entries(data.saveJsonData)) {
+    try {
+      if (key === 'activity' || key === 'weather') continue
+      const parsed = JSON.parse(String(value))
+      if (key === 'album' ? !Array.isArray(parsed) : !record(parsed)) throw new Error('invalid data')
+      if (key === 'task' && (parsed.taskList && !record(parsed.taskList) || parsed.daily && !Array.isArray(parsed.daily))) throw new Error('invalid tasks')
+      if (key === 'task' && parsed.taskList && Object.values(parsed.taskList).some(v => !Array.isArray(v) || v.some(e => !record(e) || !Array.isArray(e.good)))) throw new Error('invalid rewards')
+      if (key === 'signin' && parsed.collectionList && (!record(parsed.collectionList) || Object.values(parsed.collectionList).some(y => !record(y) || Object.values(y).some(m => !Array.isArray(m))))) throw new Error('invalid signin')
+      if (key === 'email' && Object.values(parsed).some(m => !record(m) || !m.e && !Array.isArray(m.glb))) throw new Error('invalid email')
+      if (key === 'farm' && !Array.isArray(parsed.farmland)) throw new Error('invalid farm')
+      if (key === 'fishs' && parsed.fishs && !Array.isArray(parsed.fishs)) throw new Error('invalid pond')
+    } catch { delete data.saveJsonData[key] }
+  }
+  for (const type of Object.keys(data.selfGoodDatas)) {
+    if (Array.isArray(data.selfGoodDatas[type])) data.selfGoodDatas[type] = data.selfGoodDatas[type].filter((v: unknown) => typeof v === 'string' && /^_.+\*\d+$/.test(v))
+  }
+  const defaults = fresh() as unknown as Record<string, any>
+  for (const [key, value] of Object.entries(defaults)) {
+    if (typeof value !== 'object' && (typeof data[key] !== typeof value || typeof data[key] === 'number' && !Number.isFinite(data[key]))) data[key] = value
+  }
   return fixed
 }
 
 /** The save in a file of ours, or in the original's config.json (under `petInfoData`). */
 export function petOf(data: Record<string, any>): Record<string, any> {
+  if (!record(data)) throw new Error('存档必须是 JSON 对象')
   const pet = data.petInfoData ?? data
+  if (!record(pet)) throw new Error('存档格式无效')
   delete pet.machineId
   delete pet.oId
   return pet
@@ -195,25 +217,52 @@ export function petOf(data: Record<string, any>): Record<string, any> {
 
 /** The save to run with: the stored pet, repaired, or else a new one. */
 export function startSave(stored: Record<string, any> | null): SaveData {
-  if (stored?.havePet) {
+  if (stored) stored = clean(stored) as Record<string, any>
+  if (stored?.havePet === true) {
     const fixed = repair(stored)
     if (fixed.length) console.warn('repaired save fields:', fixed.join(', '))
     return stored as SaveData
   }
   // A new pet keeps the owner's preferences, but not the old pet's pause or hiding.
   const save = fresh()
-  if (stored?.settings) Object.assign(save.settings, stored.settings, { paused: false, hidden: false })
+  if (record(stored?.settings)) Object.assign(save.settings, stored.settings, { paused: false, hidden: false })
   return save
 }
 
 export function applyPatch(save: SaveData, patch: SavePatch): void {
-  const target = save as unknown as Record<string, unknown>
-  for (const [key, value] of Object.entries(patch)) {
-    const current = target[key]
-    if (value && typeof value === 'object' && !Array.isArray(value) && current && typeof current === 'object') Object.assign(current, value)
-    else target[key] = value
+  if (!record(patch)) throw new Error('Invalid save patch')
+  const safe = clean(patch) as Record<string, any>
+  const defaults = fresh() as unknown as Record<string, any>
+  for (const [key, value] of Object.entries(safe)) {
+    if (!Object.hasOwn(defaults, key)) throw new Error('Unknown save field')
+    if (record(defaults[key])) {
+      if (!record(value)) throw new Error('Invalid save group')
+      for (const field of Object.keys(value)) {
+        if (key !== 'saveJsonData' && !Object.hasOwn(defaults[key], field)) throw new Error('Unknown save field')
+      }
+    } else if (Array.isArray(defaults[key]) ? !Array.isArray(value) : typeof value !== typeof defaults[key]) throw new Error('Invalid save value')
   }
+  const candidate = structuredClone(save) as unknown as Record<string, any>
+  for (const [key, value] of Object.entries(safe)) {
+    if (record(value)) Object.assign(candidate[key], value)
+    else candidate[key] = value
+  }
+  repair(candidate)
+  Object.assign(save, candidate)
   save.saveNum++
+}
+
+/** Import is validated before the current file or its backup is touched. */
+export function validatedImport(value: unknown): SaveData {
+  const pet = petOf(value as Record<string, any>)
+  if (pet.havePet !== true) throw new Error('存档没有宠物')
+  for (const group of Object.keys(RULES)) if (pet[group] !== undefined && !record(pet[group])) throw new Error('存档分组格式无效')
+  return startSave(pet)
+}
+
+/** Credentials are session-only and never included in saves, backups or exports. */
+export function publicSave(save: SaveData): SaveData {
+  return { ...save, settings: { ...save.settings, aiKey: '' } }
 }
 
 /** Buries the pet: the next start selects an egg, or begins with a newborn of `sex`. */
@@ -225,4 +274,19 @@ export function buried(save: SaveData, sex?: Sex): SaveData {
   born.petInfo.sex = sex
   born.havePet = true
   return born
+}
+
+function record(v: unknown): v is Record<string, any> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+function clean(v: unknown, depth = 0): unknown {
+  if (depth > 40) throw new Error('Save nesting too deep')
+  if (Array.isArray(v)) return v.map(x => clean(x, depth + 1))
+  if (!record(v)) return v
+  const out: Record<string, unknown> = {}
+  for (const [k, x] of Object.entries(v)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') throw new Error('Unsafe save field')
+    out[k] = clean(x, depth + 1)
+  }
+  return out
 }

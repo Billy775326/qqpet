@@ -1,19 +1,23 @@
+import { portable } from './paths'
 import { app } from 'electron'
-import { copyFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { copyFileSync, statSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SaveData, SavePatch, Sex } from '../shared/save'
-import { applyPatch, buried, petOf, startSave } from '../shared/save-logic'
+import { applyPatch, buried, petOf, startSave, publicSave, validatedImport } from '../shared/save-logic'
 
 const FILE = join(app.getPath('userData'), 'save.json')
 // Arctic Penguin T800 kept the same data under `petInfoData` in electron-store.
 const LEGACY_FILE = join(app.getPath('appData'), 'Arctic Penguin', 'config.json')
 
-const readJson = (file: string): Record<string, any> => JSON.parse(readFileSync(file, 'utf8'))
+const readJson = (file: string): Record<string, any> => {
+  if (statSync(file).size > 10 * 1024 * 1024) throw new Error('存档超过 10 MiB 限制')
+  return JSON.parse(readFileSync(file, 'utf8'))
+}
 
 function read(): Record<string, any> | null {
   if (existsSync(FILE)) {
     try {
-      return readJson(FILE)
+      return startSave(readJson(FILE))
     } catch (e) {
       // Keep the broken file for manual recovery instead of silently losing the pet.
       const backup = `${FILE}.corrupt-${Date.now()}`
@@ -22,7 +26,7 @@ function read(): Record<string, any> | null {
       return null
     }
   }
-  if (existsSync(LEGACY_FILE)) {
+  if (!portable && existsSync(LEGACY_FILE)) {
     console.log(`migrating save from ${LEGACY_FILE}`)
     return petOf(readJson(LEGACY_FILE))
   }
@@ -31,7 +35,7 @@ function read(): Record<string, any> | null {
 
 function write(data: SaveData): void {
   const tmp = `${FILE}.tmp`
-  writeFileSync(tmp, JSON.stringify(data))
+  writeFileSync(tmp, JSON.stringify(publicSave(data)))
   renameSync(tmp, FILE)
 }
 
@@ -53,7 +57,7 @@ export function patchSave(patch: SavePatch): void {
 }
 
 export function exportSave(file: string): void {
-  writeFileSync(file, JSON.stringify(save, null, 2))
+  writeFileSync(file, JSON.stringify(publicSave(save), null, 2))
 }
 
 /**
@@ -61,10 +65,9 @@ export function exportSave(file: string): void {
  * the next launch repairs it. Throws when the file holds no pet.
  */
 export function importSave(file: string): void {
-  const pet = petOf(readJson(file))
-  if (pet.havePet !== true) throw new Error('no pet in this file')
+  const pet = validatedImport(readJson(file))
   copyFileSync(FILE, `${FILE}.bak`)
-  writeFileSync(FILE, JSON.stringify(pet))
+  write(pet)
 }
 
 /** Buries the pet: the next launch starts with egg selection, or with a newborn of `sex`. */

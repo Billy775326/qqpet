@@ -8,25 +8,17 @@ import { touch } from '../ui/dom'
 export const save: SaveData = await window.qqpet.load()
 export const info: PetInfo = save.petInfo
 
-let patch: Record<string, unknown> = {}
-let flushTimer = 0
 
-/** Applies a change to `save` and writes it to disk, batched like the original (200 ms). */
+/** Applies a change to `save` and writes it to disk, acknowledged synchronously before returning. */
 export function update<K extends keyof SaveData>(key: K, value: SavePatch[K]): void {
   const target = save as unknown as Record<string, unknown>
   const isGroup = typeof value === 'object' && value !== null && !Array.isArray(value)
   if (isGroup) {
     Object.assign(target[key] as object, value)
-    patch[key] = { ...(patch[key] as object), ...value }
   } else {
     target[key] = value
-    patch[key] = value
   }
-  flushTimer ||= window.setTimeout(() => {
-    window.qqpet.save(patch as SavePatch)
-    patch = {}
-    flushTimer = 0
-  }, 200)
+  window.qqpet.save({ [key]: value } as SavePatch)
 }
 
 type NumKey = { [K in keyof PetInfo]: PetInfo[K] extends number ? K : never }[keyof PetInfo]
