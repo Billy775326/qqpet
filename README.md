@@ -48,7 +48,7 @@ QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic 
 
 ## 下载安装
 
-从 [Releases](https://github.com/AnkioTomas/qqpet/releases/latest) 下载对应平台的安装包：
+从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的安装包：
 
 | 平台 | 文件 |
 |---|---|
