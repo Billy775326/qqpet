@@ -143,7 +143,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      - run: mkdir dist && mv android/app/build/outputs/apk/release/app-release.apk "dist/QQPet-${RELEASE_TAG#v}.apk"
+      - run: mkdir -p dist && mv android/app/build/outputs/apk/release/app-release.apk "dist/QQPet-${RELEASE_TAG#v}.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: qqpet-android
