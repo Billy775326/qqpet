@@ -42,5 +42,13 @@ try {
 } finally {
   ws?.close()
   if(child.exitCode===null) { child.kill(); await Promise.race([exited,new Promise(r=>setTimeout(r,2000))]) }
-  if(existsSync(data)) renameSync(data,resolve('dist/portable-smoke-data'))
+  if(existsSync(data)) {
+    for(let attempt=0; ; attempt++) {
+      try { renameSync(data,resolve('dist/portable-smoke-data')); break }
+      catch(error) {
+        if(attempt>=59 || !['EPERM','EBUSY','EACCES'].includes(error.code)) throw error
+        await new Promise(r=>setTimeout(r,500))
+      }
+    }
+  }
 }
