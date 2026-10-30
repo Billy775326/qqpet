@@ -933,9 +933,6 @@ span::-webkit-scrollbar-track {
 .focusPress:active {
   cursor: url(/pet/img_res/hand/focus/press.cur), default !important;
 }
-.focusPress:focus {
-  cursor: url(/pet/img_res/hand/focus/press.cur), default !important;
-}
 .focusPress.mark {
   position: relative;
   z-index: 1;

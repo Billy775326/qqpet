@@ -62,10 +62,12 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   const desktop = new Element(); body.append(desktop)
   let target: Element | null = null
   let clickThrough = true
-  const document = { body, createElement: () => new Element(), getElementById: () => pet, elementFromPoint: () => target, addEventListener(name: string, fn: Function) { callbacks[name] = fn } }
+  let themed = false
+  const document = { body, documentElement: { classList: { toggle: (_name: string, on: boolean) => { themed = on } } }, createElement: () => new Element(), getElementById: () => pet, elementFromPoint: () => target, addEventListener(name: string, fn: Function) { callbacks[name] = fn } }
   runInNewContext(bundled.outputFiles[0].text, {
     document, testSave: save, innerWidth: 1200, innerHeight: 800,
     matchMedia: () => ({ matches: false }), Event,
+    requestAnimationFrame: (fn: Function) => fn(0),
     window: { addEventListener() {}, dispatchEvent() {}, qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
   })
   const menu = () => body.children.find(c => c.className === 'ui-menu')
@@ -86,11 +88,13 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   assert.ok(show, 'hidden pet must have a show action')
   move(show)
   assert.equal(clickThrough, false)
+  assert.equal(themed, true, 'first hover must enable the original cursor before clicking')
   show.emit('click')
   assert.equal(save.settings.hidden, false)
   assert.equal(menu(), undefined)
   move(desktop)
   assert.equal(clickThrough, true)
+  assert.equal(themed, false, 'leaving the hit region must restore the desktop cursor')
   open()
   const next = menu()!, nextSurface = next.children[0]
   nextSurface.emit('pointerenter')

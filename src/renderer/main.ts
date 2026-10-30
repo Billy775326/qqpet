@@ -94,6 +94,7 @@ window.qqpet.onCursor((p) => {
   if (hit === interactive) return
   interactive = hit
   window.qqpet.setClickThrough(!hit)
+  requestAnimationFrame(() => document.documentElement.classList.toggle('qqpet-cursor-hit', interactive))
 })
 
 petEl.addEventListener('contextmenu', (e) => openMenu({ x: e.clientX, y: e.clientY, pet: true }, adoptPet))

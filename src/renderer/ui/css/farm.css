@@ -1,6 +1,6 @@
 .ui-farm .farm {position:relative;width:700px;height:550px}
 .ui-farm .actions {display:flex;justify-content:center;gap:12px;padding-top:6px}
-.ui-farm .act {width:76px;height:24px;font-size:12px;color:#000000bc;cursor:pointer;background:url(/pet/email/5.svg) 0 0/100% 100% no-repeat}
+.ui-farm .act {width:76px;height:24px;font-size:12px;color:#000000bc;cursor:url(/pet/img_res/hand/focus/normal.cur),default;background:url(/pet/email/5.svg) 0 0/100% 100% no-repeat}
 .ui-farm .act:hover {background-image:url(/pet/email/9.svg)}
 .ui-farm .act:active {background-image:url(/pet/email/11.svg)}
 /* Over Farm.swf's empty TipBg slot, in stage pixels. */

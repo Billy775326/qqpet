@@ -8,14 +8,14 @@
   opacity: var(--opacity,1);
   touch-action: none;
   user-select: none;
-  cursor: pointer;
+  cursor: url(/pet/img_res/hand/focus/normal.cur), default;
 }
 .local-edge-mini[hidden] {
   display: none !important;
 }
 .local-edge-mini.local-mini-dragging {
   transition: none;
-  cursor: grabbing;
+  cursor: url(/pet/img_res/hand/focus/press.cur), default;
 }
 .local-mini-artwork {
   position: absolute;

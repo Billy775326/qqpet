@@ -278,3 +278,15 @@ body {
 .petHidden .ui-control {
   display: none;
 }
+
+/* Share the original QQPet artwork across the pet canvas, controls and mini. */
+html,body{cursor:auto!important}
+html{--qqpet-original-ui-cursor:auto}
+html.qqpet-cursor-hit{--qqpet-original-ui-cursor:url(/pet/img_res/hand/focus/normal.cur),default}
+#pet{--qqpet-original-pet-cursor:var(--qqpet-original-ui-cursor);cursor:var(--qqpet-original-pet-cursor)!important}
+#pet:active{--qqpet-original-pet-cursor:url(/pet/img_res/hand/focus/press.cur),default}
+#pet>ruffle-player,#pet .point{cursor:var(--qqpet-original-pet-cursor)!important}
+.focusPress,.ui-control .menuItem,.ui-control .childrenMenuItem,.local-edge-mini{cursor:var(--qqpet-original-ui-cursor)!important}
+.ui-control .menuItem:active,.ui-control .childrenMenuItem:active,.local-edge-mini:active,.local-edge-mini.local-mini-dragging{cursor:url(/pet/img_res/hand/focus/press.cur),default!important}
+/* Keep the existing 72 px peek zone stationary while the portrait slides. */
+.local-edge-mini::before{content:"";position:fixed;top:inherit;right:0;width:72px;height:80px;background:rgba(0,0,0,.004);cursor:inherit}

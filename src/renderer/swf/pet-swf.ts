@@ -1,4 +1,5 @@
 import { SwfPlayer } from './player'
+import { installPetCursor, originalCursorsReady } from './cursor'
 
 const nextPaint = (): Promise<void> => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
 
@@ -21,6 +22,8 @@ export class PetSwf {
   async load(url: string): Promise<void> {
     const next = this.back
     await next.load(url)
+    await originalCursorsReady
+    installPetCursor(next.el)
     await nextPaint()
     next.el.style.visibility = 'visible'
     this.front.el.style.visibility = 'hidden'

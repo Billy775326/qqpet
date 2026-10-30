@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline'
 import { IPC, type Point } from '../shared/ipc'
 import { APP_ORIGIN } from './protocol'
 
-const CURSOR_INTERVAL_MS = 33
+const CURSOR_INTERVAL_MS = 16
 const PAGES = process.env.ELECTRON_RENDERER_URL ?? APP_ORIGIN
 
 /** Transparent, click-through overlay covering the primary display's work area. */

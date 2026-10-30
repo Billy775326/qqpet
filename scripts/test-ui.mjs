@@ -11,6 +11,8 @@ const { prepareControls } = await import('../tests/ui/prepare-controls.mjs')
 await prepareControls()
 const { prepareMini } = await import('../tests/ui/prepare-mini.mjs')
 await prepareMini()
+const { prepareCursor } = await import('../tests/ui/prepare-cursor.mjs')
+await prepareCursor()
 const suites = JSON.parse(readFileSync(join(fixture, 'suites.json'), 'utf8'))
 let executable, packaged = false
 if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
