@@ -1,9 +1,6 @@
 import { description, version } from '../../../package.json'
-import { allGoods, type GoodType } from '../pet/data/goods'
-import { give } from '../pet/items'
 import { speak } from '../pet/pet'
-import { rand } from '../pet/rand'
-import { addInfo, info, save, setInfo, update } from '../pet/store'
+import { info, save, setInfo, update } from '../pet/store'
 import { weatherNow } from '../pet/weather'
 import { openFrame } from './box'
 import './css/setup.css'
@@ -53,13 +50,6 @@ async function importSave(): Promise<void> {
 async function rebornAsOther(): Promise<void> {
   const message = '点击将会清空当前宠物数据，并重生为另一个性别的宠物，请慎重选择'
   if ((await window.qqpet.messageBox({ type: 'question', title: '重生为另一个性别~', message })) === 1) window.qqpet.resetPet(info.sex === 'GG' ? 'MM' : 'GG')
-}
-
-/** Ten of a random good of `type`. */
-function grant(type: GoodType): void {
-  const all = allGoods(type)
-  const g = { ...all[rand(0, all.length - 1)], num: 10 }
-  give([g], `[host]，我获得了${g.num}个${g.name}！`)
 }
 
 /** The pet reports the new city's weather right away, so a wrong name shows at once. */
@@ -165,23 +155,6 @@ const TABS: { label: string; options: Option[] }[] = [
     label: '工具',
     options: [
       { type: 'radio', label: '实时监听播报剪切板', title: '复制文字后，宠物会把它念出来', on: () => s.clip, run: () => update('settings', { clip: !s.clip }) },
-    ],
-  },
-  {
-    label: '作弊',
-    options: [
-      {
-        type: 'button',
-        label: '元宝 +1000',
-        run: () => {
-          addInfo('yb', 1000)
-          speak({ s: '[host]，我获得了1000元宝！', now: true }, 'appear')
-        },
-      },
-      { type: 'button', label: '成长值 +5000', run: () => addInfo('growth', 5000) },
-      { type: 'button', label: '随机获得 10 个食物', run: () => grant('food') },
-      { type: 'button', label: '随机获得 10 个清洁用品', run: () => grant('clean') },
-      { type: 'button', label: '随机获得 10 个药品', run: () => grant('medicine') },
     ],
   },
   {
