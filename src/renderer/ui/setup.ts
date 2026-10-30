@@ -8,6 +8,7 @@ import { weatherNow } from '../pet/weather'
 import { openFrame } from './box'
 import './css/setup.css'
 import { button, div, typeable } from './dom'
+import { expandEdgeMini } from './edge-mini'
 import { setFaceClick } from './face'
 import { readopt, setHidden } from './menu'
 
@@ -35,6 +36,7 @@ document.body.classList.toggle('hd', save.settings.hd)
 
 /** Brings a lost pet back on screen. */
 function homing(): void {
+  expandEdgeMini()
   setInfo('lastX', 100)
   setInfo('lastY', innerHeight * 0.6)
   // On start: an interrupted hide ends, and hides the pet, right before.

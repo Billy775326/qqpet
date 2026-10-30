@@ -9,6 +9,8 @@ const fixture = join(root, 'tests/ui')
 mkdirSync(join(root, 'dist'), { recursive: true })
 const { prepareControls } = await import('../tests/ui/prepare-controls.mjs')
 await prepareControls()
+const { prepareMini } = await import('../tests/ui/prepare-mini.mjs')
+await prepareMini()
 const suites = JSON.parse(readFileSync(join(fixture, 'suites.json'), 'utf8'))
 let executable, packaged = false
 if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
@@ -25,7 +27,8 @@ if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
 }
 const env = { ...process.env }
 delete env.ELECTRON_RUN_AS_NODE
-for (const suite of suites) {
+const selected = process.argv.slice(2)
+for (const suite of suites.filter(suite => !selected.length || selected.includes(suite))) {
   await new Promise((done, fail) => {
     const child = spawn(executable, [...(packaged ? [] : [fixture]), `--suite=${suite}`], { cwd: root, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
     child.stdout.pipe(process.stdout)

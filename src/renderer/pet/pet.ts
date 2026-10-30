@@ -44,6 +44,7 @@ export const machine = new Machine(new PetSwf(document.getElementById('pet')!), 
   if (next.a === 'normal') idleTimer = window.setTimeout(idle, Math.trunc(Math.random() * 40000 + 20000))
   over.e?.()
   next.s?.()
+  window.dispatchEvent(new Event('qqpet:pose'))
 })
 
 /** Answering the pet's small talk cheers it up. */

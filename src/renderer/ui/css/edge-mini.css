@@ -1,0 +1,106 @@
+.local-edge-mini {
+  position: fixed;
+  width: 72px;
+  height: 80px;
+  right: -36px;
+  z-index: 620;
+  transition: right .18s ease-out;
+  opacity: var(--opacity,1);
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+}
+.local-edge-mini[hidden] {
+  display: none !important;
+}
+.local-edge-mini.local-mini-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+.local-mini-artwork {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: 50% 75%;
+  animation: qqpet-mini-breathe 3s ease-in-out infinite;
+}
+.local-mini-portrait {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+}
+.local-edge-mini[data-mode=peek] .local-mini-artwork {
+  animation: none;
+  transform: rotate(-7deg) translate(-1px, -2px);
+}
+.local-edge-mini[data-mode=mini-sleep] .local-mini-artwork {
+  animation: qqpet-mini-sleep 5s ease-in-out infinite;
+  filter: brightness(.9) saturate(.75);
+}
+.local-mini-zzz {
+  display: none;
+  position: absolute;
+  left: 5px;
+  top: -2px;
+  color: #47678a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 16px;
+  text-shadow: 0 1px 2px #fff;
+  pointer-events: none;
+}
+.local-edge-mini[data-mode=mini-sleep] .local-mini-zzz {
+  display: block;
+  animation: qqpet-mini-zzz 3s ease-in-out infinite;
+}
+body.qqpet-edge-mini #pet {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.qqpet-edge-mini #pet > ruffle-player {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.qqpet-edge-mini .ui-control,
+body.qqpet-edge-mini #talk {
+  display: none !important;
+}
+body.petHidden .local-edge-mini {
+  display: none !important;
+}
+@keyframes qqpet-mini-breathe {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+@keyframes qqpet-mini-sleep {
+  0%, 100% {
+    transform: rotate(7deg) translateY(3px) scale(.98);
+  }
+  50% {
+    transform: rotate(7deg) translateY(4px) scale(1);
+  }
+}
+@keyframes qqpet-mini-zzz {
+  0%, 100% {
+    opacity: .5;
+    transform: translateY(1px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .local-edge-mini {
+    transition: none;
+  }
+  .local-mini-artwork,
+  .local-mini-zzz {
+    animation: none !important;
+  }
+}

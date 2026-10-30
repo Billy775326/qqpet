@@ -12,7 +12,7 @@ app.whenReady().then(async () => {
   const prepared=JSON.parse(readFileSync('dist/ui-controls-prepared.json','utf8'))
   const {setup,css}=prepared
   const win = new BrowserWindow({ width: 1920, height: 1040, useContentSize: true, show: false, webPreferences: { sandbox: true, contextIsolation: true, offscreen: true, backgroundThrottling: false } })
-  win.webContents.on('console-message', (_event, details) => { if(details?.level==='error'||details?.level===3) console.error('Fixture renderer:',details.message) })
+  win.webContents.on('console-message', event => { if(event.level==='error'||event.level===3) console.error('Fixture renderer:',event.message) })
   const html = resolve('dist/source-control-test.html')
   const assetRoot=pathToFileURL(resolve(process.env.QQPET_TEST_RESOURCES||'resources')+'/').href
   writeFileSync(html,'<!doctype html><html><head><meta charset="UTF-8"><base href="'+assetRoot+'"><style>'+css.replaceAll('url(/pet/','url('+assetRoot+'pet/')+'</style></head><body></body></html>')

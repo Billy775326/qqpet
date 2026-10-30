@@ -1,10 +1,11 @@
-import { axisMax, axisFromCanvas, clampAxis, petCanvasRect, petMetrics } from './pet/geometry'
+import { axisMax, axisFromCanvas, clampAxis, petCanvasRect, petMetrics, petVisibleRect } from './pet/geometry'
 import { clipAsk } from './pet/ai'
 import { resumeTask } from './pet/jobs'
 import { speak, startPet } from './pet/pet'
 import { info, onInfoChange, petSize, save, setInfo } from './pet/store'
 import { adopt } from './ui/adopt'
-import { scheduleHide, showControl } from './ui/control'
+import { collapseControls, scheduleHide, showControl } from './ui/control'
+import { createEdgeMini, type EdgeMini } from './ui/edge-mini'
 import { div, touch } from './ui/dom'
 import './ui/face'
 import { closeMenu, openMenu, runTrayAction, trackMenuPointer } from './ui/menu'
@@ -12,6 +13,7 @@ import { openState } from './ui/state'
 
 const petEl = document.getElementById('pet')!
 const HOLD_MS = 500
+let mini: EdgeMini | undefined
 
 function clampPosition(snap = false): void {
   const m = petMetrics()
@@ -48,6 +50,7 @@ function layout(): void {
   } finally {
     layingOut = false
   }
+  mini?.refresh()
   window.dispatchEvent(new Event('qqpet:pet-layout'))
 }
 if (info.lastX < 0 || info.lastY < 0) {
@@ -77,9 +80,14 @@ window.API = {
 // element (or a drag is in progress).
 let interactive = false
 let dragging = false
+mini = createEdgeMini({
+  closeMenu, collapseControls, layout, showControls: showControl,
+  openContextMenu: point => openMenu({ ...point, pet: true }, adoptPet),
+})
 window.qqpet.onCursor((p) => {
   cursor.x = p.x
   cursor.y = p.y
+  mini?.trackPointer(p)
   const target = document.elementFromPoint(p.x, p.y)
   trackMenuPointer(target)
   const hit = dragging || target?.isConnected === true && target.closest('[data-hit]') != null
@@ -99,9 +107,13 @@ petEl.addEventListener('pointerdown', (e: PointerEvent) => {
   const dx = e.clientX - rect.left
   const dy = e.clientY - rect.top
   const hold = touch ? setTimeout(() => openMenu({ x: e.clientX, y: e.clientY, pet: true }, adoptPet), HOLD_MS) : 0
+  let moved = false
   const move = (m: PointerEvent) => {
     if (m.pointerId !== e.pointerId) return
-    if (Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) > 8) clearTimeout(hold)
+    if (Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) >= 8) {
+      moved = true
+      clearTimeout(hold)
+    }
     const frame = petMetrics()
     const x = axisFromCanvas(m.clientX - dx, innerWidth, frame.extent, frame.left, frame.right)
     const y = axisFromCanvas(m.clientY - dy, innerHeight, frame.extent, frame.top, frame.bottom)
@@ -118,6 +130,7 @@ petEl.addEventListener('pointerdown', (e: PointerEvent) => {
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.removeEventListener(type, finish)
     if (petEl.hasPointerCapture(e.pointerId)) petEl.releasePointerCapture(e.pointerId)
     clampPosition(true)
+    if (event.type === 'pointerup' && moved && petVisibleRect().right >= innerWidth - 0.75) mini?.enter()
     scheduleHide()
   }
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.addEventListener(type, finish)

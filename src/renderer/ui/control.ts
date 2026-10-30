@@ -10,6 +10,7 @@ import './css/control.css'
 import { formatDate } from './date'
 import { button, div, img, touch } from './dom'
 import { openEmail } from './email'
+import { expandEdgeMini } from './edge-mini'
 import { openFarm } from './farm'
 import { openFishing } from './fishing'
 import { openGames } from './games'
@@ -295,6 +296,7 @@ function intro(n = 0): void {
 
 /** Pressing the pet shows the bar. */
 export function showControl(): void {
+  if (expandEdgeMini()) return
   if (save.isBury) return
   clearTimeout(hideTimer)
   if (shown) return
@@ -321,6 +323,14 @@ function hide(): void {
   shown = false
   control.classList.remove('showControl')
   place()
+}
+
+/** Docking hides both the goods panel and the icon bar. */
+export function collapseControls(): void {
+  closePanel()
+  clearTimeout(hideTimer)
+  clearTimeout(introTimer)
+  hide()
 }
 
 let list: HTMLElement | null = null
