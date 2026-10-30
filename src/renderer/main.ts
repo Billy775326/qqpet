@@ -1,3 +1,4 @@
+import { axisMax, axisFromCanvas, clampAxis, petCanvasRect, petMetrics } from './pet/geometry'
 import { clipAsk } from './pet/ai'
 import { resumeTask } from './pet/jobs'
 import { speak, startPet } from './pet/pet'
@@ -12,40 +13,64 @@ import { openState } from './ui/state'
 const petEl = document.getElementById('pet')!
 const HOLD_MS = 500
 
-function clampPosition(): void {
-  const max = (n: number, limit: number): number => Math.min(Math.max(n, 0), limit - petSize())
-  setInfo('lastX', max(info.lastX, innerWidth))
-  setInfo('lastY', max(info.lastY, innerHeight))
+function clampPosition(snap = false): void {
+  const m = petMetrics()
+  setInfo('lastX', clampAxis(info.lastX, innerWidth, m.extent, m.left, m.right, snap))
+  setInfo('lastY', clampAxis(info.lastY, innerHeight, m.extent, m.top, m.bottom, snap))
 }
-
 let size = petSize()
+let layoutWidth = innerWidth
+let layoutHeight = innerHeight
+let layingOut = false
 function layout(): void {
-  // A pet that grows keeps its center.
-  const shift = (petSize() - size) / 2
-  if (shift) {
-    size = petSize()
-    setInfo('lastX', info.lastX - shift)
-    setInfo('lastY', info.lastY - shift)
-    clampPosition()
+  if (layingOut) return
+  layingOut = true
+  try {
+    const next = petSize()
+    if (next !== size || layoutWidth !== innerWidth || layoutHeight !== innerHeight) {
+      const oldMaxX = axisMax(layoutWidth, size)
+      const oldMaxY = axisMax(layoutHeight, size)
+      const right = oldMaxX > 0 && info.lastX >= oldMaxX - 0.5
+      const bottom = oldMaxY > 0 && info.lastY >= oldMaxY - 0.5
+      const left = info.lastX <= 0.5
+      const top = info.lastY <= 0.5
+      const shift = (next - size) / 2
+      size = next
+      layoutWidth = innerWidth
+      layoutHeight = innerHeight
+      setInfo('lastX', right ? axisMax(innerWidth, next) : left ? 0 : Math.max(0, Math.min(info.lastX - shift, axisMax(innerWidth, next))))
+      setInfo('lastY', bottom ? axisMax(innerHeight, next) : top ? 0 : Math.max(0, Math.min(info.lastY - shift, axisMax(innerHeight, next))))
+    }
+    const rect = petCanvasRect()
+    petEl.style.width = petEl.style.height = `${size}px`
+    petEl.style.left = `${rect.left}px`
+    petEl.style.top = `${rect.top}px`
+  } finally {
+    layingOut = false
   }
-  petEl.style.width = petEl.style.height = `${size}px`
-  petEl.style.left = `${info.lastX}px`
-  petEl.style.top = `${info.lastY}px`
+  window.dispatchEvent(new Event('qqpet:pet-layout'))
 }
-
 if (info.lastX < 0 || info.lastY < 0) {
   setInfo('lastX', (innerWidth - size) / 2)
   setInfo('lastY', (innerHeight - size) / 2)
 }
+clampPosition()
 layout()
 onInfoChange((key) => {
-  if (key === 'lastX' || key === 'lastY' || key === 'growth') layout()
+  if (['lastX', 'lastY', 'growth', 'mood', 'sex'].includes(key)) {
+    layout()
+    if (key === 'growth') queueMicrotask(layout)
+  }
 })
+window.addEventListener('resize', layout)
 
 const cursor = { x: 0, y: 0 }
 window.API = {
   GetCursorPosition: () => `${cursor.x},${cursor.y},0`,
-  GetWindowRect: () => `${info.lastX},${info.lastY},${size},${size}`,
+  GetWindowRect: () => {
+    const r = petCanvasRect()
+    return `${r.left},${r.top},${size},${size}`
+  },
 }
 
 // The window is click-through except while the cursor is over a [data-hit]
@@ -65,33 +90,37 @@ window.qqpet.onCursor((p) => {
 
 petEl.addEventListener('contextmenu', (e) => openMenu({ x: e.clientX, y: e.clientY, pet: true }, adoptPet))
 
-petEl.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || (e.target as HTMLElement).classList.contains('point')) return
+petEl.addEventListener('pointerdown', (e: PointerEvent) => {
+  if (e.button !== 0 || dragging || (e.target as HTMLElement).classList.contains('point')) return
   closeMenu()
   showControl()
   dragging = true
-  const dx = e.clientX - info.lastX
-  const dy = e.clientY - info.lastY
-  // Touch has no right button, and Ruffle keeps the browser from turning a long press into one.
+  const rect = petEl.getBoundingClientRect()
+  const dx = e.clientX - rect.left
+  const dy = e.clientY - rect.top
   const hold = touch ? setTimeout(() => openMenu({ x: e.clientX, y: e.clientY, pet: true }, adoptPet), HOLD_MS) : 0
-  const move = (m: PointerEvent): void => {
+  const move = (m: PointerEvent) => {
+    if (m.pointerId !== e.pointerId) return
     if (Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) > 8) clearTimeout(hold)
-    setInfo('lastX', m.clientX - dx)
-    setInfo('lastY', m.clientY - dy)
+    const frame = petMetrics()
+    const x = axisFromCanvas(m.clientX - dx, innerWidth, frame.extent, frame.left, frame.right)
+    const y = axisFromCanvas(m.clientY - dy, innerHeight, frame.extent, frame.top, frame.bottom)
+    setInfo('lastX', clampAxis(x, innerWidth, frame.extent, frame.left, frame.right, true))
+    setInfo('lastY', clampAxis(y, innerHeight, frame.extent, frame.top, frame.bottom, true))
   }
   petEl.setPointerCapture(e.pointerId)
   petEl.addEventListener('pointermove', move)
-  petEl.addEventListener(
-    'pointerup',
-    () => {
-      clearTimeout(hold)
-      dragging = false
-      petEl.removeEventListener('pointermove', move)
-      clampPosition()
-      scheduleHide()
-    },
-    { once: true },
-  )
+  const finish = (event: PointerEvent) => {
+    if (!dragging || event.pointerId !== e.pointerId) return
+    clearTimeout(hold)
+    dragging = false
+    petEl.removeEventListener('pointermove', move)
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.removeEventListener(type, finish)
+    if (petEl.hasPointerCapture(e.pointerId)) petEl.releasePointerCapture(e.pointerId)
+    clampPosition(true)
+    scheduleHide()
+  }
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.addEventListener(type, finish)
 })
 
 // Touch has no hover to show a tooltip by: a long press shows it, and the lift is not a tap.

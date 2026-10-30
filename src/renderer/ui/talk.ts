@@ -1,4 +1,5 @@
-import { info, petSize } from '../pet/store'
+import { petVisibleRect } from '../pet/geometry'
+import { info } from '../pet/store'
 import { SwfPlayer } from '../swf/player'
 
 const W = 261
@@ -44,11 +45,12 @@ export function setBubbleLift(px: number): void {
   place()
 }
 
+window.addEventListener('qqpet:pet-layout', place)
+
 function place(): void {
-  const size = petSize()
-  const left = Math.min(Math.max(info.lastX + size / 2 - W / 2, 0), innerWidth - W)
-  // Above the pet; below it when there is no room at the top.
-  const top = info.lastY < H ? info.lastY + size : info.lastY - H - lift
+  const body = petVisibleRect()
+  const left = Math.max(0, Math.min((body.left + body.right - W) / 2, innerWidth - W))
+  const top = Math.max(0, Math.min(body.top < H ? body.bottom : body.top - H - lift, innerHeight - H))
   el.style.left = `${left}px`
   el.style.top = `${top}px`
 }

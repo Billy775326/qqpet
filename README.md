@@ -83,6 +83,12 @@ npm ci
 npm run dev
 ```
 
+### 检查与测试
+
+在仓库根目录运行 `npm run typecheck`、`npm test` 和 `npm run test:ui`。UI 测试使用隔离的 Electron 配置与模拟数据，检查屏幕边缘布局、悬停和面板切换，不操作正在运行的宠物。
+
+若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
+
 ## 构建
 
 ```bash

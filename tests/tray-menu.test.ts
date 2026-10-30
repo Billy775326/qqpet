@@ -31,9 +31,10 @@ const body = new Element()
 
 test('hidden pet tray menu survives travel across desktop and tray popup, and can restore the pet', async () => {
   const callbacks: Record<string, Function> = {}
-  const save = { havePet: true, settings: { hidden: true, paused: false }, petInfo: { lastX: 100, lastY: 100, health: 100, growth: 0 } }
+  const save = { havePet: true, settings: { hidden: true, paused: false }, petInfo: { lastX: 100, lastY: 100, health: 5, growth: 0, sex: 'GG' } }
   const stub = `
     export const save = globalThis.testSave, info = save.petInfo;
+    export const stage = () => 'Kid', mood = () => 'peaceful';
     export const petSize = () => 100, onInfoChange = () => {}, setInfo = (k,v) => {info[k]=v};
     export const update = (group,patch) => Object.assign(save[group],patch);
     export const setPaused = () => {}, setTray = () => {}, aiOn = () => false;
@@ -49,7 +50,7 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
       b.onResolve({ filter: /^(\.\/pet\/|\.\.\/pet\/|\.\/ui\/|\.\/)/ }, args => {
         // Keep the actual menu and DOM helpers; stub unrelated UI and pet runtime.
         if (!args.importer) return
-        if (['./ui/menu', './ui/dom', './dom'].includes(args.path)) return
+        if (['./ui/menu', './ui/dom', './dom', './pet/geometry', '../../shared/pet-geometry'].includes(args.path)) return
         return { path: args.path, namespace: 'stub' }
       })
       b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: stub }))
@@ -63,8 +64,8 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   const document = { body, createElement: () => new Element(), getElementById: () => pet, elementFromPoint: () => target, addEventListener(name: string, fn: Function) { callbacks[name] = fn } }
   runInNewContext(bundled.outputFiles[0].text, {
     document, testSave: save, innerWidth: 1200, innerHeight: 800,
-    matchMedia: () => ({ matches: false }),
-    window: { addEventListener() {}, qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
+    matchMedia: () => ({ matches: false }), Event,
+    window: { addEventListener() {}, dispatchEvent() {}, qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
   })
   const menu = () => body.children.find(c => c.className === 'ui-menu')
   const move = (over: Element | null, x = 600, y = 400) => { target = over; callbacks.cursor({ x, y }) }

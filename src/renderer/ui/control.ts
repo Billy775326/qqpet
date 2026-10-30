@@ -1,3 +1,4 @@
+import { petCanvasRect, petVisibleRect } from '../pet/geometry'
 import { describe, type Good, type GoodType } from '../pet/data/goods'
 import { listGoods, onGoodsChange, pageOf, type Page } from '../pet/goods'
 import { doctor, pay, useItem } from '../pet/items'
@@ -24,7 +25,6 @@ import { openTravel } from './travel'
 import { windowView } from './window-view'
 
 const ICONS = 'pet/control/icons/'
-const BAR_HEIGHT = 180
 /** The goods panel, the bar's widest part. */
 const BAR_WIDTH = 314
 /** Pet size the bar was drawn for (level 1 on a 1920 px screen). */
@@ -156,22 +156,96 @@ let hideTimer = 0
 let introTimer = 0
 let open: (Panel & { page: number }) | null = null
 
-/**
- * Centered under the pet, above it when there is no room below, and kept on screen.
- * On touch screens it grows with the pet, as far as the screen is wide.
- */
+type Placement = 'left' | 'right' | 'above' | 'below'
+const LOCAL_CONTROL_ITEM = 32;
+const LOCAL_CONTROL_GAP = 0;
+const LOCAL_FLYOUT_GAP = 2;
+const LOCAL_PET_CONTROL_GAP = 10;
+const LOCAL_SIDE_ENTER = 72;
+const LOCAL_SIDE_EXIT = 96;
 function place(): void {
-  const size = petSize()
-  const scale = touch ? Math.min(size / DESKTOP_PET, (innerWidth - 2 * EDGE) / BAR_WIDTH) : 1
-  const height = BAR_HEIGHT * scale
-  const half = (BAR_WIDTH * scale) / 2 + EDGE
-  let top = info.lastY + size
-  const onTop = top > innerHeight - EDGE - height
-  if (onTop) top = info.lastY - height
-  control.style.left = `${Math.min(Math.max(info.lastX + size / 2, half), innerWidth - half)}px`
-  control.style.top = `${top}px`
-  control.style.transform = `scale(${scale})`
-  setBubbleLift(shown && onTop ? height : 0)
+  if(!shown){setBubbleLift(0);return;}
+  // Actions can occupy the whole SWF canvas, beyond the standing silhouette.
+  const frame=petCanvasRect(),size2=petSize();
+  const body={left:Math.max(0,frame.left),top:Math.max(0,frame.top),right:Math.min(innerWidth,frame.right),bottom:Math.min(innerHeight,frame.bottom)};
+  const clamp=(n: number,min: number,max: number)=>Math.max(min,Math.min(n,Math.max(min,max)));
+  const normalScale=touch?size2/DESKTOP_PET:1;
+  const length=menus.children.length*LOCAL_CONTROL_ITEM+(menus.children.length-1)*LOCAL_CONTROL_GAP;
+  const silhouette=petVisibleRect();
+  const edgeDistance=Math.min(silhouette.left,innerWidth-silhouette.right);
+  const previousVertical=control.dataset.layout==="vertical";
+  const nearSide=edgeDistance<=(previousVertical?LOCAL_SIDE_EXIT:LOCAL_SIDE_ENTER);
+  const columnFits=length*normalScale<=innerHeight-2*EDGE;
+  const rowFits=length*normalScale<=innerWidth-2*EDGE;
+  const flyoutHeight=Math.max(0,...Array.from(menus.querySelectorAll<HTMLElement>(".childrenMenu"),e=>e.scrollHeight));
+  const expandedFits=Math.max(body.top-EDGE,innerHeight-EDGE-body.bottom)>=(LOCAL_CONTROL_ITEM+flyoutHeight+LOCAL_FLYOUT_GAP+LOCAL_PET_CONTROL_GAP)*normalScale;
+  const vertical=columnFits&&(nearSide||!rowFits||!expandedFits);
+  control.dataset.layout=vertical?"vertical":"horizontal";
+  control.classList.toggle("verticalControls",vertical);
+  const width=open?list?.offsetWidth||BAR_WIDTH:menus.offsetWidth;
+  const height=open?list?.offsetHeight||138:menus.offsetHeight;
+  const scale=Math.min(normalScale,Math.max(1,innerWidth-2*EDGE)/width,Math.max(1,innerHeight-2*EDGE)/height);
+  const w=width*scale,h=height*scale,spacing=LOCAL_PET_CONTROL_GAP*scale;
+  const room={left:body.left-EDGE-spacing,right:innerWidth-EDGE-body.right-spacing,above:body.top-EDGE-spacing,below:innerHeight-EDGE-body.bottom-spacing};
+  const sideOrder: Placement[]=room.right>=room.left?["right","left"]:["left","right"];
+  const lineReserve=h+(!open&&!vertical?(flyoutHeight+LOCAL_FLYOUT_GAP)*scale:0);
+  const lineOrder: Placement[]=room.below>=lineReserve?["below","above"]:room.above>=lineReserve?["above","below"]:room.below>=room.above?["below","above"]:["above","below"];
+  const priorities=vertical?[...sideOrder,...lineOrder]:[...lineOrder,...sideOrder];
+  let placement=priorities.find(side=>(side==="left"||side==="right")?room[side]>=w:room[side]>=h);
+  // Very small work areas still retain a usable, clamped bar or goods panel.
+  if(!placement)placement=priorities.reduce((best,side)=>room[side]>room[best]?side:best,priorities[0]);
+  let x=(body.left+body.right-w)/2,y=(body.top+body.bottom-h)/2;
+  if(placement==="right")x=body.right+spacing;
+  if(placement==="left")x=body.left-spacing-w;
+  if(placement==="below")y=body.bottom+spacing;
+  if(placement==="above")y=body.top-spacing-h;
+  x=clamp(x,EDGE,innerWidth-EDGE-w);y=clamp(y,EDGE,innerHeight-EDGE-h);
+  control.style.left=x+w/2+"px";control.style.top=y+"px";
+  control.style.transform="scale("+scale+")";
+  control.style.setProperty("--local-control-text-width",Math.max(1,(innerWidth-2*EDGE)/scale)+"px");
+  control.dataset.placement=placement;
+  control.classList.toggle("abovePet",placement==="above");
+  for(const parent of menus.querySelectorAll<HTMLElement>(".menuItem")){
+    const child=parent.querySelector<HTMLElement>(".childrenMenu");if(!child)continue;
+    child.style.left=child.style.right=child.style.top=child.style.bottom="auto";
+    child.style.transform="none";child.style.padding="0";
+    child.style.maxHeight=Math.max(1,(innerHeight-2*EDGE)/scale)+"px";
+    const anchor=parent.getBoundingClientRect();
+    const sideways=!vertical&&Math.max(anchor.top-EDGE,innerHeight-EDGE-anchor.bottom)<(child.offsetHeight+LOCAL_FLYOUT_GAP)*scale;
+    if(vertical||sideways){
+      const freeRight=innerWidth-EDGE-anchor.right,freeLeft=anchor.left-EDGE;
+      const preferred=vertical?(placement==="right"?"right":"left"):(freeRight>=freeLeft?"right":"left");
+      const toRight=preferred==="right"?freeRight>=(child.offsetWidth+LOCAL_FLYOUT_GAP)*scale||freeRight>=freeLeft:!(freeLeft>=(child.offsetWidth+LOCAL_FLYOUT_GAP)*scale||freeLeft>=freeRight);
+      child.dataset.direction=toRight?"right":"left";
+      child.style.top="0px";
+      if(toRight){child.style.left="100%";child.style.paddingLeft=LOCAL_FLYOUT_GAP+"px";}
+      else{child.style.right="100%";child.style.paddingRight=LOCAL_FLYOUT_GAP+"px";}
+    }else{
+      const up=anchor.top-EDGE,down=innerHeight-EDGE-anchor.bottom;
+      const toUp=placement==="above"?up>=(child.offsetHeight+LOCAL_FLYOUT_GAP)*scale||up>=down:down<(child.offsetHeight+LOCAL_FLYOUT_GAP)*scale&&up>down;
+      child.dataset.direction=toUp?"above":"below";
+      if(toUp){child.style.bottom="100%";child.style.paddingBottom=LOCAL_FLYOUT_GAP+"px";}
+      else{child.style.top="100%";child.style.paddingTop=LOCAL_FLYOUT_GAP+"px";}
+      child.style.left=(parent.offsetWidth-child.offsetWidth)/2+"px";
+    }
+    const r=child.getBoundingClientRect();
+    child.style.transform="translate("+(clamp(r.left,EDGE,innerWidth-EDGE-r.width)-r.left)/scale+"px,"+(clamp(r.top,EDGE,innerHeight-EDGE-r.height)-r.top)/scale+"px)";
+  }
+  for(const tip of menus.querySelectorAll<HTMLElement>(".menuTip")){
+    tip.style.translate="none";
+    const r=tip.getBoundingClientRect();if(!r.width||!r.height)continue;
+    tip.style.translate=(clamp(r.left,EDGE,innerWidth-EDGE-r.width)-r.left)/scale+"px "+(clamp(r.top,EDGE,innerHeight-EDGE-r.height)-r.top)/scale+"px";
+  }
+  for(const tip of control.querySelectorAll<HTMLElement>(".goodInfo")){
+    if(getComputedStyle(tip).display==="none")continue;
+    tip.style.left="100%";tip.style.right="auto";tip.style.top="0px";tip.style.transform="none";
+    tip.style.maxWidth=Math.max(1,(innerWidth-2*EDGE)/scale)+"px";
+    tip.style.maxHeight=Math.max(1,(innerHeight-2*EDGE)/scale)+"px";
+    if(tip.getBoundingClientRect().right>innerWidth-EDGE){tip.style.left="auto";tip.style.right="100%";}
+    const r=tip.getBoundingClientRect();
+    tip.style.transform="translate("+(clamp(r.left,EDGE,innerWidth-EDGE-r.width)-r.left)/scale+"px,"+(clamp(r.top,EDGE,innerHeight-EDGE-r.height)-r.top)/scale+"px)";
+  }
+  setBubbleLift(placement==="above"?Math.max(0,body.top-y):0);
 }
 
 /** A tap leaves its menu hovered, children shown: on touch the bar goes once a child is picked, unless it opened a goods panel. */
@@ -191,7 +265,7 @@ const menus = div(
       div('menuTip', g.name),
       icon,
       ...(g.children
-        ? [div('childrenMenu', ...g.children.map((c) => button('childrenMenuItem fc', () => pick(c.run), img('childrenMenuItemIcon', ICONS + c.icon), ` ${c.name}`)))]
+        ? [div('childrenMenu', ...g.children.map((c) => button('childrenMenuItem fc', () => pick(c.run), img('childrenMenuItemIcon', ICONS + c.icon), div('childrenMenuLabel', c.name))))]
         : []),
     )
     if (g.run) item.addEventListener('click', g.run)
@@ -205,6 +279,11 @@ const menus = div(
   }),
 )
 control.appendChild(menus)
+control.addEventListener('pointerover', place)
+control.addEventListener('pointerenter', () => clearTimeout(hideTimer))
+control.addEventListener('pointerleave', scheduleHide)
+window.addEventListener('resize', place)
+window.addEventListener('qqpet:pet-layout', place)
 
 const highlight = (n: number): void => icons.forEach((icon, i) => icon.classList.toggle('hoverMenuItemIcon', i === n))
 
@@ -234,7 +313,7 @@ export function openGoods(type: keyof typeof PANELS): void {
 /** The bar hides 1.5 s (5 s on touch screens) after the pointer leaves it, unless an inventory panel is open. */
 export function scheduleHide(): void {
   clearTimeout(hideTimer)
-  if (open) return
+  if (open || control.matches(':hover')) return
   hideTimer = window.setTimeout(hide, HIDE_MS)
 }
 
@@ -289,6 +368,7 @@ function openPanel(p: Panel, page = 1): void {
   if (list) list.replaceWith(next)
   else control.appendChild(next)
   list = next
+  place()
 }
 
 function closePanel(): void {
@@ -296,6 +376,7 @@ function closePanel(): void {
   list?.remove()
   list = null
   menus.style.display = ''
+  place()
   scheduleHide()
 }
 

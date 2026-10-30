@@ -269,3 +269,213 @@
   height: 15px;
   z-index: -1;
 }
+
+.ui-control .menus,
+.ui-control .showControl .menus {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+  height: 40px;
+  transform: translateX(-50%);
+}
+.ui-control .menuItem {
+  margin: 0 5px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+.ui-control .menuItemIconBox {
+  flex-shrink: 0;
+}
+.ui-control .childrenMenu {
+  transition: opacity .2s;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.ui-control .abovePet .menuTip {
+  top: 100%;
+  transform: translate(-50%, 0);
+  padding: 5px 5px 2px;
+}
+.ui-control .goodList {
+  top: 0;
+}
+.ui-control .goodInfo {
+  box-sizing: border-box;
+  overflow: auto;
+}
+.ui-control .goodName,
+.ui-control .goodDatas {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ui-control .control {
+  z-index: 600;
+}
+.ui-control .menus,
+.ui-control .showControl .menus {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  width: max-content;
+  height: max-content;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+}
+.ui-control .verticalControls .menus {
+  flex-direction: column;
+}
+.ui-control .menuItem {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  flex: 0 0 36px;
+  transition: none;
+}
+.ui-control .menuItemIconBox {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  transition: width .15s, height .15s;
+}
+.ui-control .menuItem:hover .menuItemIconBox,
+.ui-control .hoverMenuItemIcon {
+  width: 32px;
+  height: 32px;
+  transform: none;
+}
+.ui-control .menuItem:hover .menuItemIconBox:after {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  animation: none;
+}
+.ui-control .childrenMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: content-box;
+  transition: opacity .15s;
+}
+.ui-control .childrenMenuItem {
+  height: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+  margin: 0;
+}
+.ui-control .childrenMenuItem:after {
+  display: none;
+}
+.ui-control .menuItem:has(.childrenMenu) > .menuTip {
+  display: none;
+}
+.ui-control .menuTip {
+  pointer-events: none;
+}
+.ui-control [data-placement=above] .menuTip {
+  top: 0;
+  transform: translate(-50%, -100%);
+}
+.ui-control [data-placement=below] .menuTip {
+  top: 100%;
+  transform: translate(-50%, 0);
+}
+.ui-control .verticalControls[data-placement=right] .menuTip {
+  left: 100%;
+  right: auto;
+  top: 50%;
+  transform: translate(6px, -50%);
+  padding: 4px 6px;
+}
+.ui-control .verticalControls[data-placement=left] .menuTip {
+  left: auto;
+  right: 100%;
+  top: 50%;
+  transform: translate(-6px, -50%);
+  padding: 4px 6px;
+}
+.ui-control .menuTip,
+.ui-control .childrenMenuLabel,
+.ui-control .goodInfo {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.5;
+}
+.ui-control .menuTip {
+  width: max-content;
+  max-width: min(240px, var(--local-control-text-width,calc(100vw - 20px)));
+  box-sizing: border-box;
+}
+.ui-control .childrenMenuItem {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 28px;
+  width: 100px;
+  max-width: var(--local-control-text-width,calc(100vw - 20px));
+  padding: 4px 6px;
+  gap: 6px;
+  align-items: center;
+}
+.ui-control .childrenMenuItemIcon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  margin: 0;
+}
+.ui-control .childrenMenuLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+.ui-control .goodInfo {
+  width: 240px;
+  max-width: var(--local-control-text-width,calc(100vw - 20px));
+}
+.ui-control .goodName,
+.ui-control .goodDatas {
+  writing-mode: horizontal-tb;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.ui-control .menus,
+.ui-control .showControl .menus {
+  gap: 0;
+}
+.ui-control .menuItem {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  margin: 0;
+}
+.ui-control .menuItem:hover .menuItemIconBox,
+.ui-control .hoverMenuItemIcon {
+  width: 30px;
+  height: 30px;
+}
+.ui-control .childrenMenu {
+  gap: 2px;
+}
+.ui-control .childrenMenuItem {
+  min-height: 26px;
+  padding: 3px 6px;
+}
+.ui-control .menuTip {
+  padding: 2px 4px;
+  line-height: 1.4;
+}
+.ui-control .verticalControls[data-placement=right] .menuTip {
+  transform: translate(2px, -50%);
+  padding: 2px 4px;
+}
+.ui-control .verticalControls[data-placement=left] .menuTip {
+  transform: translate(-2px, -50%);
+  padding: 2px 4px;
+}

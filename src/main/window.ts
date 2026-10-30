@@ -56,6 +56,19 @@ export function createPetWindow(): BrowserWindow {
   }, CURSOR_INTERVAL_MS)
   win.on('closed', () => clearInterval(timer))
 
+  const workArea = (): void => {
+    if (win.isDestroyed()) return
+    const area = screen.getPrimaryDisplay().workArea, box = win.getBounds()
+    if (['x', 'y', 'width', 'height'].some(key => area[key as keyof typeof area] !== box[key as keyof typeof box])) win.setBounds(area)
+  }
+  screen.on('display-metrics-changed', workArea)
+  screen.on('display-added', workArea)
+  screen.on('display-removed', workArea)
+  win.on('closed', () => {
+    screen.off('display-metrics-changed', workArea)
+    screen.off('display-added', workArea)
+    screen.off('display-removed', workArea)
+  })
   void win.loadURL(`${PAGES}/index.html`)
   if (process.env.ELECTRON_RENDERER_URL) win.webContents.openDevTools({ mode: 'detach' })
   return win

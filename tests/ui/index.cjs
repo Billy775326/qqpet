@@ -1,0 +1,1 @@
+const suites=require('./suites.json');const suite=process.argv.find(v=>v.startsWith('--suite='))?.slice(8)||suites[0];if(!suites.includes(suite))throw Error('Unknown UI suite');require('./'+suite+'.cjs');
