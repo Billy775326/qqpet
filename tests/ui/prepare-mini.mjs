@@ -17,9 +17,10 @@ export async function prepareMini(){
     window.qqpet={setClickThrough(){},onCursor(fn){this.testCursor=fn},onTrayClick(){},onClipboard(){}};`
   const api=`    const miniWidget = document.querySelector('.local-edge-mini');
     window.fixture={
-      full:()=>mini.expand(),mini:()=>mini.enter(),state:()=>({model:structuredClone(info),mini:mini.active,mode:miniWidget.dataset.mode,hidden:miniWidget.hidden,dragging:miniWidget.classList.contains('local-mini-dragging'),sleepTimers:window.capturedTimers.size,phase,sex:info.sex,x:info.lastX,y:info.lastY,pref:localStorage.getItem('qqpet.edge-mini.v1'),controls:document.querySelector('.control').classList.contains('showControl')}),
+      full:()=>mini.expand(),mini:side=>mini.enter(side),state:()=>({model:structuredClone(info),mini:mini.active,side:miniWidget.dataset.side,mode:miniWidget.dataset.mode,hidden:miniWidget.hidden,dragging:miniWidget.classList.contains('local-mini-dragging'),sleepTimers:window.capturedTimers.size,phase,sex:info.sex,x:info.lastX,y:info.lastY,pref:localStorage.getItem('qqpet.edge-mini.v1'),controls:document.querySelector('.control').classList.contains('showControl')}),
       position(x,y){mini.expand();setInfo('lastX',x);setInfo('lastY',y);layout()},
       grab(){const r=petEl.getBoundingClientRect(),m=petMetrics();return {x:r.left+(m.left+m.right)/2,y:r.top+(m.top+m.bottom)/2}},
+      visible:petVisibleRect,menu:()=>window.menuOpened,
       target(side){const m=petMetrics(),dx=(m.left+m.right)/2,dy=(m.top+m.bottom)/2;return {x:side==='right'?innerWidth-m.right-5+dx:side==='left'?5-m.left+dx:innerWidth/2,y:side==='top'?5-m.top+dy:side==='bottom'?innerHeight-m.bottom-5+dy:innerHeight/2}},
       cursor:p=>window.qqpet.testCursor(p),
       sleep(){for(const [id,fn] of [...window.capturedTimers]){window.capturedTimers.delete(id);fn()}},
@@ -35,7 +36,7 @@ const listeners=[];
 export const onInfoChange=fn=>listeners.push(fn);
 export const setInfo=(key,value)=>{if(info[key]===value)return;info[key]=value;for(const fn of listeners)fn(key)};
 export const petSize=()=>146,stage=()=>globalThis.phase,mood=()=>globalThis.feeling,busy=()=>globalThis.testBusy;
-export const openMenu=()=>{window.menuOpened=true};
+export const openMenu=point=>{window.menuOpened=point};
 export const describe=()=>[],listGoods=()=>({list:[],totalPage:1}),pageOf=()=>({list:[],totalPage:1});
 export const setBubbleLift=()=>{};
 export const onGoodsChange=()=>{};

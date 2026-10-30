@@ -4,6 +4,7 @@ import { div, img } from './dom'
 import './css/edge-mini.css'
 
 interface Point { x: number; y: number }
+type EdgeSide = 'left' | 'right'
 interface MiniActions {
   closeMenu: () => void
   collapseControls: () => void
@@ -15,7 +16,7 @@ export interface EdgeMini {
   readonly active: boolean
   refresh: () => void
   trackPointer: (point: Point) => void
-  enter: () => void
+  enter: (side?: EdgeSide) => void
   expand: (point?: Point) => void
   destroy: () => void
 }
@@ -44,6 +45,7 @@ export function expandEdgeMini(): boolean {
 export function createEdgeMini(actions: MiniActions): EdgeMini {
   current?.destroy()
   let active = false
+  let side: EdgeSide = 'right'
   let peeking = false
   let sleeping = false
   let sleepTimer = 0
@@ -63,7 +65,7 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
 
   function remember(): void {
     try {
-      if (active) localStorage.setItem(PREF, JSON.stringify({ version: 1, side: 'right' }))
+      if (active) localStorage.setItem(PREF, JSON.stringify({ version: 1, side }))
       else localStorage.removeItem(PREF)
     } catch (error) {
       console.warn('Could not persist edge mini preference; using this session only', error)
@@ -80,6 +82,7 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     widget.title = sleeping ? '宠物小憩中，移入鼠标唤醒，点击展开' : '点击展开宠物，也可以拖离屏幕边缘'
   }
   function refresh(): void {
+    widget.dataset.side = side
     if (active && (!save.havePet || save.isBury || info.health <= 0)) {
       active = peeking = sleeping = false
       remember()
@@ -106,7 +109,8 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     if (!drag) {
       const body = petVisibleRect()
       widget.style.top = `${Math.max(8, Math.min((body.top + body.bottom - HEIGHT) / 2, innerHeight - HEIGHT - 8))}px`
-      widget.style.right = `${-(WIDTH - (peeking ? PEEK_VISIBLE : VISIBLE))}px`
+      widget.style[side] = `${-(WIDTH - (peeking ? PEEK_VISIBLE : VISIBLE))}px`
+      widget.style[side === 'left' ? 'right' : 'left'] = 'auto'
     }
     if (!canSleep()) {
       stopSleep()
@@ -129,12 +133,14 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
   function trackPointer(point: Point): void {
     if (!active || save.settings.hidden || drag) return
     const top = parseFloat(widget.style.top)
-    setPeek(point.x >= innerWidth - (peeking ? 112 : 72) && point.x <= innerWidth + 4 && point.y >= top - 16 && point.y <= top + HEIGHT + 16)
+    const distance = side === 'left' ? point.x : innerWidth - point.x
+    setPeek(distance >= -4 && distance <= (peeking ? 112 : 72) && point.y >= top - 16 && point.y <= top + HEIGHT + 16)
   }
-  function enter(): void {
+  function enter(edge: EdgeSide = 'right'): void {
     if (!canDock() || active) return
     actions.closeMenu()
     actions.collapseControls()
+    side = edge
     active = true
     peeking = sleeping = false
     remember()
@@ -147,7 +153,7 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     remember()
     refresh()
     const m = petMetrics()
-    const x = point ? point.x - (m.left + m.right) / 2 : innerWidth - m.right - 12
+    const x = point ? point.x - (m.left + m.right) / 2 : side === 'left' ? 12 - m.left : innerWidth - m.right - 12
     setInfo('lastX', clampAxis(axisFromCanvas(x, innerWidth, m.extent, m.left, m.right), innerWidth, m.extent, m.left, m.right))
     if (point) setInfo('lastY', clampAxis(axisFromCanvas(point.y - (m.top + m.bottom) / 2, innerHeight, m.extent, m.top, m.bottom), innerHeight, m.extent, m.top, m.bottom))
     actions.layout()
@@ -161,7 +167,7 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
   widget.addEventListener('contextmenu', event => {
     event.preventDefault()
     expand()
-    actions.openContextMenu({ x: Math.min(event.clientX, innerWidth - 10), y: event.clientY })
+    actions.openContextMenu({ x: Math.max(10, Math.min(event.clientX, innerWidth - 10)), y: event.clientY })
   })
   widget.addEventListener('pointerdown', event => {
     if (event.button !== 0 || drag) return
@@ -178,8 +184,9 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     if (!drag || event.pointerId !== drag.id) return
     if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8 && !drag.moved) return
     drag.moved = true
-    const left = Math.max(8, Math.min(event.clientX - drag.dx, innerWidth - VISIBLE))
-    widget.style.right = `${innerWidth - left - WIDTH}px`
+    const left = Math.max(side === 'left' ? VISIBLE - WIDTH : 8, Math.min(event.clientX - drag.dx, side === 'right' ? innerWidth - VISIBLE : innerWidth - WIDTH - 8))
+    if (side === 'left') widget.style.left = `${left}px`
+    else widget.style.right = `${innerWidth - left - WIDTH}px`
     widget.style.top = `${Math.max(8, Math.min(event.clientY - drag.dy, innerHeight - HEIGHT - 8))}px`
   })
   function finishDrag(event: PointerEvent): void {
@@ -192,7 +199,7 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     if (event.type !== 'pointerup') return refresh()
     if (!moved) return expand()
     const point = { x: rect.left + WIDTH / 2, y: rect.top + HEIGHT / 2 }
-    if (point.x < innerWidth - 56) return expand(point)
+    if (side === 'left' ? point.x > 56 : point.x < innerWidth - 56) return expand(point)
     const m = petMetrics()
     setInfo('lastY', clampAxis(axisFromCanvas(point.y - (m.top + m.bottom) / 2, innerHeight, m.extent, m.top, m.bottom), innerHeight, m.extent, m.top, m.bottom))
     peeking = false
@@ -219,7 +226,10 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
   try {
     const preference = localStorage.getItem(PREF)
     const parsed = preference && JSON.parse(preference)
-    if (parsed?.version === 1 && parsed.side === 'right' && save.havePet && !save.isBury && info.health > 0) active = true
+    if (parsed?.version === 1 && (parsed.side === 'left' || parsed.side === 'right') && save.havePet && !save.isBury && info.health > 0) {
+      side = parsed.side
+      active = true
+    }
   } catch (error) {
     console.warn('Could not read edge mini preference; showing the full pet', error)
   }

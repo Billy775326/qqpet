@@ -48,6 +48,9 @@ app.whenReady().then(async()=>{
   assert.equal(await run('getComputedStyle(document.getElementById("pet")).cursor'),'auto','Leaving restores automatic cursor')
   const miniHit=await run('(()=>{const e=document.querySelector(".local-edge-mini"),p=getComputedStyle(e,"::before");return{position:p.position,right:p.right,top:p.top,parentTop:getComputedStyle(e).top,width:p.width,height:p.height}})()')
   assert.equal(miniHit.position,'fixed');assert.equal(miniHit.right,'0px');assert.equal(miniHit.top,miniHit.parentTop);assert.equal(miniHit.width,'72px');assert.equal(miniHit.height,'80px')
+  await run('document.querySelector(".local-edge-mini").dataset.side="left";true')
+  const leftHit=await run('(()=>{const p=getComputedStyle(document.querySelector(".local-edge-mini"),"::before");return{left:p.left,right:p.right,width:p.width}})()')
+  assert.equal(leftHit.left,'0px');assert.equal(parseFloat(leftHit.right),await run('innerWidth-72'));assert.equal(leftHit.width,'72px')
   const result={checks:checks.length,shadowPlayers:2,normalPressedRelease:true,focusRegression:true,miniDrag:true,stableMiniHitZone:true,hitEntryExit:true,backgroundAutomatic:true,duplicateStylesPrevented:true,controlGapPreserved:10}
   writeFileSync('dist/source-cursor-results.json',JSON.stringify(result,null,2))
   console.log('Cursor theme isolated checks passed:',JSON.stringify(result));app.exit(0)

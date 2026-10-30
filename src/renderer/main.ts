@@ -131,7 +131,11 @@ petEl.addEventListener('pointerdown', (e: PointerEvent) => {
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.removeEventListener(type, finish)
     if (petEl.hasPointerCapture(e.pointerId)) petEl.releasePointerCapture(e.pointerId)
     clampPosition(true)
-    if (event.type === 'pointerup' && moved && petVisibleRect().right >= innerWidth - 0.75) mini?.enter()
+    if (event.type === 'pointerup' && moved) {
+      const body = petVisibleRect()
+      if (body.left <= 0.75) mini?.enter('left')
+      else if (body.right >= innerWidth - 0.75) mini?.enter('right')
+    }
     scheduleHide()
   }
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) petEl.addEventListener(type, finish)

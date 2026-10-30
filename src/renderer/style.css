@@ -290,3 +290,4 @@ html.qqpet-cursor-hit{--qqpet-original-ui-cursor:url(/pet/img_res/hand/focus/nor
 .ui-control .menuItem:active,.ui-control .childrenMenuItem:active,.local-edge-mini:active,.local-edge-mini.local-mini-dragging{cursor:url(/pet/img_res/hand/focus/press.cur),default!important}
 /* Keep the existing 72 px peek zone stationary while the portrait slides. */
 .local-edge-mini::before{content:"";position:fixed;top:inherit;right:0;width:72px;height:80px;background:rgba(0,0,0,.004);cursor:inherit}
+.local-edge-mini[data-side=left]::before{left:0;right:auto}

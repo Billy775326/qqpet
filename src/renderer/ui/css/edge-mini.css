@@ -4,11 +4,22 @@
   height: 80px;
   right: -36px;
   z-index: 620;
-  transition: right .18s ease-out;
+  transition: left .18s ease-out, right .18s ease-out;
   opacity: var(--opacity,1);
   touch-action: none;
   user-select: none;
   cursor: url(/pet/img_res/hand/focus/normal.cur), default;
+}
+.local-edge-mini[data-side=left] {
+  left: -36px;
+  right: auto;
+}
+.local-edge-mini[data-side=left] .local-mini-artwork {
+  scale: -1 1;
+}
+.local-edge-mini[data-side=left] .local-mini-zzz {
+  left: auto;
+  right: 5px;
 }
 .local-edge-mini[hidden] {
   display: none !important;

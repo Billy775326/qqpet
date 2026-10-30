@@ -31,7 +31,9 @@ app.whenReady().then(async()=>{
   const results=[]
   for(const side of ['left','top','bottom','right']){
     await drag(side)
-    assert.equal((await evaluate('fixture.state()')).mini,side==='right',side+' dock state')
+    const docked=await evaluate('fixture.state()')
+    assert.equal(docked.mini,side==='left'||side==='right',side+' dock state')
+    if(docked.mini){assert.equal(docked.side,side);assert.equal(JSON.parse(docked.pref).side,side)}
     results.push({check:'drag-'+side,status:'passed'})
   }
   await move(0,0);await evaluate('fixture.cursor({x:0,y:0})');await pause(220)
@@ -87,17 +89,78 @@ app.whenReady().then(async()=>{
     avatars.push(sex+stage)
   }
   const layouts=[]
-  for(const [w,h] of [[1920,1040],[1366,728],[800,560],[320,480]]){
-    win.setContentSize(w,h);await pause(80);await evaluate('fixture.refresh();fixture.cursor({x:0,y:0})');await pause(220)
+  for(const side of ['right','left'])for(const [w,h] of [[1920,1040],[1366,728],[800,560],[320,480],[2560,1400],[3840,2120]]){
+    win.setContentSize(w,h);await pause(80);await evaluate('fixture.full();fixture.mini('+JSON.stringify(side)+');fixture.cursor({x:innerWidth/2,y:0})');await pause(220)
     const box=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()")
-    assert.ok(Math.abs(w-box.x-36)<.2&&box.y>=7.5&&box.bottom<=h-7.5,'mini must remain attached and vertically inside work area')
+    assert.ok(Math.abs((side==='left'?box.right:w-box.x)-36)<.2&&box.y>=7.5&&box.bottom<=h-7.5,'mini must remain attached and vertically inside work area: '+side+' '+w+'x'+h)
     const state=await evaluate('fixture.state()');assert.ok(state.x>=0&&state.y>=0&&state.x<=w-146+.2&&state.y<=h-146+.2)
-    layouts.push({width:w,height:h,status:'passed'})
+    layouts.push({side,width:w,height:h,status:'passed'})
   }
   await evaluate('fixture.health(0)');assert.equal((await evaluate('fixture.state()')).mini,false,'death must restore the full pet')
   await evaluate('fixture.health(5);fixture.mini()')
   await win.loadFile(html);await evaluate(boot)
   assert.equal((await evaluate('fixture.state()')).mini,true,'restart must restore persisted mini mode')
+  assert.equal((await evaluate('fixture.state()')).side,'right','existing v1 right preference remains compatible')
+
+  win.setContentSize(800,560);await pause(80)
+  await drag('left',true);assert.equal((await evaluate('fixture.state()')).mini,false,'cancelled left drag must not dock')
+  await drag('left');await move(400,0);await evaluate('fixture.cursor({x:400,y:0})');await pause(220)
+  rect=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right}})()")
+  assert.ok(Math.abs(rect.right-36)<.2,'left idle must expose half the mini')
+  const captureLeft=async(mode)=>{
+    const top=await evaluate("parseFloat(document.querySelector('.local-edge-mini').style.top)")
+    writeFileSync('dist/source-mini-left-'+mode+'-fixture.png',(await win.webContents.capturePage({x:0,y:Math.max(0,Math.floor(top)-12),width:120,height:104})).toPNG())
+  }
+  await captureLeft('idle')
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.local-mini-artwork')).scale"),'-1 1','left portrait mirrors the right portrait')
+  const hit=await evaluate("(()=>{const e=document.querySelector('.local-edge-mini'),p=getComputedStyle(e,'::before');return {left:p.left,right:p.right,width:p.width,hit:document.elementFromPoint(60,parseFloat(e.style.top)+40)?.closest('.local-edge-mini')===e}})()")
+  // Chromium resolves the automatic opposite inset to its used pixel offset.
+  assert.equal(hit.left,'0px');assert.equal(parseFloat(hit.right),800-72);assert.equal(hit.width,'72px');assert.equal(hit.hit,true,'left peek zone must stay at the left edge')
+  await evaluate('fixture.cursor({x:780,y:'+String(rect.y+40)+'})');assert.equal((await evaluate('fixture.state()')).mode,'mini','opposite edge cannot trigger left peek')
+  await move(20,rect.y+40);await evaluate('fixture.cursor({x:20,y:'+String(rect.y+40)+'})');await pause(220)
+  assert.equal((await evaluate('fixture.state()')).mode,'peek')
+  assert.ok(Math.abs(await evaluate("document.querySelector('.local-edge-mini').getBoundingClientRect().right")-64)<.2)
+  await captureLeft('peek')
+  await evaluate('fixture.cursor({x:100,y:'+String(rect.y+40)+'})');assert.equal((await evaluate('fixture.state()')).mode,'peek','left hysteresis prevents flicker')
+  await move(400,0);await evaluate('fixture.cursor({x:400,y:0});fixture.sleep()');assert.equal((await evaluate('fixture.state()')).mode,'mini-sleep')
+  await pause(220);await captureLeft('sleep')
+  await move(20,rect.y+40);await evaluate('fixture.cursor({x:20,y:'+String(rect.y+40)+'})');assert.equal((await evaluate('fixture.state()')).mode,'peek')
+  await down(20,rect.y+40);await up(20,rect.y+40)
+  assert.equal((await evaluate('fixture.state()')).mini,false);assert.equal((await evaluate('fixture.state()')).pref,null)
+  assert.ok(Math.abs((await evaluate('fixture.visible()')).left-12)<.2,'left click expands beside the left edge')
+  assert.ok((await evaluate('fixture.state()')).controls,'left expansion restores usable controls')
+
+  await drag('left');await move(400,0);await evaluate('fixture.cursor({x:400,y:0})');await pause(220)
+  rect=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
+  await down(20,rect.y+40);await move(20,400,1);await up(20,400)
+  assert.equal((await evaluate('fixture.state()')).mini,true);assert.equal((await evaluate('fixture.state()')).side,'left');assert.ok((await evaluate('fixture.state()')).y>200)
+  await down(20,400);await move(200,400,1)
+  await evaluate("document.querySelector('.local-edge-mini').dispatchEvent(new PointerEvent('pointercancel',{pointerId:1,bubbles:true}))");await up(200,400)
+  assert.equal((await evaluate('fixture.state()')).mini,true);assert.equal((await evaluate('fixture.state()')).dragging,false)
+  await down(20,400);await move(200,400,1);await up(200,400)
+  assert.equal((await evaluate('fixture.state()')).mini,false,'dragging left mini inward expands it')
+  assert.ok((await evaluate('fixture.visible()')).left>56,'dragged left pet stays near release')
+
+  await drag('left');await win.loadFile(html);await evaluate(boot)
+  assert.equal((await evaluate('fixture.state()')).mini,true);assert.equal((await evaluate('fixture.state()')).side,'left','restart retains the left edge')
+  await evaluate('fixture.refresh();fixture.cursor({x:400,y:0})');await move(400,0);await pause(220)
+  rect=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
+  await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:20,y:rect.y+40,button:'right',clickCount:1})
+  await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:20,y:rect.y+40,button:'right',clickCount:1})
+  assert.equal((await evaluate('fixture.state()')).mini,false,'left context menu expands the pet');assert.ok((await evaluate('fixture.menu()')).x>=10)
+  assert.ok(Math.abs((await evaluate('fixture.visible()')).left-12)<.2)
+  results.push({check:'left half-body, mirrored artwork, fixed hit zone, peek, sleep, click, drag, cancellation, context menu and persistence',status:'passed'})
+
+  const scaling=[]
+  for(const side of ['left','right'])for(const dpr of [1.5,2]){
+    await cdp('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:dpr,mobile:false})
+    await evaluate('fixture.full();fixture.mini('+JSON.stringify(side)+');fixture.refresh();fixture.cursor({x:640,y:0})');await move(640,0);await pause(220)
+    const metrics=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {dpr:devicePixelRatio,width:innerWidth,visible:fixture.state().side==='left'?r.right:innerWidth-r.left,bottom:r.bottom}})()")
+    assert.equal(metrics.dpr,dpr);assert.equal(metrics.width,1280);assert.ok(Math.abs(metrics.visible-36)<.2&&metrics.bottom<=712)
+    scaling.push({side,dpr,status:'passed'})
+  }
+  await cdp('Emulation.clearDeviceMetricsOverride')
+  await evaluate("fixture.full();fixture.mini('right')")
   win.setContentSize(480,360);await pause(80);await evaluate("fixture.avatar('GG','Kid');fixture.cursor({x:0,y:0})");await move(0,0);await pause(250)
   const capture=async(name)=>{
     const r=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
@@ -107,6 +170,6 @@ app.whenReady().then(async()=>{
   await move(0,0);await evaluate('fixture.cursor({x:0,y:0});fixture.sleep()');await pause(250);await capture('sleep')
   await evaluate('fixture.cleanup()');assert.equal((await evaluate('fixture.state()')).sleepTimers,0)
   assert.equal((await evaluate('fixture.state()')).model.yb,5000);assert.equal((await evaluate('fixture.state()')).model.growth,0);assert.equal((await evaluate('fixture.state()')).model.health,5)
-  const result={checks:results,avatarVariants:avatars,layoutCases:layouts,extraChecks:['death expands','restart restores mini','sleep timer cleaned on unload','growth, currency and health preserved'],sleepDelayMs:180000}
+  const result={checks:results,avatarVariants:avatars,layoutCases:layouts,scalingCases:scaling,extraChecks:['death expands','restart restores mini on both sides','sleep timer cleaned on unload','growth, currency and health preserved'],sleepDelayMs:180000}
   writeFileSync('dist/source-mini-test-results.json',JSON.stringify(result,null,2));console.log('Edge mini passed:',JSON.stringify(result));app.exit(0)
 }).catch(error=>{console.error(error);app.exit(1)})
