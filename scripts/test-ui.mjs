@@ -13,6 +13,8 @@ const { prepareMini } = await import('../tests/ui/prepare-mini.mjs')
 await prepareMini()
 const { prepareCursor } = await import('../tests/ui/prepare-cursor.mjs')
 await prepareCursor()
+const { prepareShop } = await import('../tests/ui/prepare-shop.mjs')
+await prepareShop()
 const suites = JSON.parse(readFileSync(join(fixture, 'suites.json'), 'utf8'))
 let executable, packaged = false
 if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
@@ -30,6 +32,7 @@ if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
 const env = { ...process.env }
 delete env.ELECTRON_RUN_AS_NODE
 const selected = process.argv.slice(2)
+if (selected.some(suite => !suites.includes(suite))) throw Error('Unknown UI test suite')
 for (const suite of suites.filter(suite => !selected.length || selected.includes(suite))) {
   await new Promise((done, fail) => {
     const child = spawn(executable, [...(packaged ? [] : [fixture]), `--suite=${suite}`], { cwd: root, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })

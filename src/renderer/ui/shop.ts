@@ -8,6 +8,7 @@ import { openFrame } from './box'
 import './css/shop.css'
 import { button, div, img } from './dom'
 import { windowView } from './window-view'
+import { closeRecharge, rechargePlus, refreshRecharge } from './recharge'
 
 interface Tab {
   label: string
@@ -174,7 +175,7 @@ export function openShop(): void {
         'leftSelfFoot',
         div(
           'leftSelfFootBk por',
-          div('lsfb_yb', String(info.yb)),
+          div('lsfb_yb', Object.assign(div('balanceAmount', String(info.yb)), { title: String(info.yb) }), rechargePlus()),
           div('lsfb_pageMsg fcc', ...pager('lsfb', mine.page, totalPage, (page) => drawLeft({ ...mine, page }))),
         ),
       ),
@@ -354,6 +355,7 @@ export function openShop(): void {
   redraw = { left: drawLeft, right: drawRight }
   const remove = openFrame(shop)
   close = () => {
+    closeRecharge()
     remove()
     close = redraw = null
   }
@@ -363,6 +365,7 @@ export function openShop(): void {
 let redraw: { left: () => void; right: () => void } | null = null
 onGoodsChange(() => redraw?.left())
 onInfoChange((key) => {
+  if (key === 'yb') refreshRecharge()
   if (key === 'yb' || key === 'sex') redraw?.left()
   if (key === 'growth' || key === 'pinkDiamond') redraw?.right()
 })
