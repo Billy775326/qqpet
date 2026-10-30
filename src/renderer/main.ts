@@ -6,7 +6,6 @@ import { info, onInfoChange, petSize, save, setInfo } from './pet/store'
 import { adopt } from './ui/adopt'
 import { collapseControls, scheduleHide, showControl } from './ui/control'
 import { createEdgeMini, type EdgeMini } from './ui/edge-mini'
-import { createEdgeIdle } from './ui/edge-idle'
 import { div, touch } from './ui/dom'
 import './ui/face'
 import { closeMenu, openMenu, runTrayAction, trackMenuPointer } from './ui/menu'
@@ -85,12 +84,10 @@ mini = createEdgeMini({
   closeMenu, collapseControls, layout, showControls: showControl,
   openContextMenu: point => openMenu({ ...point, pet: true }, adoptPet),
 })
-const edgeIdle = createEdgeIdle(petEl, () => mini?.active === true)
 window.qqpet.onCursor((p) => {
   cursor.x = p.x
   cursor.y = p.y
   mini?.trackPointer(p)
-  edgeIdle.trackPointer(p)
   const target = document.elementFromPoint(p.x, p.y)
   trackMenuPointer(target)
   const hit = dragging || target?.isConnected === true && target.closest('[data-hit]') != null
@@ -193,7 +190,6 @@ const adoptPet = (): void => adopt(begin)
 
 // Linux trays report no position; their menus live at the top of the screen.
 window.qqpet.onTrayClick((c) => {
-  edgeIdle.interrupt()
   if (c.kind === 'action') { if (c.action) runTrayAction(c.action, adoptPet); return }
   const x = c.x ?? innerWidth - 60
   const y = c.y ?? 0

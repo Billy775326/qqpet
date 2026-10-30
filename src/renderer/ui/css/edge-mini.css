@@ -22,9 +22,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  transform-origin: 88% 50%;
-  clip-path: inset(0 0 30% 0);
-  transform: rotate(-24deg);
+  transform-origin: 50% 75%;
   animation: qqpet-mini-breathe 3s ease-in-out infinite;
 }
 .local-mini-portrait {
@@ -33,9 +31,8 @@
   pointer-events: none;
 }
 .local-edge-mini[data-mode=peek] .local-mini-artwork {
-  clip-path: inset(0 0 22% 0);
-  animation: qqpet-mini-peek .42s ease-out both;
-  transform: rotate(-30deg) translate(-2px, -3px);
+  animation: none;
+  transform: rotate(-7deg) translate(-1px, -2px);
 }
 .local-edge-mini[data-mode=mini-sleep] .local-mini-artwork {
   animation: qqpet-mini-sleep 5s ease-in-out infinite;
@@ -74,23 +71,18 @@ body.petHidden .local-edge-mini {
 }
 @keyframes qqpet-mini-breathe {
   0%, 100% {
-    transform: rotate(-24deg) translateY(0);
+    transform: translateY(0);
   }
   50% {
-    transform: rotate(-22deg) translateY(-1px);
+    transform: translateY(-1px);
   }
-}
-@keyframes qqpet-mini-peek {
-  from { transform: rotate(-24deg) translateY(0); }
-  65% { transform: rotate(-34deg) translate(-3px, -4px); }
-  to { transform: rotate(-30deg) translate(-2px, -3px); }
 }
 @keyframes qqpet-mini-sleep {
   0%, 100% {
-    transform: rotate(-16deg) translateY(3px) scale(.98);
+    transform: rotate(7deg) translateY(3px) scale(.98);
   }
   50% {
-    transform: rotate(-16deg) translateY(4px) scale(1);
+    transform: rotate(7deg) translateY(4px) scale(1);
   }
 }
 @keyframes qqpet-mini-zzz {

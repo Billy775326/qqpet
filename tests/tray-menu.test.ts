@@ -44,7 +44,6 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
     export const adopt = () => {}, openChat = () => {}, openGoods = () => {}, openPetInfo = () => {}, openSetup = () => {}, openShop = () => {};
     export const openState = () => {}, scheduleHide = () => {}, showControl = () => {}, collapseControls = () => {};
     export const createEdgeMini = () => ({refresh(){},trackPointer(){},enter(){}});
-    export const createEdgeIdle = () => ({trackPointer(){},interrupt(){}});
   `
   const bundled = await build({
     entryPoints: ['src/renderer/main.ts'], bundle: true, write: false, format: 'iife',

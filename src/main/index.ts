@@ -1,7 +1,6 @@
 import './paths'
 import { portable } from './paths'
-import { app, clipboard, dialog, ipcMain, net, screen, session } from 'electron'
-import { hasBottomTaskbar } from '../shared/taskbar'
+import { app, clipboard, dialog, ipcMain, net, session } from 'electron'
 import { IPC, type MessageBoxOptions, type TrayState } from '../shared/ipc'
 import type { SavePatch, Sex } from '../shared/save'
 import { aiChat, aiModels } from '../shared/ai'
@@ -34,11 +33,6 @@ app.whenReady().then(() => {
   })
   app.on('before-quit', () => tray.destroy())
   const priority = menuPriority(win)
-  ipcMain.handle(IPC.bottomTaskbar, event => {
-    if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) return false
-    const display = screen.getPrimaryDisplay()
-    return hasBottomTaskbar(display.bounds, display.workArea)
-  })
   const valid = (event: Electron.IpcMainEvent, on: unknown): on is boolean =>
     event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && typeof on === 'boolean'
   ipcMain.on(IPC.showTrayMenu, (event, on: unknown) => {
