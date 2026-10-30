@@ -30,7 +30,8 @@ export async function prepareMini(){
       externalPanel(on){if(on){const e=div('boxFrame');e.id='externalPanel';document.body.append(e)}else document.getElementById('externalPanel')?.remove()},
       goods:()=>showControl(),refresh:mini.refresh,cleanup:()=>mini.destroy(),
     };`
-  const stub=`export const save=globalThis.testSave, info=save.petInfo;
+  const stub=`export const createEdgeIdle=()=>({trackPointer(){},interrupt(){}});
+export const save=globalThis.testSave, info=save.petInfo;
 const listeners=[];
 export const onInfoChange=fn=>listeners.push(fn);
 export const setInfo=(key,value)=>{if(info[key]===value)return;info[key]=value;for(const fn of listeners)fn(key)};
@@ -75,7 +76,7 @@ export const windowView=()=>{};
 `
   const result=await build({stdin:{contents:source+'\n'+api,resolveDir:resolve('src/renderer'),loader:'ts'},bundle:true,write:false,format:'iife',plugins:[{name:'isolated-mini-source',setup(b){
     b.onResolve({filter:/.*/},args=>{
-      if(['./pet/geometry','../pet/geometry','../../shared/pet-geometry','./ui/control','./ui/dom','./dom','./ui/edge-mini','./edge-mini'].includes(args.path))return
+      if(['./pet/geometry','../pet/geometry','../../shared/pet-geometry','./ui/control','./ui/dom','./dom','./ui/edge-mini','./edge-mini','../pet/portrait'].includes(args.path))return
       return {path:args.path,namespace:'mock'}
     })
     b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:stub}))

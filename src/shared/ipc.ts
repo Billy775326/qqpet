@@ -26,6 +26,7 @@ export const IPC = {
   trayClick: 'tray:click',
   showTrayMenu: 'tray:menu',
   setMenuOpen: 'win:set-menu-open',
+  bottomTaskbar: 'win:bottom-taskbar',
 } as const
 
 export interface Point {
@@ -130,6 +131,8 @@ export interface QQPetApi {
   /** Optional on Android, where the notification opens the HTML menu. */
   showTrayMenu?(enabled: boolean): void
   setMenuOpen?(enabled: boolean): void
+  /** Desktop only: whether the primary work area ends above a reserved taskbar/dock. */
+  hasBottomTaskbar?(): Promise<boolean>
   setClickThrough(enabled: boolean): void
   setAlwaysOnTop(enabled: boolean): void
   setFocusable(enabled: boolean): void

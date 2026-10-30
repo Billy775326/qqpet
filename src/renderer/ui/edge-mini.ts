@@ -1,5 +1,6 @@
 import { axisFromCanvas, clampAxis, petMetrics, petVisibleRect } from '../pet/geometry'
 import { busy, info, save, setInfo, stage } from '../pet/store'
+import { fitPortrait } from '../pet/portrait'
 import { div, img } from './dom'
 import './css/edge-mini.css'
 
@@ -26,11 +27,6 @@ const HEIGHT = 80
 const VISIBLE = 36
 const PEEK_VISIBLE = 64
 const SLEEP_MS = 180000
-// Alpha bounds of the existing 400 x 400 portrait assets, in source pixels.
-const AVATARS: Record<string, readonly [number, number, number, number]> = {
-  GGEgg: [115, 123, 278, 340], GGKid: [100, 144, 291, 341], GGAdult: [104, 148, 296, 341],
-  MMEgg: [115, 122, 278, 340], MMKid: [99, 123, 293, 341], MMAdult: [104, 115, 296, 340],
-}
 let current: EdgeMini | undefined
 
 /** Restore the full pet before a tray/settings action targets it. */
@@ -93,15 +89,10 @@ export function createEdgeMini(actions: MiniActions): EdgeMini {
     }
     const key = info.sex + stage()
     if (image.dataset.avatar !== key) {
-      const [left, top, right, bottom] = AVATARS[key]
-      const scale = Math.min(64 / (right - left), 64 / (bottom - top))
-      image.src = `pet/avatar/${key}.png`
-      image.dataset.avatar = key
-      Object.assign(image.style, {
-        width: `${400 * scale}px`, height: `${400 * scale}px`,
-        left: `${(WIDTH - (right - left) * scale) / 2 - left * scale}px`,
-        top: `${(HEIGHT - (bottom - top) * scale) / 2 - top * scale}px`,
-      })
+      fitPortrait(image, key, 64, 64)
+      // Center the 64 px portrait inside the unchanged mini hit box.
+      image.style.left = `${parseFloat(image.style.left) + (WIDTH - 64) / 2}px`
+      image.style.top = `${parseFloat(image.style.top) + (HEIGHT - 64) / 2}px`
     }
     if (!drag) {
       const body = petVisibleRect()

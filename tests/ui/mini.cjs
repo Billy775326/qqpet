@@ -103,7 +103,8 @@ app.whenReady().then(async()=>{
     const r=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
     writeFileSync('dist/source-mini-'+name+'-fixture.png',(await win.webContents.capturePage({x:360,y:Math.max(0,Math.floor(r.y)-12),width:120,height:104})).toPNG())
   }
-  await capture('idle');await evaluate('fixture.cursor({x:465,y:parseFloat(document.querySelector(".local-edge-mini").style.top)+40})');await pause(250);await capture('peek')
+  assert.ok(await evaluate("getComputedStyle(document.querySelector('.local-mini-artwork')).clipPath.includes('30%')"),'idle mini must crop the lower body');
+  await capture('idle');await evaluate('fixture.cursor({x:465,y:parseFloat(document.querySelector(".local-edge-mini").style.top)+40})');await pause(450);assert.equal(await evaluate("getComputedStyle(document.querySelector('.local-mini-artwork')).animationName"),'qqpet-mini-peek');await capture('peek')
   await move(0,0);await evaluate('fixture.cursor({x:0,y:0});fixture.sleep()');await pause(250);await capture('sleep')
   await evaluate('fixture.cleanup()');assert.equal((await evaluate('fixture.state()')).sleepTimers,0)
   assert.equal((await evaluate('fixture.state()')).model.yb,5000);assert.equal((await evaluate('fixture.state()')).model.growth,0);assert.equal((await evaluate('fixture.state()')).model.health,5)

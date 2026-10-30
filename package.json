@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:ui": "node scripts/test-ui.mjs",
+    "preview:edges": "node scripts/preview-edge-motion.mjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
