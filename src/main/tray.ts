@@ -1,10 +1,12 @@
-import { app, Menu, nativeImage, Tray, type NativeImage } from 'electron'
+import { app, Menu, nativeImage, Tray, type NativeImage, type MenuItemConstructorOptions } from 'electron'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TrayClick, TrayState } from '../shared/ipc'
 import type { PetInfo, SaveData } from '../shared/save'
 import { TRAY_STATES, trayTip } from '../shared/tray'
 import { resourcesRoot } from './protocol'
+import { getSave } from './save'
+import { trayMenuEntries, type TrayMenuEntry } from '../shared/tray-menu'
 
 const FRAME_MS = 300
 
@@ -38,7 +40,14 @@ export function createPetTray(onClick: (e: TrayClick) => void) {
     const tip = trayTip(current, pet)
     if (tip) tray.setToolTip(tip)
   }
+  const nativeEntry = (entry: TrayMenuEntry): MenuItemConstructorOptions => ({
+    label: entry.label, type: entry.type, checked: entry.checked,
+    submenu: entry.submenu?.map(nativeEntry),
+    click: entry.action ? () => onClick({ kind: 'action', action: entry.action }) : undefined,
+  })
   return {
+    openMenu(): void { tray.popUpContextMenu(Menu.buildFromTemplate(trayMenuEntries(getSave()).map(nativeEntry))) },
+    closeMenu(): void { tray.closeContextMenu() },
     /** Re-renders the tooltip, e.g. after a rename. */
     retip,
     /** Without a state: redraws the current one, e.g. after the hd setting changed. */

@@ -64,7 +64,7 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   runInNewContext(bundled.outputFiles[0].text, {
     document, testSave: save, innerWidth: 1200, innerHeight: 800,
     matchMedia: () => ({ matches: false }),
-    window: { qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
+    window: { addEventListener() {}, qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
   })
   const menu = () => body.children.find(c => c.className === 'ui-menu')
   const move = (over: Element | null, x = 600, y = 400) => { target = over; callbacks.cursor({ x, y }) }

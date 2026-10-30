@@ -16,3 +16,5 @@
 .ui-menu .menuC:hover .chooseC {background:url(/pet/Menu/ditu04_22.png);background-size:100% 100%;height:19px}
 .ui-menu .menuC:hover .rightNormalC {background:url(/pet/Menu/ditu06_2.png);background-size:100% 100%}
 .ui-menu .unShow {display:none}
+
+.ui-menu .rightMenu { z-index: 2147483647 }

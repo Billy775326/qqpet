@@ -24,6 +24,8 @@ export const IPC = {
   setTrayState: 'tray:set-state',
   cursor: 'win:cursor',
   trayClick: 'tray:click',
+  showTrayMenu: 'tray:menu',
+  setMenuOpen: 'win:set-menu-open',
 } as const
 
 export interface Point {
@@ -49,7 +51,8 @@ export type TrayState =
 
 /** `state` opens the pet status panel, `menu` the pet's context menu. Window coordinates (the tray may lie outside it), absent on Linux. */
 export interface TrayClick {
-  kind: 'state' | 'menu'
+  kind: 'state' | 'menu' | 'action'
+  action?: string
   x?: number
   y?: number
 }
@@ -124,6 +127,9 @@ export interface QQPetApi {
   /** Resolves to the index of the clicked button. */
   messageBox(options: MessageBoxOptions): Promise<number>
   copyText(text: string): void
+  /** Optional on Android, where the notification opens the HTML menu. */
+  showTrayMenu?(enabled: boolean): void
+  setMenuOpen?(enabled: boolean): void
   setClickThrough(enabled: boolean): void
   setAlwaysOnTop(enabled: boolean): void
   setFocusable(enabled: boolean): void

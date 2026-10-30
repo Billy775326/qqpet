@@ -9,6 +9,7 @@ import { weather } from '../shared/weather'
 import { handleScheme, registerScheme } from './protocol'
 import { exportSave, getSave, importSave, loadSave, keyStorageStatus, patchSave, resetSave } from './save'
 import { createPetTray } from './tray'
+import { menuPriority } from './menu-priority'
 import { createPetWindow, openGameWindow } from './window'
 
 if (!app.requestSingleInstanceLock()) app.exit(0)
@@ -31,6 +32,14 @@ app.whenReady().then(() => {
     win.webContents.send(IPC.trayClick, click.x === undefined ? click : { ...click, x: click.x - b.x, y: click.y! - b.y })
   })
   app.on('before-quit', () => tray.destroy())
+  const priority = menuPriority(win)
+  const valid = (event: Electron.IpcMainEvent, on: unknown): on is boolean =>
+    event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && typeof on === 'boolean'
+  ipcMain.on(IPC.showTrayMenu, (event, on: unknown) => {
+    if (!valid(event, on)) return
+    if (on) tray.openMenu(); else tray.closeMenu()
+  })
+  ipcMain.on(IPC.setMenuOpen, (event, on: unknown) => { if (valid(event, on)) priority.setOpen(on) })
 
   let copied = ''
   setInterval(async () => {
@@ -91,7 +100,7 @@ app.whenReady().then(() => {
   ipcMain.on(IPC.copyText, (_e, text: string) => clipboard.writeText(text))
   ipcMain.on(IPC.setClickThrough, (_e, on: boolean) => win.setIgnoreMouseEvents(on))
   ipcMain.on(IPC.setAlwaysOnTop, (_e, on: boolean) => win.setAlwaysOnTop(on, 'screen-saver'))
-  ipcMain.on(IPC.setFocusable, (_e, on: boolean) => win.setFocusable(on))
+  ipcMain.on(IPC.setFocusable, (_e, on: boolean) => win.setFocusable(priority.open || on))
   ipcMain.on(IPC.setAutoStart, (_e, on: boolean) => !portable && app.setLoginItemSettings({ openAtLogin: on }))
   ipcMain.on(IPC.setTrayState, (_e, state: TrayState) => tray.setState(getSave(), state))
 })

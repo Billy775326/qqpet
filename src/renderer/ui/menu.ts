@@ -27,6 +27,7 @@ let current: HTMLElement | null = null
 let entered = false
 
 export function closeMenu(): void {
+  if (current) window.qqpet.setMenuOpen?.(false)
   current?.remove()
   current = null
   entered = false
@@ -105,6 +106,12 @@ function items(adopt: () => void): Item[] {
   ]
 }
 
+export function runTrayAction(action: string, adopt: () => void): void {
+  const chosen = items(adopt).flatMap(it => it.children ?? [it]).find(it => it.label === action)
+  closeMenu()
+  chosen?.run?.()
+}
+
 const pick = (it: Item) => (): void => {
   if (it.children) return
   closeMenu()
@@ -138,6 +145,7 @@ const child = (it: Item): HTMLElement => button('menuC fc', pick(it), div('choos
  */
 export function openMenu(at: { x: number; y: number; pet: boolean }, adopt: () => void): void {
   closeMenu()
+  if (!at.pet && window.qqpet.showTrayMenu) { window.qqpet.showTrayMenu(true); return }
   const { x, y } = at
   const left = Math.min(Math.max(at.pet ? x : x - WIDTH / 2, 0), innerWidth - WIDTH)
   const menu = div('rightMenu focusPress', frame(list(items(adopt), left + 2 * WIDTH > innerWidth), ditu, [12, 21]))
@@ -150,4 +158,7 @@ export function openMenu(at: { x: number; y: number; pet: boolean }, adopt: () =
   else menu.style.bottom = `${Math.max(innerHeight - y, 0)}px`
   current = div('ui-menu', menu)
   document.body.appendChild(current)
+  window.qqpet.setMenuOpen?.(true)
 }
+
+window.addEventListener('blur', closeMenu)

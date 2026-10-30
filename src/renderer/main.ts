@@ -6,7 +6,7 @@ import { adopt } from './ui/adopt'
 import { scheduleHide, showControl } from './ui/control'
 import { div, touch } from './ui/dom'
 import './ui/face'
-import { closeMenu, openMenu, trackMenuPointer } from './ui/menu'
+import { closeMenu, openMenu, runTrayAction, trackMenuPointer } from './ui/menu'
 import { openState } from './ui/state'
 
 const petEl = document.getElementById('pet')!
@@ -147,6 +147,7 @@ const adoptPet = (): void => adopt(begin)
 
 // Linux trays report no position; their menus live at the top of the screen.
 window.qqpet.onTrayClick((c) => {
+  if (c.kind === 'action') { if (c.action) runTrayAction(c.action, adoptPet); return }
   const x = c.x ?? innerWidth - 60
   const y = c.y ?? 0
   if (c.kind === 'menu') openMenu({ x, y, pet: false }, adoptPet)
