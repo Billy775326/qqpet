@@ -142,10 +142,10 @@ export function study(g: Good): boolean {
   }
   const lines = [
     `[host]，我被分配到${rand(1e6, 9999999)}班学习${g.object},我放学就回来，不要太想念我哦~~~`,
-    `[host]，我去上${g.useTime}分钟的${g.object}课啦！学习不花元宝，记得让我保持健康和好心情哦~`,
+    `[host]，这节${g.object}课要上${g.useTime}分钟，等我回来陪你哦~`,
     g.id.startsWith('xwzj-')
-      ? '[host]，研究生毕业也要继续学习呀，学历不再增加，还能提升属性哦~'
-      : `[host]，我去学${g.object}啦！这阶段学满${g.classNum}课再通过考试，就能拿到这科的学历哦~`,
+      ? '[host]，研究生已经是我这科的最高学历啦~'
+      : `[host]，这阶段的${g.object}要学满${g.classNum}课，我会努力的~`,
   ]
   speak({ s: lines[rand(0, lines.length - 1)], now: true }, 'speak', {
     start: () => startTask(studyTask(g), g.id),

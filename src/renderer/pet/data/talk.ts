@@ -822,11 +822,15 @@ export const TALK: Record<string, Line[] | Record<string, Line[]>> = {
     ],
     overStudy: [
       {
-        tolk: '[host]，学历是一科一科拿的，不用等九科都学完，我也能先毕业哦~',
+        tolk: '[host]，每门课都能单独拿学历，我要一科一科努力~',
         submitText: '好的',
       },
       {
-        tolk: '[host]，考试没过也别灰心，再点这科就能重考，之前的课时不会白学哦~',
+        tolk: '[host]，考试没过也别灰心，再点同一科就能重考哦~',
+        submitText: '好的',
+      },
+      {
+        tolk: '[host]，上课不花元宝，省下来的元宝给我买好吃的吧~',
         submitText: '好的',
       },
       {
@@ -858,7 +862,15 @@ export const TALK: Record<string, Line[] | Record<string, Line[]>> = {
     ],
     cententStudy: [
       {
-        tolk: '[host]，学习不用等级和粉钻门槛，健康、开心时就能去，打工旅游回来再学哦~',
+        tolk: '[host]，上学不用粉钻，我也能认真读书哦~',
+        submitText: '好的',
+      },
+      {
+        tolk: '[host]，学习不挑等级，什么时候开始都不晚哦~',
+        submitText: '好的',
+      },
+      {
+        tolk: '[host]，心情好了才学得进去，记得陪我玩一会儿哦~',
         submitText: '好的',
       },
       {
