@@ -830,10 +830,6 @@ export const TALK: Record<string, Line[] | Record<string, Line[]>> = {
         submitText: '好的',
       },
       {
-        tolk: '[host]，上课不花元宝，省下来的元宝给我买好吃的吧~',
-        submitText: '好的',
-      },
-      {
         tolk: '[host]，我学习回来了~~',
         submitText: '好的',
       },
@@ -861,18 +857,6 @@ export const TALK: Record<string, Line[] | Record<string, Line[]>> = {
       },
     ],
     cententStudy: [
-      {
-        tolk: '[host]，上学不用粉钻，我也能认真读书哦~',
-        submitText: '好的',
-      },
-      {
-        tolk: '[host]，学习不挑等级，什么时候开始都不晚哦~',
-        submitText: '好的',
-      },
-      {
-        tolk: '[host]，心情好了才学得进去，记得陪我玩一会儿哦~',
-        submitText: '好的',
-      },
       {
         tolk: '老师说我今天很认真，[host]，让我先回来陪着你！~',
         submitText: '真棒',
