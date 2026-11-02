@@ -1,7 +1,6 @@
 .ui-shop .lsfb_yb {
   display: flex;
   align-items: center;
-  gap: 3px;
   /* Leave the bitmap's 187px pager, 17px right inset and a 6px gap intact. */
   right: 210px;
   min-width: 0;
@@ -12,14 +11,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ui-shop .rechargePlus {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  background: url(/pet/shppingMall/bk/shoping_09.gif) center/100% 100% no-repeat;
-}
-.ui-shop .rechargePlus:hover {
-  filter: brightness(1.12);
+.ui-shop .rechargeEntry {
+  /* The 元宝 label is part of the footer bitmap; keep its original artwork. */
+  position: absolute;
+  left: 35px;
+  top: 10px;
+  width: 33px;
+  height: 24px;
 }
 .localRechargeBackdrop {
   position: fixed;

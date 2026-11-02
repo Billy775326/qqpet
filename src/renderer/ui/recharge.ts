@@ -111,10 +111,11 @@ export function openRecharge(): void {
   draw()
 }
 
-export function rechargePlus(): HTMLElement {
-  const plus = button('rechargePlus focusPress', openRecharge)
-  plus.title = '充值元宝'
-  plus.setAttribute('role', 'button')
-  plus.setAttribute('aria-label', '充值元宝')
-  return plus
+/** Hit area over the original footer's 元宝 lettering. */
+export function rechargeEntry(): HTMLElement {
+  const entry = button('rechargeEntry focusPress', openRecharge)
+  entry.title = '充值元宝'
+  entry.setAttribute('role', 'button')
+  entry.setAttribute('aria-label', '充值元宝')
+  return entry
 }

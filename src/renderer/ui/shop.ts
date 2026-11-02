@@ -8,7 +8,7 @@ import { openFrame } from './box'
 import './css/shop.css'
 import { button, div, img } from './dom'
 import { windowView } from './window-view'
-import { closeRecharge, rechargePlus, refreshRecharge } from './recharge'
+import { closeRecharge, rechargeEntry, refreshRecharge } from './recharge'
 
 interface Tab {
   label: string
@@ -175,7 +175,8 @@ export function openShop(): void {
         'leftSelfFoot',
         div(
           'leftSelfFootBk por',
-          div('lsfb_yb', Object.assign(div('balanceAmount', String(info.yb)), { title: String(info.yb) }), rechargePlus()),
+          rechargeEntry(),
+          div('lsfb_yb', Object.assign(div('balanceAmount', String(info.yb)), { title: String(info.yb) })),
           div('lsfb_pageMsg fcc', ...pager('lsfb', mine.page, totalPage, (page) => drawLeft({ ...mine, page }))),
         ),
       ),
