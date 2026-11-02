@@ -1,3 +1,4 @@
+const { resizeViewport } = require('./viewport.cjs')
 const {app,BrowserWindow}=require('electron')
 const {readFileSync,writeFileSync,mkdtempSync}=require('node:fs')
 const {resolve,join}=require('node:path')
@@ -13,15 +14,15 @@ app.whenReady().then(async()=>{
   const win=new BrowserWindow({width:800,height:560,useContentSize:true,show:false,webPreferences:{sandbox:true,contextIsolation:true,offscreen:true,backgroundThrottling:false}})
   const evaluate=code=>win.webContents.executeJavaScript(code)
   const pause=ms=>new Promise(r=>setTimeout(r,ms))
-  await win.loadFile(html);await evaluate(prepared.setup+'\n'+prepared.code+';true')
-  win.webContents.debugger.attach('1.3')
+  await win.loadFile(html);await resizeViewport(win,800,560);await evaluate(prepared.setup+'\n'+prepared.code+';true')
+  if(!win.webContents.debugger.isAttached())win.webContents.debugger.attach('1.3')
   const cdp=(method,params)=>win.webContents.debugger.sendCommand(method,params)
   const move=async(x,y)=>{await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});await evaluate('fixture.cursor('+x+','+y+')')}
   const click=async(x,y)=>{await move(x,y);for(const type of ['mousePressed','mouseReleased'])await cdp('Input.dispatchMouseEvent',{type,x,y,button:'left',clickCount:1})}
   const exists=()=>evaluate('!!document.querySelector(".ui-menu")')
   const cases=[]
   for(const [w,h] of [[800,560],[1920,1040],[320,480]])for(const side of ['left','right']){
-    win.setContentSize(w,h);await pause(80)
+    await resizeViewport(win,w,h);await pause(80)
     await evaluate('fixture.hide();fixture.open('+(side==='left'?12:w+30)+','+(h+40)+')')
     await evaluate('Promise.all([...document.querySelectorAll(".ui-menu img")].map(image=>image.decode()))')
     const box=await evaluate('(()=>{const r=document.querySelector(".rightMenu").getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()')
@@ -37,7 +38,7 @@ app.whenReady().then(async()=>{
     assert.equal(await exists(),false);assert.equal((await evaluate('fixture.state()')).priority.at(-1),false)
     cases.push({width:w,height:h,side,status:'passed'})
   }
-  win.setContentSize(800,560);await pause(80);await evaluate('fixture.hide();fixture.open(780,600)')
+  await resizeViewport(win,800,560);await pause(80);await evaluate('fixture.hide();fixture.open(780,600)')
   const parent=await evaluate('(()=>{const e=[...document.querySelectorAll(".menu")].find(e=>e.querySelector(".centent")?.textContent==="喂养宠物"),r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()')
   await move(parent.x,parent.y);await pause(80)
   // Absolutely positioned inline blocks resolve to block; visibility and bounds are the contract.

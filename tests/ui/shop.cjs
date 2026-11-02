@@ -1,3 +1,4 @@
+const { resizeViewport } = require('./viewport.cjs')
 const {app,BrowserWindow,ipcMain}=require('electron')
 const {readFileSync,writeFileSync,mkdtempSync,renameSync}=require('node:fs')
 const {resolve,join}=require('node:path')
@@ -27,8 +28,8 @@ app.whenReady().then(async()=>{
   const win=new BrowserWindow({width:1000,height:700,useContentSize:true,show:false,webPreferences:{preload:join(__dirname,'shop-preload.cjs'),sandbox:true,contextIsolation:true,offscreen:true,backgroundThrottling:false}})
   const evaluate=expression=>win.webContents.executeJavaScript(expression)
   const pause=ms=>new Promise(r=>setTimeout(r,ms))
-  await win.loadFile(html);await evaluate(boot)
-  win.webContents.debugger.attach('1.3')
+  await win.loadFile(html);await resizeViewport(win,1000,700);await evaluate(boot)
+  if(!win.webContents.debugger.isAttached())win.webContents.debugger.attach('1.3')
   const cdp=(method,params)=>win.webContents.debugger.sendCommand(method,params)
   const click=async selector=>{
     const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing '+${JSON.stringify(selector)});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)
@@ -157,7 +158,7 @@ app.whenReady().then(async()=>{
   await click('.localRecharge .windowViewBut');await evaluate('fixture.setBalance(5000)')
   const layouts=[]
   for(const [width,height] of [[1920,1040],[1000,700],[800,560],[480,360],[320,480]]){
-    win.setContentSize(width,height);await pause(80)
+    await resizeViewport(win,width,height);await pause(80)
     await evaluate('fixture.setBalance(2147483647)')
     const footer=await evaluate(`(()=>{const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};return {entry:rect(document.querySelector('.rechargeEntry')),amount:rect(document.querySelector('.balanceAmount')),pager:rect(document.querySelector('.lsfb_pageMsg'))}})()`)
     assert.ok(footer.entry.right<=footer.amount.x+0.2,'recharge label overlaps balance')
@@ -187,9 +188,9 @@ app.whenReady().then(async()=>{
   assert.equal(disk.petInfo.yb,5000,'closing the shop must invalidate the recharge dialog')
   await evaluate('fixture.openShop()');await pause(60);await click('.rechargeEntry');await click('[data-tier="98"]');await click('.localRecharge .windowViewButSubmit')
   assert.equal(disk.petInfo.yb,5980)
-  await win.loadFile(html);await evaluate(boot+'')
+  await win.loadFile(html);await resizeViewport(win,1000,700);await evaluate(boot+'')
   assert.equal(await evaluate('fixture.balance()'),5980,'balance must survive reloading the renderer from the isolated save')
-  win.setContentSize(1000,700);await evaluate('fixture.openShop()');await pause(100)
+  await resizeViewport(win,1000,700);await evaluate('fixture.openShop()');await pause(100)
   await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0})
   writeFileSync('dist/source-shop-pager.png',(await win.webContents.capturePage()).toPNG())
   await checkPager()

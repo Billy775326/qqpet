@@ -93,6 +93,16 @@ npm run dev
 
 若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
 
+在仓库根目录运行开发检查：
+
+```bash
+npm test
+npm run typecheck
+npm run test:ui
+```
+
+界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口并使用当前屏幕缩放，校验实际渲染尺寸，处理 Windows 分数缩放下的原生窗口取整。mini 测试额外模拟 100%、125%、150%、175% 和 200% 的设备缩放。这些测试覆盖指定的视口和交互路径，完整的多屏与任务栏自动隐藏实测仍需单独进行。
+
 ## 构建
 
 ```bash

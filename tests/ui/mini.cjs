@@ -1,3 +1,4 @@
+const { resizeViewport } = require('./viewport.cjs')
 const {app,BrowserWindow}=require('electron')
 const {readFileSync,writeFileSync,mkdtempSync}=require('node:fs')
 const {resolve,join}=require('node:path')
@@ -15,8 +16,8 @@ app.whenReady().then(async()=>{
   win.webContents.on('console-message', event => { if(event.level==='error'||event.level===3) console.error('Mini fixture:',event.message) })
   const evaluate=expression=>win.webContents.executeJavaScript(expression)
   const pause=ms=>new Promise(r=>setTimeout(r,ms))
-  await win.loadFile(html);await evaluate('localStorage.removeItem("qqpet.edge-mini.v1")');await evaluate(boot)
-  win.webContents.debugger.attach('1.3')
+  await win.loadFile(html);await resizeViewport(win,800,560);await evaluate('localStorage.removeItem("qqpet.edge-mini.v1")');await evaluate(boot)
+  if(!win.webContents.debugger.isAttached())win.webContents.debugger.attach('1.3')
   const cdp=(method,params)=>win.webContents.debugger.sendCommand(method,params)
   const move=(x,y,buttons=0)=>cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x,y,button:buttons?'left':'none',buttons})
   const down=(x,y)=>cdp('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1})
@@ -90,7 +91,7 @@ app.whenReady().then(async()=>{
   }
   const layouts=[]
   for(const side of ['right','left'])for(const [w,h] of [[1920,1040],[1366,728],[800,560],[320,480],[2560,1400],[3840,2120]]){
-    win.setContentSize(w,h);await pause(80);await evaluate('fixture.full();fixture.mini('+JSON.stringify(side)+');fixture.cursor({x:innerWidth/2,y:0})');await pause(220)
+    await resizeViewport(win,w,h);await pause(80);await evaluate('fixture.full();fixture.mini('+JSON.stringify(side)+');fixture.cursor({x:innerWidth/2,y:0})');await pause(220)
     const box=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()")
     assert.ok(Math.abs((side==='left'?box.right:w-box.x)-36)<.2&&box.y>=7.5&&box.bottom<=h-7.5,'mini must remain attached and vertically inside work area: '+side+' '+w+'x'+h)
     const state=await evaluate('fixture.state()');assert.ok(state.x>=0&&state.y>=0&&state.x<=w-146+.2&&state.y<=h-146+.2)
@@ -98,11 +99,11 @@ app.whenReady().then(async()=>{
   }
   await evaluate('fixture.health(0)');assert.equal((await evaluate('fixture.state()')).mini,false,'death must restore the full pet')
   await evaluate('fixture.health(5);fixture.mini()')
-  await win.loadFile(html);await evaluate(boot)
+  await win.loadFile(html);await resizeViewport(win,800,560);await evaluate(boot)
   assert.equal((await evaluate('fixture.state()')).mini,true,'restart must restore persisted mini mode')
   assert.equal((await evaluate('fixture.state()')).side,'right','existing v1 right preference remains compatible')
 
-  win.setContentSize(800,560);await pause(80)
+  await resizeViewport(win,800,560);await pause(80)
   await drag('left',true);assert.equal((await evaluate('fixture.state()')).mini,false,'cancelled left drag must not dock')
   await drag('left');await move(400,0);await evaluate('fixture.cursor({x:400,y:0})');await pause(220)
   rect=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right}})()")
@@ -141,7 +142,7 @@ app.whenReady().then(async()=>{
   assert.equal((await evaluate('fixture.state()')).mini,false,'dragging left mini inward expands it')
   assert.ok((await evaluate('fixture.visible()')).left>56,'dragged left pet stays near release')
 
-  await drag('left');await win.loadFile(html);await evaluate(boot)
+  await drag('left');await win.loadFile(html);await resizeViewport(win,800,560);await evaluate(boot)
   assert.equal((await evaluate('fixture.state()')).mini,true);assert.equal((await evaluate('fixture.state()')).side,'left','restart retains the left edge')
   await evaluate('fixture.refresh();fixture.cursor({x:400,y:0})');await move(400,0);await pause(220)
   rect=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
@@ -152,7 +153,7 @@ app.whenReady().then(async()=>{
   results.push({check:'left half-body, mirrored artwork, fixed hit zone, peek, sleep, click, drag, cancellation, context menu and persistence',status:'passed'})
 
   const scaling=[]
-  for(const side of ['left','right'])for(const dpr of [1.5,2]){
+  for(const side of ['left','right'])for(const dpr of [1,1.25,1.5,1.75,2]){
     await cdp('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:dpr,mobile:false})
     await evaluate('fixture.full();fixture.mini('+JSON.stringify(side)+');fixture.refresh();fixture.cursor({x:640,y:0})');await move(640,0);await pause(220)
     const metrics=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {dpr:devicePixelRatio,width:innerWidth,visible:fixture.state().side==='left'?r.right:innerWidth-r.left,bottom:r.bottom}})()")
@@ -161,7 +162,7 @@ app.whenReady().then(async()=>{
   }
   await cdp('Emulation.clearDeviceMetricsOverride')
   await evaluate("fixture.full();fixture.mini('right')")
-  win.setContentSize(480,360);await pause(80);await evaluate("fixture.avatar('GG','Kid');fixture.cursor({x:0,y:0})");await move(0,0);await pause(250)
+  await resizeViewport(win,480,360);await pause(80);await evaluate("fixture.avatar('GG','Kid');fixture.cursor({x:0,y:0})");await move(0,0);await pause(250)
   const capture=async(name)=>{
     const r=await evaluate("(()=>{const r=document.querySelector('.local-edge-mini').getBoundingClientRect();return {y:r.y}})()")
     writeFileSync('dist/source-mini-'+name+'-fixture.png',(await win.webContents.capturePage({x:360,y:Math.max(0,Math.floor(r.y)-12),width:120,height:104})).toPNG())

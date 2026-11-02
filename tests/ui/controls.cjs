@@ -1,3 +1,4 @@
+const { resizeViewport } = require('./viewport.cjs')
 const { app, BrowserWindow } = require('electron')
 const { readFileSync, writeFileSync, mkdirSync, mkdtempSync } = require('node:fs')
 const { resolve, join } = require('node:path')
@@ -16,9 +17,9 @@ app.whenReady().then(async () => {
   const html = resolve('dist/source-control-test.html')
   const assetRoot=pathToFileURL(resolve(process.env.QQPET_TEST_RESOURCES||'resources')+'/').href
   writeFileSync(html,'<!doctype html><html><head><meta charset="UTF-8"><base href="'+assetRoot+'"><style>'+css.replaceAll('url(/pet/','url('+assetRoot+'pet/')+'</style></head><body></body></html>')
-  await win.loadFile(html)
+  await win.loadFile(html);await resizeViewport(win,1920,1040)
   await win.webContents.executeJavaScript(setup + '\n'+prepared.code+';true')
-  win.webContents.debugger.attach('1.3')
+  if(!win.webContents.debugger.isAttached())win.webContents.debugger.attach('1.3')
   const cdp = (method, params) => win.webContents.debugger.sendCommand(method, params)
   await cdp('DOM.enable'); await cdp('CSS.enable')
   const root = (await cdp('DOM.getDocument')).root.nodeId
@@ -36,7 +37,7 @@ app.whenReady().then(async () => {
   const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y))
   const results=[]
   for(const [width,height] of [[1920,1040],[800,560],[320,480],[480,360]]){
-    win.setContentSize(width,height)
+    await resizeViewport(win,width,height)
     await new Promise(r=>setTimeout(r,50))
     for(const [name,x,y] of [['top-left',0,0],['top-right',width-146,0],['bottom-left',0,height-146],['bottom-right',width-146,height-146],['left',0,(height-146)/2],['right',width-146,(height-146)/2],['top',width/2-73,0],['bottom',width/2-73,height-146],['center',width/2-73,height/2-73]]){
       await win.webContents.executeJavaScript(`fixture.position(${x},${y})`)
@@ -90,7 +91,7 @@ app.whenReady().then(async () => {
     console.log('Adaptive controls checked at',width,height)
   }
   // Inspect real artwork in an isolated fixture, with a marked pet silhouette.
-  win.setContentSize(720,500)
+  await resizeViewport(win,720,500)
   await win.webContents.executeJavaScript(`fixture.position(0,177);(()=>{const b=fixture.state().action,e=document.createElement('div');e.textContent='动画画布范围';Object.assign(e.style,{position:'absolute',left:b.left+'px',top:b.top+'px',width:b.width+'px',height:b.height+'px',border:'1px dashed #888',color:'#666',fontSize:'10px'});document.body.append(e)})()`)
   await forceHover('.menuItem:nth-child(1)',true)
   await new Promise(r=>setTimeout(r,200))
