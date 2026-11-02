@@ -18,6 +18,46 @@
   top: 10px;
   width: 33px;
   height: 24px;
+  border-radius: 3px;
+}
+.ui-shop .rechargeEntry:hover,
+.ui-shop .rechargeEntry:focus-visible {
+  box-shadow: inset 0 0 0 1px #fff2a2b3;
+}
+.ui-shop .rechargeEntryTip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: -8px;
+  z-index: 20;
+  padding: 6px 10px;
+  border: 1px solid #ba8a48;
+  border-radius: 4px;
+  background: #fff6dc;
+  box-shadow: 0 2px 5px #60341033;
+  color: #74471e;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+.ui-shop .rechargeEntryTip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid #ba8a48;
+  border-bottom: 1px solid #ba8a48;
+  background: #fff6dc;
+  transform: rotate(45deg);
+}
+.ui-shop .rechargeEntry:hover .rechargeEntryTip,
+.ui-shop .rechargeEntry:focus-visible .rechargeEntryTip {
+  opacity: 1;
+  visibility: visible;
 }
 .localRechargeBackdrop {
   position: fixed;
@@ -29,8 +69,8 @@
   background-size: 100% 100%;
 }
 .ui-window .localRecharge {
-  width: 360px;
-  height: 320px;
+  width: 380px;
+  height: 364px;
   color: #6c3b18;
 }
 .ui-window .localRecharge .title {
@@ -39,23 +79,36 @@
 }
 .localRecharge .rechargeBalance {
   position: absolute;
-  top: 40px;
-  left: 20px;
-  right: 20px;
-  text-align: center;
+  top: 41px;
+  left: 22px;
+  right: 22px;
+  height: 32px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #d7b680;
+  border-radius: 4px;
+  background: #fff7e5;
   font-size: 12px;
+}
+.localRecharge .rechargeBalanceValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #92501e;
 }
 .localRecharge .rechargeGrid {
   position: absolute;
-  top: 66px;
-  left: 20px;
-  right: 20px;
+  top: 109px;
+  left: 22px;
+  right: 22px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 .localRecharge .rechargeTier {
-  height: 66px;
+  position: relative;
+  height: 68px;
   box-sizing: border-box;
   border: 1px solid #c99a60;
   border-radius: 6px;
@@ -69,12 +122,31 @@
   white-space: nowrap;
 }
 .localRecharge .rechargeTier:hover {
+  border-color: #b77b38;
   background: linear-gradient(#fff6d6, #ecd0a0);
+}
+.localRecharge .rechargeTier:focus-visible {
+  outline: 2px solid #a65b24;
+  outline-offset: 2px;
 }
 .localRecharge .rechargeTier.selected {
   border-color: #a65b24;
   background: linear-gradient(#ffedb9, #ebc78d);
   box-shadow: inset 0 0 0 1px #d69243;
+}
+.localRecharge .rechargeTier.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 17px;
+  height: 17px;
+  border-radius: 0 4px 0 5px;
+  background: #a65b24;
+  color: #fff8df;
+  font-size: 12px;
+  line-height: 17px;
+  text-align: center;
 }
 .localRecharge .rechargeAmount {
   font-size: 18px;
@@ -82,14 +154,19 @@
   color: #92501e;
 }
 .localRecharge .rechargeGain {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: #805a30;
 }
 .localRecharge .rechargeStatus {
   position: absolute;
-  top: 218px;
-  left: 16px;
-  right: 16px;
+  top: 263px;
+  left: 22px;
+  right: 22px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #ead3aa66;
   font-size: 12px;
   line-height: 18px;
   text-align: center;
@@ -99,10 +176,11 @@
 }
 .localRecharge .rechargeHint {
   position: absolute;
-  top: 241px;
-  left: 15px;
-  right: 15px;
+  top: 82px;
+  left: 22px;
+  right: 22px;
   text-align: center;
   font-size: 11px;
+  line-height: 18px;
   color: #8b704d;
 }

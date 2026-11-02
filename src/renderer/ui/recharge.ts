@@ -19,7 +19,8 @@ export function openRecharge(): void {
   let rate = RECHARGE_RATE
   let boostClicks = 0
   let settled = false
-  const balance = div('rechargeBalance')
+  const balanceValue = div('rechargeBalanceValue')
+  const balance = div('rechargeBalance', div('rechargeBalanceLabel', '当前元宝'), balanceValue)
   const hint = div('rechargeHint')
   const status = div('rechargeStatus')
   status.setAttribute('aria-live', 'polite')
@@ -27,7 +28,7 @@ export function openRecharge(): void {
   grid.setAttribute('role', 'radiogroup')
   grid.setAttribute('aria-label', '选择充值档位')
   const draw = (): void => {
-    balance.textContent = `当前元宝：${info.yb}`
+    balanceValue.textContent = String(info.yb)
     status.classList.remove('rechargeError')
     status.textContent = `已选 ${selected} 元，可获得 ${selected * rate} 元宝`
     hint.textContent = `本地模拟充值 · 1 元 = ${rate} 元宝`
@@ -113,9 +114,16 @@ export function openRecharge(): void {
 
 /** Hit area over the original footer's 元宝 lettering. */
 export function rechargeEntry(): HTMLElement {
-  const entry = button('rechargeEntry focusPress', openRecharge)
-  entry.title = '充值元宝'
+  const tip = div('rechargeEntryTip', '点击充值元宝')
+  tip.id = 'shop-recharge-tip'
+  tip.setAttribute('role', 'tooltip')
+  const entry = button('rechargeEntry focusPress', openRecharge, tip)
+  entry.tabIndex = 0
   entry.setAttribute('role', 'button')
   entry.setAttribute('aria-label', '充值元宝')
+  entry.setAttribute('aria-describedby', tip.id)
+  entry.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openRecharge() }
+  })
   return entry
 }
