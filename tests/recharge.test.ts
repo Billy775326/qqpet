@@ -13,3 +13,10 @@ test('recharge cannot overflow the save integer or accept a corrupt balance', ()
   for (const previous of [2147483647 - 59, 2147483648, -2147483649, NaN, Infinity, 0.5]) assert.equal(rechargedBalance(previous, 6), null)
   assert.equal(rechargedBalance(-2147483648, 6), -2147483588)
 })
+
+test('boosted recharge supports only 1:100 with the same integer limits', () => {
+  for (const tier of RECHARGE_TIERS) assert.equal(rechargedBalance(5000, tier, 100), 5000 + tier * 100)
+  assert.equal(rechargedBalance(2147483647 - 64800, 648, 100), 2147483647)
+  assert.equal(rechargedBalance(2147483647 - 64799, 648, 100), null)
+  for (const rate of [0, -10, 1, 10.5, 1000, NaN, Infinity]) assert.equal(rechargedBalance(5000, 648, rate), null)
+})

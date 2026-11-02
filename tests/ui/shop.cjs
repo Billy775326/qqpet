@@ -37,6 +37,8 @@ app.whenReady().then(async()=>{
     await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',...p,button:'left',clickCount:1})
   }
   const results=[]
+  const click648=async(count=10)=>{for(let i=0;i<count;i++)await click('[data-tier="648"]')}
+  const hint=()=>evaluate("document.querySelector('.rechargeHint').textContent")
   await evaluate('fixture.openSetup()');await pause(80)
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.ui-setup .lm_once')].map(e=>e.textContent)"),['全局设置','存档','工具','AI','关于'])
   assert.equal(await evaluate("document.querySelector('.ui-setup').textContent.includes('作弊')"),false)
@@ -61,6 +63,42 @@ app.whenReady().then(async()=>{
     assert.equal(writes,beforeWrites+1)
     results.push({tier,gain,status:'passed'})
   }
+  const beforeBoost=disk.petInfo.yb,boostWrites=writes
+  await click('.rechargePlus');await click648(9)
+  assert.ok((await hint()).includes('1 元 = 10 元宝'),'nine clicks must retain the default rate')
+  await click('[data-tier="30"]');await click648(1)
+  assert.ok((await hint()).includes('1 元 = 100 元宝'),'the tenth cumulative 648 click unlocks the session rate')
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.rechargeGain')].map(e=>e.textContent)"),['600 元宝','3000 元宝','9800 元宝','19800 元宝','32800 元宝','64800 元宝'])
+  assert.ok(await evaluate("document.querySelector('.rechargeStatus').textContent.includes('64800')"))
+  assert.equal(disk.petInfo.yb,beforeBoost);assert.equal(writes,boostWrites,'unlocking cannot save or credit currency')
+  await click648(1);assert.ok((await hint()).includes('1 元 = 100 元宝'),'extra clicks do not toggle the rate back')
+  await evaluate('fixture.retainSubmit();window.staleTier=document.querySelector(".rechargeGrid").lastElementChild')
+  await click('.localRecharge .windowViewButSubmit')
+  assert.equal(disk.petInfo.yb,beforeBoost+64800);assert.equal(writes,boostWrites+1)
+  assert.ok(await evaluate("window.lastSpeech.includes('64800')"),'arrival message matches the credited amount')
+  await evaluate('window.staleSubmit.click();window.staleSubmit.click()');assert.equal(disk.petInfo.yb,beforeBoost+64800)
+  await click('.rechargePlus');assert.ok((await hint()).includes('1 元 = 10 元宝'),'successful recharge resets the next dialog')
+  await evaluate('for(let i=0;i<10;i++)window.staleTier.click()');assert.ok((await hint()).includes('1 元 = 10 元宝'),'detached cards cannot affect a new session')
+  await click('.localRecharge .windowViewBut')
+  for(const method of ['cancel','escape','shop']){
+    const dismiss=async()=>{
+      if(method==='cancel')await click('.localRecharge .windowViewBut')
+      else if(method==='escape')await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
+      else{await evaluate('fixture.closeShop();fixture.openShop()');await pause(60)}
+    }
+    await click('.rechargePlus');await click648(9);await dismiss()
+    await click('.rechargePlus');await click648(1)
+    assert.ok((await hint()).includes('1 元 = 10 元宝'),method+' must reset the click count')
+    await click648(9);assert.ok((await hint()).includes('1 元 = 100 元宝'))
+    await dismiss();await click('.rechargePlus')
+    assert.ok((await hint()).includes('1 元 = 10 元宝'),method+' must reset the boosted rate')
+    await click('.localRecharge .windowViewBut')
+  }
+  const beforeBoostRetry=disk.petInfo.yb
+  await click('.rechargePlus');await click648();failNext=true
+  await click('.localRecharge .windowViewButSubmit')
+  assert.equal(disk.petInfo.yb,beforeBoostRetry);assert.ok((await hint()).includes('1 元 = 100 元宝'),'save failure retains the open dialog rate')
+  await click('.localRecharge .windowViewButSubmit');assert.equal(disk.petInfo.yb,beforeBoostRetry+64800)
   const saved=disk.petInfo.yb
   await click('.rechargePlus');await click('[data-tier="648"]');await click('.localRecharge .windowViewBut')
   assert.equal(disk.petInfo.yb,saved,'cancelling must not change the balance')
@@ -79,6 +117,8 @@ app.whenReady().then(async()=>{
   await click('.localRecharge .windowViewButSubmit')
   assert.equal(disk.petInfo.yb,2147483640,'recharge must not overflow the save integer')
   assert.ok(await evaluate("document.querySelector('.rechargeStatus').textContent.includes('上限')"))
+  await click648();await click('[data-tier="6"]');await click('.localRecharge .windowViewButSubmit')
+  assert.equal(disk.petInfo.yb,2147483640,'boosted recharge must also respect the save integer limit')
   await click('.localRecharge .windowViewBut');await evaluate('fixture.setBalance(5000)')
   const layouts=[]
   for(const [width,height] of [[1920,1040],[1000,700],[800,560],[480,360],[320,480]]){
@@ -92,7 +132,9 @@ app.whenReady().then(async()=>{
     assert.ok(layout.background.includes('windowTip/alert/bg.png'))
     assert.ok(layout.plusBackground.includes('shoping_09.gif'))
     assert.ok(Math.abs(layout.cards[0].y-layout.cards[2].y)<.2&&layout.cards[3].y>layout.cards[0].bottom,'tiers must use two rows of three')
-    await click('[data-tier="648"]');await click('.localRecharge .windowViewBut')
+    await click648()
+    assert.ok(await evaluate("[...document.querySelectorAll('.rechargeTier')].every(card=>card.querySelector('.rechargeGain').scrollWidth<=card.clientWidth)"),'boosted amounts must fit the existing cards')
+    await click('.localRecharge .windowViewBut')
     layouts.push({width,height,status:'passed'})
   }
   await click('.rechargePlus');await evaluate('fixture.retainSubmit();fixture.closeShop();window.staleSubmit.click()')
@@ -103,8 +145,8 @@ app.whenReady().then(async()=>{
   await win.loadFile(html);await evaluate(boot+'')
   assert.equal(await evaluate('fixture.balance()'),5980,'balance must survive reloading the renderer from the isolated save')
   win.setContentSize(1000,700);await evaluate('fixture.openShop()');await pause(100);await click('.rechargePlus');await pause(100)
-  writeFileSync('dist/source-shop-fixture.png',(await win.webContents.capturePage()).toPNG())
-  writeFileSync('dist/source-shop-results.json',JSON.stringify({tiers:results,layoutCases:layouts,checks:['cheat tab removed','exact six tiers','selection and cancel preserve balance','1:10 credits saved and redrawn','duplicate clicks guarded','single dialog','Escape closes','save failure rolls back and retries','integer limit guarded','shop close cleans up','balance survives renderer reload'],persistedBalance:disk.petInfo.yb},null,2))
-  console.log('Shop recharge passed: 6 tiers, 5 viewport sizes, persistence, failure, cancellation and lifecycle checks')
+  await click648();writeFileSync('dist/source-shop-fixture.png',(await win.webContents.capturePage()).toPNG())
+  writeFileSync('dist/source-shop-results.json',JSON.stringify({tiers:results,layoutCases:layouts,checks:['cheat tab removed','exact six tiers','selection and cancel preserve balance','1:10 and 1:100 credits saved and redrawn','tenth cumulative 648 activation unlocks without crediting','all close paths reset rate and count','stale cards and duplicate submits guarded','single dialog','Escape closes','save failure retains rate and retries','integer limit guarded at both rates','shop close cleans up','balance survives renderer reload'],persistedBalance:disk.petInfo.yb},null,2))
+  console.log('Shop recharge passed: 6 tiers, 5 viewport sizes, session boost boundary and reset, persistence, failure, cancellation and lifecycle checks')
   app.exit(0)
 }).catch(error=>{console.error(error);app.exit(1)})

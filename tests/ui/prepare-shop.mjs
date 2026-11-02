@@ -14,7 +14,7 @@ export async function prepareShop() {
       retainSubmit:()=>window.staleSubmit=document.querySelector('.localRecharge .windowViewButSubmit')};
   `
   const stub = `
-    export const speak=()=>{},readopt=()=>{},setHidden=()=>{},setFaceClick=()=>{},weatherNow=async()=>'';
+    export const speak=speech=>{window.lastSpeech=speech.s},readopt=()=>{},setHidden=()=>{},setFaceClick=()=>{},weatherNow=async()=>'';
     export const goodOf=(type,id)=>({type,id,name:'测试商品',num:1,price:12,url:'pet/img_res/food/102010001.gif'});
     export const TYPE_NAMES={food:'食物',clean:'日用品',medicine:'药品',toy:'玩具',nums:'属性',background:'背景'};
     export const listGoods=()=>({list:[],totalPage:1}),describe=()=>['隔离商品'],onGoodsChange=()=>{};

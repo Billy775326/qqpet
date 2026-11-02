@@ -1,4 +1,4 @@
-import { RECHARGE_RATE, RECHARGE_TIERS, rechargedBalance } from '../../shared/recharge'
+import { RECHARGE_BOOST_CLICKS, RECHARGE_BOOST_RATE, RECHARGE_RATE, RECHARGE_TIERS, rechargedBalance } from '../../shared/recharge'
 import { speak } from '../pet/pet'
 import { info, setInfo } from '../pet/store'
 import { openFrame } from './box'
@@ -16,8 +16,11 @@ export const refreshRecharge = (): void => redraw?.()
 export function openRecharge(): void {
   if (close) return
   let selected: number = RECHARGE_TIERS[0]
+  let rate = RECHARGE_RATE
+  let boostClicks = 0
   let settled = false
   const balance = div('rechargeBalance')
+  const hint = div('rechargeHint')
   const status = div('rechargeStatus')
   status.setAttribute('aria-live', 'polite')
   const grid = div('rechargeGrid')
@@ -26,15 +29,23 @@ export function openRecharge(): void {
   const draw = (): void => {
     balance.textContent = `当前元宝：${info.yb}`
     status.classList.remove('rechargeError')
-    status.textContent = `已选 ${selected} 元，可获得 ${selected * RECHARGE_RATE} 元宝`
+    status.textContent = `已选 ${selected} 元，可获得 ${selected * rate} 元宝`
+    hint.textContent = `本地模拟充值 · 1 元 = ${rate} 元宝`
     for (const card of grid.children) {
-      const active = Number((card as HTMLElement).dataset.tier) === selected
+      const tier = Number((card as HTMLElement).dataset.tier)
+      const active = tier === selected
+      card.querySelector('.rechargeGain')!.textContent = `${tier * rate} 元宝`
       card.classList.toggle('selected', active)
       card.setAttribute('aria-checked', String(active))
     }
   }
   grid.append(...RECHARGE_TIERS.map(tier => {
-    const choose = (): void => { if (!settled) { selected = tier; draw() } }
+    const choose = (): void => {
+      if (settled) return
+      selected = tier
+      if (tier === 648 && boostClicks < RECHARGE_BOOST_CLICKS && ++boostClicks === RECHARGE_BOOST_CLICKS) rate = RECHARGE_BOOST_RATE
+      draw()
+    }
     const card = button('rechargeTier focusPress', choose, div('rechargeAmount', `${tier} 元`), div('rechargeGain', `${tier * RECHARGE_RATE} 元宝`))
     card.dataset.tier = String(tier)
     card.setAttribute('role', 'radio')
@@ -44,7 +55,7 @@ export function openRecharge(): void {
     })
     return card
   }))
-  const view = div('windowView localRecharge', div('title', '元宝充值'), balance, grid, status, div('rechargeHint', '本地模拟充值 · 1 元 = 10 元宝'))
+  const view = div('windowView localRecharge', div('title', '元宝充值'), balance, grid, status, hint)
   view.setAttribute('role', 'dialog')
   view.setAttribute('aria-label', '元宝充值')
   view.setAttribute('aria-modal', 'true')
@@ -72,7 +83,7 @@ export function openRecharge(): void {
   const submit = button('windowViewButSubmit', () => {
     if (settled) return
     const previous = info.yb
-    const next = rechargedBalance(previous, selected)
+    const next = rechargedBalance(previous, selected, rate)
     if (next === null) {
       status.textContent = '元宝数量已达上限，暂时无法充值'
       status.classList.add('rechargeError')
@@ -91,7 +102,7 @@ export function openRecharge(): void {
       return
     }
     dismiss()
-    speak({ s: `[host]，${selected * RECHARGE_RATE} 元宝到账啦~`, now: true }, 'speak')
+    speak({ s: `[host]，${selected * rate} 元宝到账啦~`, now: true }, 'speak')
   })
   submit.setAttribute('role', 'button')
   submit.setAttribute('aria-label', '确认充值')
