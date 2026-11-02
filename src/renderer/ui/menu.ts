@@ -25,6 +25,7 @@ interface Item {
 
 let current: HTMLElement | null = null
 let entered = false
+let dismissOnLeave = true
 
 export function closeMenu(): void {
   if (current) window.qqpet.setMenuOpen?.(false)
@@ -33,9 +34,9 @@ export function closeMenu(): void {
   entered = false
 }
 
-/** Allow travel from the tray (including its overflow popup) before dismissing on exit. */
+/** Pet menus dismiss on pointer exit; tray menus require an explicit dismissal. */
 export function trackMenuPointer(target: Element | null): void {
-  if (entered && (!target || !current?.contains(target))) closeMenu()
+  if (dismissOnLeave && entered && (!target || !current?.contains(target))) closeMenu()
 }
 
 document.addEventListener('pointerdown', (e) => {
@@ -145,7 +146,8 @@ const child = (it: Item): HTMLElement => button('menuC fc', pick(it), div('choos
  */
 export function openMenu(at: { x: number; y: number; pet: boolean }, adopt: () => void): void {
   closeMenu()
-  if (!at.pet && window.qqpet.showTrayMenu) { window.qqpet.showTrayMenu(true); return }
+  // Tray menus stay open across the shell overflow popup until an explicit dismissal.
+  dismissOnLeave = at.pet
   const { x, y } = at
   const left = Math.min(Math.max(at.pet ? x : x - WIDTH / 2, 0), innerWidth - WIDTH)
   const menu = div('rightMenu focusPress', frame(list(items(adopt), left + 2 * WIDTH > innerWidth), ditu, [12, 21]))

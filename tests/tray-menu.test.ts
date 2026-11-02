@@ -63,17 +63,21 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   let target: Element | null = null
   let clickThrough = true
   let themed = false
+  let nativeMenus = 0
+  const priority: boolean[] = []
   const document = { body, documentElement: { classList: { toggle: (_name: string, on: boolean) => { themed = on } } }, createElement: () => new Element(), getElementById: () => pet, elementFromPoint: () => target, addEventListener(name: string, fn: Function) { callbacks[name] = fn } }
   runInNewContext(bundled.outputFiles[0].text, {
     document, testSave: save, innerWidth: 1200, innerHeight: 800,
     matchMedia: () => ({ matches: false }), Event,
     requestAnimationFrame: (fn: Function) => fn(0),
-    window: { addEventListener() {}, dispatchEvent() {}, qqpet: { onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
+    window: { addEventListener(name: string, fn: Function) { callbacks['window:'+name] = fn }, dispatchEvent() {}, qqpet: { showTrayMenu: () => { nativeMenus++ }, setMenuOpen: (on: boolean) => { priority.push(on) }, onCursor: (fn: Function) => { callbacks.cursor = fn }, onTrayClick: (fn: Function) => { callbacks.tray = fn }, onClipboard() {}, setClickThrough: (on: boolean) => { clickThrough = on } } },
   })
   const menu = () => body.children.find(c => c.className === 'ui-menu')
   const move = (over: Element | null, x = 600, y = 400) => { target = over; callbacks.cursor({ x, y }) }
   const open = () => callbacks.tray({ kind: 'menu', x: 1100, y: 700 })
   open()
+  assert.equal(nativeMenus, 0, 'desktop tray must use the original HTML menu even when native menus are available')
+  assert.equal(priority.at(-1), true, 'original tray menu must request temporary window priority')
   move(null, 1100, 850) // taskbar, outside work area
   move(desktop) // empty route from overflow to menu
   assert.ok(menu(), 'menu disappeared before the pointer could reach it')
@@ -92,6 +96,7 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   show.emit('click')
   assert.equal(save.settings.hidden, false)
   assert.equal(menu(), undefined)
+  assert.equal(priority.at(-1), false, 'choosing an action restores window priority')
   move(desktop)
   assert.equal(clickThrough, true)
   assert.equal(themed, false, 'leaving the hit region must restore the desktop cursor')
@@ -102,11 +107,18 @@ test('hidden pet tray menu survives travel across desktop and tray popup, and ca
   move(submenu)
   assert.equal(menu(), next, 'submenu must remain interactive')
   move(desktop)
-  assert.equal(menu(), undefined, 'leaving an entered menu must dismiss it')
+  assert.equal(menu(), next, 'tray menu must survive moving back toward the overflow popup')
+  callbacks['window:blur']()
+  assert.equal(menu(), undefined, 'clicking another application dismisses the tray menu')
   open(); move(desktop)
   assert.ok(menu(), 'reopened menu must reset its entry state')
   callbacks.keydown({ key: 'Escape' })
   assert.equal(menu(), undefined)
   open(); callbacks.pointerdown({ target: desktop })
   assert.equal(menu(), undefined, 'explicit outside app click must dismiss it')
+  pet.emit('contextmenu', { clientX: 300, clientY: 300 })
+  const petMenu = menu()!
+  petMenu.children[0].emit('pointerenter')
+  move(desktop)
+  assert.equal(menu(), undefined, 'pet context menu retains its existing leave behavior')
 })
