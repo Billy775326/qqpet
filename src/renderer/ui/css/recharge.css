@@ -1,16 +1,9 @@
-.ui-shop .leftSelfFootBk {
-  display: flex;
-  align-items: center;
-  padding: 0 8px 0 75px;
-  gap: 6px;
-  box-sizing: border-box;
-}
 .ui-shop .lsfb_yb {
-  position: static;
   display: flex;
   align-items: center;
   gap: 3px;
-  flex: 1;
+  /* Leave the bitmap's 187px pager, 17px right inset and a 6px gap intact. */
+  right: 210px;
   min-width: 0;
 }
 .ui-shop .balanceAmount {
@@ -27,10 +20,6 @@
 }
 .ui-shop .rechargePlus:hover {
   filter: brightness(1.12);
-}
-.ui-shop .lsfb_pageMsg {
-  position: static;
-  flex: 0 0 auto;
 }
 .localRechargeBackdrop {
   position: fixed;

@@ -5,7 +5,7 @@ const assert=require('node:assert/strict')
 const profile=mkdtempSync(resolve('dist/source-shop-profile-'))
 app.setPath('userData',profile);app.setPath('sessionData',profile);app.setAppLogsPath(join(profile,'logs'))
 const file=join(profile,'fixture-save.json')
-let disk={petInfo:{yb:5000,sex:'GG',growth:0,faceClick:0,health:5,lastX:100,lastY:100},settings:{hd:false,opacity:1,faceClick:0,quiet:false,clip:false,aiUrl:'',aiKey:'',aiModel:'',weatherCity:''},petComputedlInfo:{level:1},selfGoodDatas:{food:[],clean:[],medicine:[],toy:[],nums:[],background:[]},selfGoodUseOption:{background:null}}
+let disk={petInfo:{yb:5000,sex:'GG',growth:0,faceClick:0,health:5,lastX:100,lastY:100},settings:{hd:false,opacity:1,faceClick:0,quiet:false,clip:false,aiUrl:'',aiKey:'',aiModel:'',weatherCity:''},petComputedlInfo:{level:1},selfGoodDatas:{food:Array.from({length:13},(_,i)=>({id:String(i),num:1})),clean:[],medicine:[],toy:[],nums:[],background:[]},selfGoodUseOption:{background:null}}
 writeFileSync(file,JSON.stringify(disk))
 let failNext=false,writes=0
 ipcMain.handle('fixture:load',()=>JSON.parse(readFileSync(file,'utf8')))
@@ -44,6 +44,29 @@ app.whenReady().then(async()=>{
   assert.equal(await evaluate("document.querySelector('.ui-setup').textContent.includes('作弊')"),false)
   await evaluate('fixture.closeSetup();fixture.openShop()');await pause(80)
   assert.equal(await evaluate("document.querySelectorAll('.rechargePlus').length"),1)
+  // The original footer bitmap already contains the arrows; hover images must cover them.
+  const arrowPositions=[['upMore',141,37,'first'],['up',180,27,'left'],['down',262,27,'right'],['downMore',291,37,'last']]
+  const checkPager=async()=>{
+    await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0})
+    assert.deepEqual(await evaluate(`(async()=>{const image=new Image();image.src=getComputedStyle(document.querySelector('.leftSelfFootBk')).backgroundImage.slice(5,-2);await image.decode();return [image.naturalWidth,image.naturalHeight]})()`),[345,42],'footer artwork must actually load')
+    const geometry=()=>evaluate(`(()=>{const f=document.querySelector('.leftSelfFootBk').getBoundingClientRect();return [...document.querySelectorAll('.lsfb_pageMsg > :not(.lsfb_text)')].map(e=>{const r=e.getBoundingClientRect();return {x:(r.x-f.x)*345/f.width,y:(r.y-f.y)*42/f.height,width:r.width*345/f.width,height:r.height*42/f.height}})})()`)
+    const before=await geometry()
+    assert.equal(before.length,4)
+    for(const [i,[name,x,width,image]] of arrowPositions.entries()){
+      const rect=before[i]
+      assert.ok(Math.abs(rect.x-x)<.2&&Math.abs(rect.y-11)<.2&&Math.abs(rect.width-width)<.2&&Math.abs(rect.height-22)<.2,'pager hit box must align with the footer artwork: '+name+' '+JSON.stringify(rect))
+      const point=await evaluate(`(()=>{const r=document.querySelector('.lsfb_${name}').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)
+      await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',...point})
+      assert.ok((await evaluate(`getComputedStyle(document.querySelector('.lsfb_${name}')).backgroundImage`)).includes('page_'+image+'.png'),'hover must highlight the matching arrow')
+      assert.deepEqual(await geometry(),before,'hover must not move pagination')
+    }
+  }
+  await checkPager()
+  const currentPage=()=>evaluate("document.querySelector('.lsfb_current').textContent")
+  assert.equal(await evaluate("document.querySelector('.lsfb_totalPage').textContent"),'3')
+  for(const [arrow,page] of [['up',1],['down',2],['downMore',3],['down',3],['up',2],['upMore',1]]){
+    await click('.lsfb_'+arrow);assert.equal(await currentPage(),String(page))
+  }
   for(const [tier,gain] of [[6,60],[30,300],[98,980],[198,1980],[328,3280],[648,6480]]){
     const previous=disk.petInfo.yb,beforeWrites=writes
     await click('.rechargePlus');await pause(60)
@@ -123,9 +146,12 @@ app.whenReady().then(async()=>{
   const layouts=[]
   for(const [width,height] of [[1920,1040],[1000,700],[800,560],[480,360],[320,480]]){
     win.setContentSize(width,height);await pause(80)
+    await evaluate('fixture.setBalance(2147483647)')
     const footer=await evaluate(`(()=>{const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};return {plus:rect(document.querySelector('.rechargePlus')),amount:rect(document.querySelector('.balanceAmount')),pager:rect(document.querySelector('.lsfb_pageMsg'))}})()`)
     assert.ok(footer.plus.right<=footer.pager.x+0.2,'recharge plus overlaps pagination')
     assert.ok(footer.amount.right<=footer.plus.x+0.2,'balance overlaps the plus')
+    await checkPager()
+    await evaluate('fixture.setBalance(5000)')
     await click('.rechargePlus');await pause(80)
     const layout=await evaluate(`(()=>{const v=document.querySelector('.localRecharge'),r=v.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,cards:[...v.querySelectorAll('.rechargeTier')].map(e=>{const q=e.getBoundingClientRect();return {x:q.x,y:q.y,right:q.right,bottom:q.bottom}}),background:getComputedStyle(v.closest('.backgroundImage')).backgroundImage,plusBackground:getComputedStyle(document.querySelector('.rechargePlus')).backgroundImage}})()`)
     assert.ok(layout.x>=7.5&&layout.y>=7.5&&layout.right<=width-7.5&&layout.bottom<=height-7.5,'recharge dialog outside viewport')
@@ -144,9 +170,14 @@ app.whenReady().then(async()=>{
   assert.equal(disk.petInfo.yb,5980)
   await win.loadFile(html);await evaluate(boot+'')
   assert.equal(await evaluate('fixture.balance()'),5980,'balance must survive reloading the renderer from the isolated save')
-  win.setContentSize(1000,700);await evaluate('fixture.openShop()');await pause(100);await click('.rechargePlus');await pause(100)
+  win.setContentSize(1000,700);await evaluate('fixture.openShop()');await pause(100)
+  await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0})
+  writeFileSync('dist/source-shop-pager.png',(await win.webContents.capturePage()).toPNG())
+  await checkPager()
+  writeFileSync('dist/source-shop-pager-hover.png',(await win.webContents.capturePage()).toPNG())
+  await click('.rechargePlus');await pause(100)
   await click648();writeFileSync('dist/source-shop-fixture.png',(await win.webContents.capturePage()).toPNG())
-  writeFileSync('dist/source-shop-results.json',JSON.stringify({tiers:results,layoutCases:layouts,checks:['cheat tab removed','exact six tiers','selection and cancel preserve balance','1:10 and 1:100 credits saved and redrawn','tenth cumulative 648 activation unlocks without crediting','all close paths reset rate and count','stale cards and duplicate submits guarded','single dialog','Escape closes','save failure retains rate and retries','integer limit guarded at both rates','shop close cleans up','balance survives renderer reload'],persistedBalance:disk.petInfo.yb},null,2))
-  console.log('Shop recharge passed: 6 tiers, 5 viewport sizes, session boost boundary and reset, persistence, failure, cancellation and lifecycle checks')
+  writeFileSync('dist/source-shop-results.json',JSON.stringify({tiers:results,layoutCases:layouts,checks:['pager hover matches footer artwork','three-page navigation and page bounds','maximum balance and recharge plus do not overlap pager','cheat tab removed','exact six tiers','selection and cancel preserve balance','1:10 and 1:100 credits saved and redrawn','tenth cumulative 648 activation unlocks without crediting','all close paths reset rate and count','stale cards and duplicate submits guarded','single dialog','Escape closes','save failure retains rate and retries','integer limit guarded at both rates','shop close cleans up','balance survives renderer reload'],persistedBalance:disk.petInfo.yb},null,2))
+  console.log('Shop passed: aligned pager hover and three-page navigation, 6 recharge tiers, 5 viewport sizes, session boost boundary and reset, persistence, failure, cancellation and lifecycle checks')
   app.exit(0)
 }).catch(error=>{console.error(error);app.exit(1)})
