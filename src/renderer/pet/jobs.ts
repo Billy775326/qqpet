@@ -124,22 +124,12 @@ export function describeStudy(g: Good): string[] {
 
 /** All lessons of a school done: the pet asks for its exam. */
 function examPrompt(g: Good): void {
-  speak({ s: `[host]，课时修满啦！点“我要考试”，随机3题全对即可获得${g.tolkName}学历；没通过可再点同一科目重考哦！`, b: '我要考试', now: true, ai: false }, 'speak', {
+  speak({ s: '[host]，我要升学啦，考试3题全对就能拿到这科的学历哦！', b: '我要考试', now: true }, 'speak', {
     ok: () =>
       openExam(g.id, () => {
-        speak({ s: `[host]，我获得${g.tolkName}学历啦！到档案的“学历获得”就能看到哦！`, now: true, ai: false }, 'speak')
+        speak({ s: '[host]，好开心啊，我终于升学了！档案里能看到这科的学历啦~', now: true }, 'speak')
         learn(subjectOf(g))
       }),
-  })
-}
-
-/** Keep instructions in short bubbles; reading them does not interrupt the current task. */
-function explainStudy(g: Good): void {
-  const s = g.id.startsWith('xwzj-')
-    ? '我已获得这科研究生学历，接下来是“学无止境”，不再增加学历；继续学习可以提升属性哦！'
-    : '学历按科目获得，不用九科全修完。修满后点“我要考试”，3题全对即可毕业；没通过可再点同一科目重考，学历在档案查看哦！'
-  speak({ s, b: '学习条件', ai: false }, undefined, {
-    ok: () => speak({ s: '学习没有等级、粉钻或元宝门槛。我需健康值5、心情大于0且未暂停成长，也不能同时打工、学习或旅游哦！', ai: false }),
   })
 }
 
@@ -150,12 +140,15 @@ export function study(g: Good): boolean {
     examPrompt(g)
     return false
   }
-  const s = g.id.startsWith('xwzj-')
-    ? `[host]，我继续学${g.object}啦！每课${g.useTime}分钟，已取得这科研究生学历，继续学习还能提升属性哦！`
-    : `[host]，我去学${g.tolkName}啦！每课${g.useTime}分钟，已学${lessons(g)}/${g.classNum}课；修满并通过考试，就能获得这科的学历哦！`
-  speak({ s, b: '学历说明', now: true, ai: false }, 'speak', {
+  const lines = [
+    `[host]，我被分配到${rand(1e6, 9999999)}班学习${g.object},我放学就回来，不要太想念我哦~~~`,
+    `[host]，我去上${g.useTime}分钟的${g.object}课啦！学习不花元宝，记得让我保持健康和好心情哦~`,
+    g.id.startsWith('xwzj-')
+      ? '[host]，研究生毕业也要继续学习呀，学历不再增加，还能提升属性哦~'
+      : `[host]，我去学${g.object}啦！这阶段学满${g.classNum}课再通过考试，就能拿到这科的学历哦~`,
+  ]
+  speak({ s: lines[rand(0, lines.length - 1)], now: true }, 'speak', {
     start: () => startTask(studyTask(g), g.id),
-    ok: () => explainStudy(g),
   })
   return true
 }

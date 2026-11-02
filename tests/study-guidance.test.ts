@@ -3,8 +3,9 @@ import test from 'node:test'
 import { build } from 'esbuild'
 import { runInNewContext } from 'node:vm'
 
-async function learning(progress = 0) {
+async function learning(progress = 0, lineIndex = 0) {
   const state = {
+    lineIndex,
     save: { petInfo: { health: 5, mood: 500 }, settings: { paused: false }, studyInfo: { chinese: progress, mathematics: 0, politics: 0, music: 0, art: 0, manner: 0, pe: 0, labouring: 0, wushu: 0 } },
     active: {} as Record<string, string>,
     messages: [] as { line: { s: string; b?: string; ai?: false }; hooks: { ok?: () => void } }[],
@@ -19,7 +20,7 @@ async function learning(progress = 0) {
     export const startTask=(task,id)=>{state.tasks.push({task,id});state.active[task.key]=id};
     export const openExam=(id,pass)=>state.exams.push({id,pass});
     export const openEmail=()=>{},floatMood=()=>{},windowView=()=>{},tripBack=()=>{},isBuddy=()=>false,takePhoto=()=>null;
-    export const addGood=()=>{},apply=()=>{},loot=()=>[],mailPhoto=()=>{},rand=()=>0,addInfo=()=>{},luck=()=>0,addCount=()=>{};
+    export const addGood=()=>{},apply=()=>{},loot=()=>[],mailPhoto=()=>{},rand=(min,max)=>min===0&&max===2?state.lineIndex:min,addInfo=()=>{},luck=()=>0,addCount=()=>{};
   `
   const result = await build({ entryPoints: ['src/renderer/pet/jobs.ts'], bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-study', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
@@ -33,22 +34,22 @@ async function learning(progress = 0) {
   return { state, api: module.exports }
 }
 
-test('study chat explains the current stage without interrupting lessons or rewriting rules', async () => {
-  for (const [progress, name, minutes, total] of [[0, '小学语文', 45, 9], [10, '中学语文', 45, 20], [31, '大学语文', 55, 40], [72, '研究生语文', 55, 95]] as const) {
-    const { state, api } = await learning(progress)
+test('random study lines keep the original single-bubble interaction and start one lesson', async () => {
+  for (const [progress, minutes, total] of [[0, 45, 9], [10, 45, 20], [31, 55, 40], [72, 55, 95]] as const) for (const index of [0, 1, 2]) {
+    const { state, api } = await learning(progress, index)
     assert.equal(api.study(api.studyGoods()[0]), true)
     const first = state.messages[0]
-    assert.ok(first.line.s.includes(name) && first.line.s.includes(`${minutes}分钟`) && first.line.s.includes(`0/${total}课`))
-    assert.equal(first.line.b, '学历说明')
-    first.hooks.ok!()
-    assert.match(state.messages.at(-1)!.line.s, /按科目.*九科.*3题全对.*重考.*档案/)
-    state.messages.at(-1)!.hooks.ok!()
-    assert.match(state.messages.at(-1)!.line.s, /没有等级、粉钻或元宝门槛.*健康.*心情大于0.*暂停成长.*打工、学习或旅游/)
-    assert.ok(state.messages.every(message => message.line.ai === false))
+    assert.equal(state.messages.length, 1)
+    assert.equal(first.line.b, undefined, 'normal study retains the original default button')
+    assert.equal(first.hooks.ok, undefined, 'study chat has no help navigation callback')
+    assert.equal(first.line.ai, undefined, 'existing chat processing is preserved')
+    if (index === 0) assert.match(first.line.s, /被分配到.*班学习/)
+    if (index === 1) assert.ok(first.line.s.includes(`${minutes}分钟`))
+    if (index === 2) assert.ok(first.line.s.includes(`${total}课`) && first.line.s.includes('考试'))
     assert.equal(state.tasks.length, 1)
     assert.equal(state.tasks[0].task.minutes, minutes)
     assert.equal(state.active.study, state.tasks[0].id)
-    assert.equal(state.save.studyInfo.chinese, progress, 'reading help cannot award lessons')
+    assert.equal(state.save.studyInfo.chinese, progress)
   }
 })
 
@@ -59,15 +60,14 @@ test('lesson completion explains the exam and awards the diploma only after pass
   assert.equal(state.save.studyInfo.chinese, 9)
   const prompt = state.messages.at(-1)!
   assert.equal(prompt.line.b, '我要考试')
-  assert.match(prompt.line.s, /随机3题全对.*小学语文.*重考/)
-  assert.equal(prompt.line.ai, false)
+  assert.match(prompt.line.s, /3题全对.*这科的学历/)
   prompt.hooks.ok!()
   assert.equal(state.exams[0].id, 'xx-chinese')
   assert.equal(state.save.studyInfo.chinese, 9, 'opening an exam does not award the diploma')
   state.exams[0].pass()
   assert.equal(state.save.studyInfo.chinese, 10)
   assert.equal(api.diploma('chinese', 10), '小学语文')
-  assert.match(state.messages.at(-1)!.line.s, /小学语文.*档案.*学历获得/)
+  assert.match(state.messages.at(-1)!.line.s, /档案.*这科的学历/)
 })
 
 test('completed stages reopen the exam and continuing study never promises a higher diploma', async () => {
@@ -75,9 +75,8 @@ test('completed stages reopen the exam and continuing study never promises a hig
   assert.equal(exam.api.study(exam.api.studyGoods()[0]), false)
   assert.equal(exam.state.tasks.length, 0)
   assert.equal(exam.state.messages[0].line.b, '我要考试')
-  const continuing = await learning(168)
+  const continuing = await learning(168, 2)
   assert.equal(continuing.api.study(continuing.api.studyGoods()[0]), true)
-  assert.match(continuing.state.messages[0].line.s, /已取得这科研究生学历.*提升属性/)
-  continuing.state.messages[0].hooks.ok!()
-  assert.match(continuing.state.messages.at(-1)!.line.s, /学无止境.*不再增加学历/)
+  assert.match(continuing.state.messages[0].line.s, /研究生毕业.*学历不再增加.*提升属性/)
+  assert.equal(continuing.state.messages[0].hooks.ok, undefined)
 })
