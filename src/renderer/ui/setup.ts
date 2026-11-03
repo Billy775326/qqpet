@@ -101,17 +101,22 @@ async function testModel(model: string): Promise<void> {
   if (aiBusy) return
   const request = ++aiRequest
   const config = { url: s.aiUrl, key: s.aiKey, model }
+  const previousModel = s.aiModel
+  let modelCleared = false
   aiBusy = true
-  update('settings', { aiModel: '' })
   aiStatus = `正在测试 ${model}…`
-  redraw()
   try {
+    update('settings', { aiModel: '' })
+    modelCleared = true
+    redraw()
     const reply = await window.qqpet.aiChat(config, [{ role: 'user', content: '你好，用一句话打个招呼。' }])
     if (request !== aiRequest) return
     update('settings', { aiModel: model })
     aiStatus = `测试通过，已启用。回复：${reply.slice(0, 60)}`
   } catch (e) {
     if (request !== aiRequest) return
+    // update() mutates renderer state before the synchronous save can fail.
+    s.aiModel = modelCleared ? '' : previousModel
     aiStatus = `测试失败：${reason(e)}`
   }
   if (request !== aiRequest) return

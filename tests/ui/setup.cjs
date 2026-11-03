@@ -8,8 +8,9 @@ app.setPath('userData',profile);app.setPath('sessionData',profile);app.setAppLog
 const settings={hd:false,opacity:1,faceClick:0,quiet:false,clip:false,aiUrl:'https://fixture.example/v1',aiKey:'fixture-key',aiModel:'',weatherCity:''}
 const disk={petInfo:{yb:5000,sex:'GG',growth:0,faceClick:0,health:5,lastX:100,lastY:100},settings,petComputedlInfo:{level:1},selfGoodDatas:{food:[],clean:[],medicine:[],toy:[],nums:[],background:[]},selfGoodUseOption:{background:null}}
 let writes=0,questions=0,resets=0,imports=0,exportCalls=0,modelCalls=0,chatCalls=0,resolveModels,rejectModels,resolveChat,lastConfig
+let failNextSave=false
 ipcMain.handle('fixture:load',()=>structuredClone(disk))
-ipcMain.on('fixture:save',(event,patch)=>{for(const [key,value]of Object.entries(patch))Object.assign(disk[key],value);writes++;event.returnValue=null})
+ipcMain.on('fixture:save',(event,patch)=>{if(failNextSave){failNextSave=false;event.returnValue='Simulated fixture save failure';return}for(const [key,value]of Object.entries(patch))Object.assign(disk[key],value);writes++;event.returnValue=null})
 ipcMain.handle('fixture:question',()=>{questions++;return 0})
 ipcMain.handle('fixture:export',()=>{exportCalls++;return false})
 ipcMain.on('fixture:import',()=>imports++)
@@ -56,6 +57,11 @@ app.whenReady().then(async()=>{
   assert.equal(lastConfig.url,'https://other-fixture.example/v1');assert.equal(lastConfig.key,'','changing endpoint clears the saved key')
   await click('.setupAction.disabled');assert.equal(modelCalls,1,'busy requests cannot be repeated')
   resolveModels(['fixture-model-with-a-very-long-name-that-must-wrap-without-horizontal-overflow']);await pause(80)
+  failNextSave=true
+  await click('.childrenIn[role=radio]')
+  assert.equal(chatCalls,0,'a failed initial save must not start a model request')
+  assert.ok(await evaluate("document.querySelector('.rightScroll').textContent.includes('测试失败')"))
+  assert.equal(await evaluate("document.querySelectorAll('.setupAction.disabled').length"),0,'save failure must release the busy state')
   await click('.childrenIn[role=radio]');assert.equal(chatCalls,1)
   resolveChat('隔离测试回复');await pause(80);assert.ok(settings.aiModel.startsWith('fixture-model'))
   await action('关闭 AI');assert.equal(settings.aiModel,'')
@@ -70,6 +76,12 @@ app.whenReady().then(async()=>{
   assert.equal(settings.aiModel,'','a stale test cannot enable AI for another endpoint')
   await action('获取模型列表');rejectModels(new Error('隔离测试连接失败'));await pause(80)
   assert.ok(await evaluate("document.querySelector('.rightScroll').textContent.includes('获取失败')"))
+  await action('获取模型列表');resolveModels(['save-failure-model']);await pause(80)
+  await click('.childrenIn[role=radio]')
+  failNextSave=true;resolveChat('模拟保存失败前的正常回复');await pause(80)
+  assert.equal(settings.aiModel,'','a failed model-enable save must leave persisted AI disabled')
+  assert.equal(await evaluate('fixture.settings().aiModel'),'','renderer state must agree with the persisted disabled model')
+  assert.ok(await evaluate("document.querySelector('.rightScroll').textContent.includes('测试失败')"))
   const layouts=[]
   for(const [width,height]of [[1920,1040],[1000,700],[800,560],[480,360],[320,480]]){
     await resizeViewport(win,width,height)
