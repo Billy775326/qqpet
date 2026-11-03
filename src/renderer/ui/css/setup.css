@@ -219,10 +219,9 @@
   background-image: url(/pet/sysSeting/guanbi02.png);
 }
 .ui-setup .setupFootnote {
-  position: absolute;
-  left: 152px;
-  right: 20px;
-  bottom: 20px;
+  margin: 6px 7px 0;
+  padding-top: 6px;
+  border-top: 1px solid #e7d7bb;
   font-size: 11px;
   text-align: right;
   color: #94734a;

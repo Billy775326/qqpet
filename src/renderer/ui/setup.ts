@@ -303,7 +303,7 @@ export function openSetup(): void {
       if (!groups.has(name)) groups.set(name, div('setupGroup', ...(name ? [div('groupTitle', name)] : [])))
       groups.get(name)!.append(option(o, draw))
     }
-    right.replaceChildren(...groups.values())
+    right.replaceChildren(...groups.values(), div('setupFootnote', '设置会自动保存'))
     right.scrollTop = scroll
     if (focused) {
       const target = [...left.querySelectorAll<HTMLElement>('[aria-label]'), ...right.querySelectorAll<HTMLElement>('[aria-label]')]
@@ -317,7 +317,7 @@ export function openSetup(): void {
   draw()
   redraw = draw
   const dismiss = control('close', '关闭系统设置', () => close())
-  const content = div('ui-setup', div('setUp', dismiss, left, title, right, div('setupFootnote', '设置会自动保存')))
+  const content = div('ui-setup', div('setUp', dismiss, left, title, right))
   content.addEventListener('pointerdown', pointerStart, true)
   document.addEventListener('pointerup', pointerEnd)
   document.addEventListener('pointercancel', pointerEnd)
