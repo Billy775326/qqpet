@@ -163,9 +163,9 @@
   display: none;
 }
 
-/* Tint the original artwork without replacing its shapes or bevels. */
+/* Keep the original yellow minus and green plus artwork; tint only the vector controls. */
 .ui-window .chooseNum {
-  --quantity-highlight: #d64f83;
+  --quantity-highlight: #e7b235;
 }
 .ui-window .quantityButton {
   padding: 0;
@@ -174,15 +174,31 @@
   background-repeat: no-repeat;
   flex-shrink: 0;
   cursor: inherit;
-  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(140deg);
+  filter: none;
   transition: filter 120ms ease-out, transform 120ms ease-out;
 }
+.ui-window .cutUp,
+.ui-window .cutUpOver {
+  filter: grayscale(1) sepia(1) saturate(4);
+}
+.ui-window .addUp,
+.ui-window .addUpOver {
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
+}
+.ui-window .quantityButton {
+  --quantity-hover-filter: grayscale(1) sepia(1) saturate(4);
+}
+.ui-window .cut,
+.ui-window .cutUp,
+.ui-window .cutUpOver {
+  --quantity-hover-filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
+}
 .ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible) {
-  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(285deg);
+  filter: var(--quantity-hover-filter);
   transform: translateY(-1px);
 }
 .ui-window .quantityButton:not(:disabled):active {
-  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(285deg) brightness(0.85);
+  filter: var(--quantity-hover-filter) brightness(0.85);
   transform: translateY(1px) scale(0.9);
 }
 .ui-window .quantityButton:disabled {
@@ -191,7 +207,7 @@
   filter: grayscale(1);
 }
 .ui-window .quantityButton:focus-visible {
-  outline: 1px dotted #00b3eb;
+  outline: 1px dotted #9a7b25;
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
