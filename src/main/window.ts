@@ -4,15 +4,24 @@ import { join } from 'node:path'
 import { IPC, type Point } from '../shared/ipc'
 import { APP_ORIGIN } from './protocol'
 
+const SHELL_REVEAL_MARGIN_DIP = 3
 const CURSOR_INTERVAL_MS = 16
 const PAGES = process.env.ELECTRON_RENDERER_URL ?? APP_ORIGIN
 
-/** Transparent, click-through overlay covering the primary display's work area. */
+// Keep the taskbar edge reachable and absorb native rounding at fractional DPI.
+function overlayBounds(): Electron.Rectangle {
+  const area = screen.getPrimaryDisplay().workArea
+  const margin = SHELL_REVEAL_MARGIN_DIP
+  return { x: area.x + margin, y: area.y + margin, width: Math.max(1, area.width - margin * 2), height: Math.max(1, area.height - margin * 2) }
+}
+
+/** Transparent, click-through overlay inside the primary display's work area. */
 export function createPetWindow(): BrowserWindow {
   const win = new BrowserWindow({
-    ...screen.getPrimaryDisplay().workArea,
+    ...overlayBounds(),
     show: false,
     frame: false,
+    thickFrame: false,
     transparent: true,
     hasShadow: false,
     resizable: false,
@@ -57,7 +66,7 @@ export function createPetWindow(): BrowserWindow {
 
   const workArea = (): void => {
     if (win.isDestroyed()) return
-    const area = screen.getPrimaryDisplay().workArea, box = win.getBounds()
+    const area = overlayBounds(), box = win.getBounds()
     if (['x', 'y', 'width', 'height'].some(key => area[key as keyof typeof area] !== box[key as keyof typeof box])) win.setBounds(area)
   }
   screen.on('display-metrics-changed', workArea)

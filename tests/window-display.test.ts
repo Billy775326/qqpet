@@ -49,25 +49,25 @@ test('pet overlay follows taskbar work-area changes and releases display listene
     })
     const module = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'))
     win = module.createPetWindow()
-    assert.deepEqual(win!.getBounds(), area)
+    assert.deepEqual(win!.getBounds(), { x: 3, y: 3, width: 1914, height: 1034 })
 
     // A hidden bottom taskbar releases its reserved work-area strip.
     area = { x: 0, y: 0, width: 1920, height: 1080 }
     screen.emit('display-metrics-changed', {}, {}, ['workArea'])
-    assert.deepEqual(win!.getBounds(), area)
+    assert.deepEqual(win!.getBounds(), { x: 3, y: 3, width: 1914, height: 1074 })
 
     // Showing it again restores the reservation.
     area = { x: 0, y: 0, width: 1920, height: 1040 }
     screen.emit('display-metrics-changed', {}, {}, ['workArea'])
-    assert.deepEqual(win!.getBounds(), area)
+    assert.deepEqual(win!.getBounds(), { x: 3, y: 3, width: 1914, height: 1034 })
 
     // Primary-display changes can also move the origin or reserve a side.
     area = { x: 48, y: 0, width: 1232, height: 720 }
     screen.emit('display-added', {}, {})
-    assert.deepEqual(win!.getBounds(), area)
+    assert.deepEqual(win!.getBounds(), { x: 51, y: 3, width: 1226, height: 714 })
     area = { x: 0, y: 40, width: 1280, height: 680 }
     screen.emit('display-removed', {}, {})
-    assert.deepEqual(win!.getBounds(), area)
+    assert.deepEqual(win!.getBounds(), { x: 3, y: 43, width: 1274, height: 674 })
 
     const closedBounds = win!.getBounds()
     win!.close()

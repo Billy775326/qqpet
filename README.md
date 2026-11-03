@@ -103,7 +103,11 @@ npm run typecheck
 npm run test:ui
 ```
 
-界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口并使用当前屏幕缩放，校验实际渲染尺寸，处理 Windows 分数缩放下的原生窗口取整。mini 测试额外模拟 100%、125%、150%、175% 和 200% 的设备缩放。这些测试覆盖指定的视口和交互路径，完整的多屏与任务栏自动隐藏实测仍需单独进行。
+界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口与设备缩放，并校验实际渲染尺寸。`display-matrix` 覆盖 1280×720、1366×768、1920×1080、2560×1440、3840×2160、3440×1440、2560×1080、1080×1920 八种物理尺寸，100%、125%、150%、175%、200%、250%、300% 七档缩放，以及任务栏隐藏和四边保留 48 DIP 的工作区；覆盖层另外保留 3 DIP 边带。五类界面共 1,400 组组合，报告保存在 `dist/display-matrix-results.json`。这是渲染器与工作区模拟验证，不能代替所有真实显示器与混合 DPI 多屏实测。
+
+可单独运行显示矩阵：`npm run test:ui -- display-matrix`。设置 `QQPET_DISPLAY_VIEWS` 为逗号分隔的 `menu,setup,shop,controls,mini` 子集，可缩小诊断范围。
+
+Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `npm run test:taskbar -- --allow-taskbar-changes`。脚本会短暂切换当前桌面的任务栏常显、自动隐藏与鼠标唤出，使用隔离透明窗口运行生产窗口逻辑，并在结束时恢复原自动隐藏状态与鼠标位置。报告为 `dist/desktop-workarea-results.json`；普通单元测试和界面测试不切换系统任务栏设置。此项只验证实际连接的主屏及当前系统缩放。
 
 ## 构建
 

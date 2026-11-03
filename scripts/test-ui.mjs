@@ -18,6 +18,7 @@ await prepareShop()
 const { prepareMenu } = await import('../tests/ui/prepare-menu.mjs')
 await prepareMenu()
 const suites = JSON.parse(readFileSync(join(fixture, 'suites.json'), 'utf8'))
+if (!Array.isArray(suites) || suites.some(suite => typeof suite !== 'string')) throw Error('UI suite manifest must contain only suite names')
 let executable, packaged = false
 if (process.env.QQPET_TEST_ELECTRON_RUNTIME) {
   executable = resolve(process.env.QQPET_TEST_ELECTRON_RUNTIME)
@@ -40,7 +41,7 @@ for (const suite of suites.filter(suite => !selected.length || selected.includes
     const child = spawn(executable, [...(packaged ? [] : [fixture]), `--suite=${suite}`], { cwd: root, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
     child.stdout.pipe(process.stdout)
     child.stderr.pipe(process.stderr)
-    const timeout = setTimeout(() => { child.kill(); fail(Error(`UI suite timed out: ${suite}`)) }, 90000)
+    const timeout = setTimeout(() => { child.kill(); fail(Error(`UI suite timed out: ${suite}`)) }, suite === 'display-matrix' ? 300000 : 90000)
     child.once('error', error => { clearTimeout(timeout); fail(error) })
     child.once('exit', code => { clearTimeout(timeout); code === 0 ? done() : fail(Error(`UI suite failed: ${suite} (${code})`)) })
   })

@@ -176,11 +176,11 @@ function place(): void {
   const edgeDistance=Math.min(silhouette.left,innerWidth-silhouette.right);
   const previousVertical=control.dataset.layout==="vertical";
   const nearSide=edgeDistance<=(previousVertical?LOCAL_SIDE_EXIT:LOCAL_SIDE_ENTER);
-  const columnFits=length*normalScale<=innerHeight-2*EDGE;
   const rowFits=length*normalScale<=innerWidth-2*EDGE;
   const flyoutHeight=Math.max(0,...Array.from(menus.querySelectorAll<HTMLElement>(".childrenMenu"),e=>e.scrollHeight));
   const expandedFits=Math.max(body.top-EDGE,innerHeight-EDGE-body.bottom)>=(LOCAL_CONTROL_ITEM+flyoutHeight+LOCAL_FLYOUT_GAP+LOCAL_PET_CONTROL_GAP)*normalScale;
-  const vertical=columnFits&&(nearSide||!rowFits||!expandedFits);
+  // Columns are scaled to the work area below, including on short displays.
+  const vertical=nearSide||!rowFits||!expandedFits;
   control.dataset.layout=vertical?"vertical":"horizontal";
   control.classList.toggle("verticalControls",vertical);
   const width=open?list?.offsetWidth||BAR_WIDTH:menus.offsetWidth;
