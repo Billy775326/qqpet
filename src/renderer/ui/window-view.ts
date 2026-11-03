@@ -5,10 +5,10 @@ import { button, div, img } from './dom'
 
 interface Dialog {
   title?: string
-  msg: string
+  msg: string | (() => string)
   goods?: Pick<Good, 'url' | 'name'>[]
-  /** Shows a quantity picker from 1 to max (initially max). */
-  max?: number
+  /** Quantity range 1..max (initially max); a live limit of 0 disables purchasing. */
+  max?: number | (() => number)
   /** OK button; without it OK just closes. `num` is the picked quantity. */
   ok?: (close: () => void, num: number) => void
   /** The sweetheart skin. */
@@ -20,10 +20,13 @@ let closeCurrent = (): void => {}
 /** The original's single "WindowView" alert: opening one replaces the previous. */
 export function windowView(d: Dialog): void {
   closeCurrent()
-  let num = d.max ?? 1
+  const limit = (): number => typeof d.max === 'function' ? d.max() : d.max ?? 1
+  let num = limit()
   const count = div('content', String(num))
-
-  const main = div('main', div('msg', d.msg))
+  const message = div('msg', typeof d.msg === 'function' ? d.msg() : d.msg)
+  const main = div('main', message)
+  let submit: HTMLDivElement
+  let refreshQuantity = (): void => {}
   if (d.goods?.length)
     main.append(
       div(
@@ -36,13 +39,15 @@ export function windowView(d: Dialog): void {
       ),
     )
   if (d.max !== undefined) {
-    const max = d.max
     const controls: { element: HTMLButtonElement; delta: number }[] = []
     const step = (delta: number): void => {
-      num = Math.min(Math.max(num + delta, 1), max)
+      const max = limit()
+      num = max > 0 ? Math.min(Math.max(num + delta, 1), max) : 0
       count.textContent = String(num)
       for (const { element, delta } of controls) element.disabled = delta < 0 ? num <= 1 : num >= max
+      submit?.setAttribute('aria-disabled', String(max <= 0))
     }
+    refreshQuantity = (): void => step(0)
     const adjust = (cls: string, delta: number, label: string): HTMLButtonElement => {
       const element = document.createElement('button')
       element.type = 'button'
@@ -57,6 +62,7 @@ export function windowView(d: Dialog): void {
       // Quantity controls must not start dragging the surrounding frame.
       element.addEventListener('pointerdown', (event) => event.stopPropagation())
       element.addEventListener('click', () => {
+        refreshQuantity()
         if (element.disabled) return
         const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
         if (!reducedMotion) {
@@ -93,10 +99,31 @@ export function windowView(d: Dialog): void {
   }
 
   const view = div(d.sweet ? 'windowView sweetHeart' : 'windowView', ...(d.title ? [div('title', d.title)] : []), main)
-  const close = openFrame(div('ui-window', view), d.sweet ? 'pet/windowTip/sweetHeart/sweetHeart.png' : 'pet/windowTip/alert/bg.png')
+  const closeFrame = openFrame(div('ui-window', view), d.sweet ? 'pet/windowTip/sweetHeart/sweetHeart.png' : 'pet/windowTip/alert/bg.png')
+  let refresher: ReturnType<typeof setInterval> | undefined
+  const close = (): void => {
+    if (refresher !== undefined) clearInterval(refresher)
+    closeFrame()
+  }
   closeCurrent = close
-  view.append(
-    button('windowViewBut', close),
-    button('windowViewButSubmit', () => (d.ok ? d.ok(close, num) : close())),
-  )
+  const refresh = (): void => {
+    refreshQuantity()
+    if (typeof d.msg === 'function') message.textContent = d.msg()
+  }
+  submit = button('windowViewButSubmit', () => {
+    const selected = num
+    refresh()
+    // A changed live limit requires reviewing the new quantity before confirming.
+    if (d.max !== undefined && (num < 1 || num !== selected)) return
+    if (d.ok) d.ok(close, num)
+    else close()
+  })
+  view.append(button('windowViewBut', close), submit)
+  refresh()
+  if (typeof d.max === 'function' || typeof d.msg === 'function') {
+    refresher = setInterval(() => {
+      if (!view.isConnected) return close()
+      refresh()
+    }, 1000)
+  }
 }

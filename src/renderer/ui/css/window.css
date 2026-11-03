@@ -240,3 +240,12 @@
     transition: none;
   }
 }
+
+.ui-window .msg {
+  white-space: pre-line;
+}
+.ui-window .windowViewButSubmit[aria-disabled='true'] {
+  opacity: 0.35;
+  filter: grayscale(1);
+  pointer-events: none;
+}

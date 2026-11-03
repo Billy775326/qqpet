@@ -1,3 +1,4 @@
+import { sweetHeartCapacity } from '../../shared/sweetheart'
 import { resetFish } from './fishing'
 import { info, setInfo } from './store'
 
@@ -44,7 +45,11 @@ export function openPinkDiamond(days: number): void {
 
 /** Books sweetheart for `days` more, from today's 06:00 when none is booked, and switches it on. */
 export function addSweetHeart(days: number): void {
-  setInfo('sweetHeartOverTime', (info.sweetHeartOverTime || dayStart()) + days * DAY)
+  const now = Date.now() / 1000
+  if (!Number.isInteger(days) || days < 1 || days > sweetHeartCapacity(info.sweetHeartOverTime, now).availableDays)
+    throw new RangeError('Sweetheart remaining time cannot exceed 30 days')
+  const base = info.sweetHeartOverTime > now ? info.sweetHeartOverTime : dayStart(now)
+  setInfo('sweetHeartOverTime', base + days * DAY)
   setInfo('sweetHeart', true)
 }
 

@@ -1,12 +1,11 @@
+import { sweetHeartCapacity } from '../../shared/sweetheart'
 import { elapsed, stopTask } from '../pet/activity'
 import { durationText, goodOf, type TimedType } from '../pet/data/goods'
-import { pay } from '../pet/items'
 import { speak } from '../pet/pet'
 import { activity, growthPerMinute, info, onInfoChange, save, setInfo } from '../pet/store'
-import { addSweetHeart } from '../pet/vip'
+import { openSweetHeartPurchase } from './sweetheart'
 import { openGoods } from './control'
 import './css/state.css'
-import { formatDate } from './date'
 import { button, div, img } from './dom'
 import { frame } from './frame'
 import { openPetInfo } from './petinfo'
@@ -57,19 +56,7 @@ export function status(): (Node | string)[] {
 
 /** Buying sweetheart days, or switching a booked one on and off. */
 function sweetHeart(): void {
-  if (!info.sweetHeartOverTime) {
-    return windowView({
-      msg: '托管费用：300元宝/一天',
-      max: 30,
-      sweet: true,
-      ok: (close, n) => {
-        close()
-        if (!pay(300 * n)) return
-        addSweetHeart(n)
-        speak({ s: `[host],贴心宝贝${formatDate(info.sweetHeartOverTime)}过期，我真是太爱你了！~`, now: true }, 'speak')
-      },
-    })
-  }
+  if (!sweetHeartCapacity(info.sweetHeartOverTime).remainingDays) return openSweetHeartPurchase()
   const on = !info.sweetHeart
   windowView({
     title: '贴心宝贝',
@@ -104,6 +91,9 @@ function render(): void {
     return [Object.assign(img('groupIcons', g.url), { title })]
   })
   const heart = div('sweetHeart')
+  const { remainingDays, availableDays } = sweetHeartCapacity(info.sweetHeartOverTime)
+  heart.title = remainingDays ? `剩余约${remainingDays}天，点击续费（最多${availableDays}天）` : '点击开通贴心宝贝'
+  heart.addEventListener('click', openSweetHeartPurchase)
   heart.style.backgroundImage = `url(pet/stateInfo/${info.sweetHeart ? 'h_up' : 'h_down'}.png)`
   const toggleNums = (): void => {
     showNums = !showNums
