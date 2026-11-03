@@ -103,20 +103,6 @@
   margin-left: 5px;
   background-size: 100% 100%;
 }
-.ui-window .cutUp {
-  background-image: url(/pet/shppingMall/cut.svg);
-  width: 18px;
-  height: 18px;
-  background-size: 100% 100%;
-  margin-right: 5px;
-}
-.ui-window .addUp {
-  background-image: url(/pet/shppingMall/add.svg);
-  width: 18px;
-  height: 18px;
-  margin-left: 5px;
-  background-size: 100% 100%;
-}
 .ui-window .cutUpOver {
   background-image: url(/pet/shppingMall/left.svg);
   width: 18px;
@@ -163,43 +149,44 @@
   display: none;
 }
 
-/* Keep the original yellow minus and green plus artwork; tint only the vector controls. */
+/* Reuse the original image controls with green normal and yellow hover states. */
 .ui-window .chooseNum {
   --quantity-highlight: #e7b235;
 }
 .ui-window .quantityButton {
+  position: relative;
   padding: 0;
   border: 0;
   background-color: transparent;
   background-repeat: no-repeat;
   flex-shrink: 0;
   cursor: inherit;
-  filter: none;
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
   transition: filter 120ms ease-out, transform 120ms ease-out;
 }
-.ui-window .cutUp,
-.ui-window .cutUpOver {
-  filter: grayscale(1) sepia(1) saturate(4);
-}
-.ui-window .addUp,
-.ui-window .addUpOver {
-  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
-}
-.ui-window .quantityButton {
-  --quantity-hover-filter: grayscale(1) sepia(1) saturate(4);
-}
-.ui-window .cut,
-.ui-window .cutUp,
-.ui-window .cutUpOver {
-  --quantity-hover-filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
-}
 .ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible) {
-  filter: var(--quantity-hover-filter);
+  filter: grayscale(1) sepia(1) saturate(4);
   transform: translateY(-1px);
 }
 .ui-window .quantityButton:not(:disabled):active {
-  filter: var(--quantity-hover-filter) brightness(0.85);
+  filter: grayscale(1) sepia(1) saturate(4) brightness(0.85);
   transform: translateY(1px) scale(0.9);
+}
+.ui-window .quantityStepHint {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+.ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible) .quantityStepHint {
+  opacity: 1;
+  visibility: visible;
 }
 .ui-window .quantityButton:disabled {
   opacity: 0.35;
@@ -214,5 +201,8 @@
   .ui-window .quantityButton {
     transition: none;
     transform: none !important;
+  }
+  .ui-window .quantityStepHint {
+    transition: none;
   }
 }
