@@ -80,7 +80,7 @@ app.whenReady().then(async () => {
     assert.equal(await value(), 10)
     await click('.cutUpOver')
     assert.equal(await value(), 1, 'subtracting ten clamps to minimum')
-    await pause(230)
+    await pause(350)
     assert.deepEqual(await state(), [true, true, false, false])
     assert.equal((await hintState('cutUpOver')).visible, 'hidden', 'disabled arrows never show active hints')
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".cutUpOver")).transform'), 'none')
@@ -119,22 +119,36 @@ app.whenReady().then(async () => {
     results.push({ sweet, tenStepArrows: true, singleSteps: true, bounds: true, submit: true, originalArtwork: true })
   }
 
+  const iconTint = async cls => {
+    const rect = await evaluate('(()=>{const r=document.querySelector(".' + cls + '").getBoundingClientRect();return{x:Math.floor(r.x),y:Math.floor(r.y),width:Math.ceil(r.width),height:Math.ceil(r.height)}})()')
+    const pixels = (await win.webContents.capturePage(rect)).toBitmap()
+    let red = 0, green = 0, count = 0
+    // Sample the green/yellow icon pixels, excluding white highlights and the pink dialog.
+    for (let i = 0; i < pixels.length; i += 4) {
+      const blue = pixels[i], g = pixels[i + 1], r = pixels[i + 2]
+      if (blue >= Math.min(r, g) * 0.8 || Math.max(r, g) - blue <= 40) continue
+      red += r; green += g; count++
+    }
+    assert.ok(count > 0, 'the original icon must be visible')
+    return { red, green }
+  }
+
   const expected = { cutUpOver: 10, cut: 19, add: 21, addUpOver: 30 }
-  let yellowHover
   for (const [cls, after] of Object.entries(expected)) {
     await open(30, true)
     await click('.cutUpOver')
     await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 })
     await pause(230)
-    const baseTints = await evaluate('[...document.querySelectorAll(".quantityButton")].map(e=>getComputedStyle(e).filter)')
-    assert.equal(new Set(baseTints).size, 1, 'enabled controls share the green base tint')
+    const baseTints = await evaluate('[...document.querySelectorAll(".quantityButton")].map(e=>getComputedStyle(e,"::before").filter)')
+    const normalTint = await iconTint(cls)
+    assert.ok(normalTint.green > normalTint.red, 'every original icon remains green in its normal state')
     assert.equal(await value(), 20)
     const point = await move('.' + cls)
     await pause(150)
-    const hoverTint = await evaluate('getComputedStyle(document.querySelector(".' + cls + '")).filter')
-    assert.notEqual(hoverTint, baseTints[0])
-    yellowHover ??= hoverTint
-    assert.equal(hoverTint, yellowHover, 'every button uses the same yellow hover state')
+    const hoverTint = await evaluate('getComputedStyle(document.querySelector(".' + cls + '"),"::before").filter')
+    assert.notEqual(hoverTint, baseTints[selectors.indexOf(cls)])
+    const yellowTint = await iconTint(cls)
+    assert.ok(yellowTint.red > yellowTint.green, 'every original icon becomes yellow on hover')
     assert.equal(await value(), 20, 'hover does not change quantity')
     const hint = await hintState(cls)
     if (hint) {
@@ -147,7 +161,7 @@ app.whenReady().then(async () => {
     await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 })
     await pause(150)
     assert.equal(await value(), 20, 'press commits only on release')
-    const pressed = await evaluate('(()=>{const s=getComputedStyle(document.querySelector(".' + cls + '"));return{filter:s.filter,transform:s.transform}})()')
+    const pressed = await evaluate('(()=>{const s=getComputedStyle(document.querySelector(".' + cls + '"));return{filter:getComputedStyle(document.querySelector(".' + cls + '"),"::before").filter,transform:s.transform}})()')
     assert.notEqual(pressed.filter, hoverTint)
     assert.notEqual(pressed.transform, 'none')
     await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 })

@@ -149,28 +149,57 @@
   display: none;
 }
 
-/* Reuse the original image controls with green normal and yellow hover states. */
+/* Preserve the original highlights and shadows while changing only icon hue. */
 .ui-window .chooseNum {
   --quantity-highlight: #e7b235;
 }
 .ui-window .quantityButton {
   position: relative;
+  appearance: none;
   padding: 0;
   border: 0;
   background-color: transparent;
   background-repeat: no-repeat;
+  background-size: 0 0;
   flex-shrink: 0;
   cursor: inherit;
-  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(35deg);
-  transition: filter 120ms ease-out, transform 120ms ease-out;
+  transition: transform 120ms ease-out;
+}
+.ui-window .quantityButton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: inherit;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  filter: hue-rotate(var(--quantity-normal-hue));
+  transition: filter 120ms ease-out;
+  pointer-events: none;
+}
+.ui-window .cut {
+  --quantity-normal-hue: 45deg;
+  --quantity-hover-hue: 0deg;
+}
+.ui-window .add {
+  --quantity-normal-hue: 0deg;
+  --quantity-hover-hue: -35deg;
+}
+.ui-window .cutUpOver,
+.ui-window .addUpOver {
+  --quantity-normal-hue: -115deg;
+  --quantity-hover-hue: -135deg;
 }
 .ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible) {
-  filter: grayscale(1) sepia(1) saturate(4);
   transform: translateY(-1px);
 }
+.ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible)::before {
+  filter: hue-rotate(var(--quantity-hover-hue));
+}
 .ui-window .quantityButton:not(:disabled):active {
-  filter: grayscale(1) sepia(1) saturate(4) brightness(0.85);
   transform: translateY(1px) scale(0.9);
+}
+.ui-window .quantityButton:not(:disabled):active::before {
+  filter: hue-rotate(var(--quantity-hover-hue)) brightness(0.85);
 }
 .ui-window .quantityStepHint {
   position: absolute;
@@ -179,6 +208,7 @@
   width: 20px;
   height: 20px;
   transform: translateX(-50%);
+  filter: grayscale(1) sepia(1) saturate(4);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -191,7 +221,10 @@
 .ui-window .quantityButton:disabled {
   opacity: 0.35;
   transition: none;
+}
+.ui-window .quantityButton:disabled::before {
   filter: grayscale(1);
+  transition: none;
 }
 .ui-window .quantityButton:focus-visible {
   outline: 1px dotted #9a7b25;
@@ -202,6 +235,7 @@
     transition: none;
     transform: none !important;
   }
+  .ui-window .quantityButton::before,
   .ui-window .quantityStepHint {
     transition: none;
   }
