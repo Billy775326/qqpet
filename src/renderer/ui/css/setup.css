@@ -1,5 +1,7 @@
 .setupFrame .backgroundImage {
-  background-size: 100% 100%;
+  /* Compress the original button footer without stretching the content panels. */
+  background-image: none !important;
+  border-image: url(/pet/sysSeting/ditu.png) 32 14 45 14 fill / 32px 14px 18px 14px / 0 stretch;
 }
 .ui-setup .setUp {
   width: 480px;
@@ -12,7 +14,7 @@
   position: absolute;
   left: 18px;
   top: 45px;
-  bottom: 65px;
+  bottom: 26px;
   width: 120px;
   gap: 7px;
 }
@@ -49,7 +51,7 @@
   left: 152px;
   right: 20px;
   top: 77px;
-  bottom: 65px;
+  bottom: 26px;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;

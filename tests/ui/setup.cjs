@@ -75,16 +75,20 @@ app.whenReady().then(async()=>{
     await resizeViewport(win,width,height)
     for(const name of ['全局设置','存档','工具','AI','关于']){
       await tab(name)
-      const state=await evaluate(`(()=>{const e=document.querySelector('.ui-setup'),r=e.getBoundingClientRect(),panel=e.querySelector('.rightScroll');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,scroll:panel.scrollWidth,client:panel.clientWidth,frame:getComputedStyle(e.closest('.backgroundImage')).backgroundImage}})()`)
+      const state=await evaluate(`(()=>{const e=document.querySelector('.ui-setup'),r=e.getBoundingClientRect(),panel=e.querySelector('.rightScroll');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,scroll:panel.scrollWidth,client:panel.clientWidth,footer:getComputedStyle(panel).bottom,frame:getComputedStyle(e.closest('.backgroundImage')).borderImageSource}})()`)
       assert.ok(state.x>=7.5&&state.y>=7.5&&state.right<=width-7.5&&state.bottom<=height-7.5,'settings must stay inside the viewport')
       assert.ok(state.scroll<=state.client+1,'settings text must wrap instead of overflowing horizontally')
       assert.ok(state.frame.includes('sysSeting/ditu.png'),'retain the original settings skin')
-      assert.ok(await evaluate("(async()=>{const image=new Image();image.src=getComputedStyle(document.querySelector('.setupFrame .backgroundImage')).backgroundImage.slice(5,-2);await image.decode();return image.naturalWidth>0})()"),'settings artwork must actually load')
+      assert.equal(state.footer,'26px','content must end at the frame border without reserving the removed button footer')
+      assert.ok(await evaluate("(async()=>{const image=new Image();image.src=getComputedStyle(document.querySelector('.setupFrame .backgroundImage')).borderImageSource.slice(5,-2);await image.decode();return image.naturalWidth>0})()"),'settings artwork must actually load')
       assert.equal(await evaluate("document.querySelectorAll('.lm_once[aria-selected=true]').length"),1)
       layouts.push({width,height,tab:name,status:'passed'})
     }
   }
   await resizeViewport(win,1000,700);await tab('全局设置');writeFileSync('dist/setup-global.png',(await win.webContents.capturePage()).toPNG())
+  const footerGap=await evaluate(`(()=>{const panel=document.querySelector('.rightScroll');panel.scrollTop=panel.scrollHeight;const last=panel.querySelector('.setupFootnote').getBoundingClientRect(),rect=panel.getBoundingClientRect();return (rect.bottom-last.bottom)*panel.clientHeight/rect.height})()`)
+  assert.ok(footerGap>=0&&footerGap<=6,'the final save hint must reach the end without empty scroll rows')
+  writeFileSync('dist/setup-global-bottom.png',(await win.webContents.capturePage()).toPNG())
   await tab('AI');writeFileSync('dist/setup-ai.png',(await win.webContents.capturePage()).toPNG())
   await action('获取模型列表');await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
   resolveModels(['closed-result']);await pause(80);assert.equal(await evaluate("document.querySelectorAll('.ui-setup').length"),0)
