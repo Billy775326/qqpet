@@ -6,11 +6,12 @@ export async function prepareShop() {
   const entry = `
     import {openShop} from './shop';
     import {openSetup} from './setup';
-    import {info,setInfo} from '../pet/store';
+    import {info,setInfo,save} from '../pet/store';
     window.fixture={openShop,openSetup,
       closeShop:()=>document.querySelector('.ui-shop .close')?.click(),
       closeSetup:()=>document.querySelector('.ui-setup .close')?.click(),
       balance:()=>info.yb,setBalance:yb=>setInfo('yb',yb),
+      settings:()=>({...save.settings}),
       retainSubmit:()=>window.staleSubmit=document.querySelector('.localRecharge .windowViewButSubmit')};
   `
   const stub = `
