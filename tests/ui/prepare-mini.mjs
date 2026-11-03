@@ -59,6 +59,7 @@ export const pay=()=>{};
 export const useItem=()=>{};
 export const speak=()=>{};
 export const openPinkDiamond=()=>{};
+export const openPinkDiamondPurchase=()=>{},openSweetHeartPurchase=()=>{};
 export const formatDate=()=>{};
 export const openEmail=()=>{};
 export const openFarm=()=>{};

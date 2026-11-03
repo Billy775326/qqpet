@@ -30,7 +30,7 @@ function settle(today: number): void {
 /** Opens pink diamond for `days` from today's 06:00, or extends a running one. */
 export function openPinkDiamond(days: number): void {
   const today = dayStart()
-  const extend = info.pinkDiamond
+  const extend = info.PDiamondExpirationDate > today
   if (extend) {
     setInfo('PDiamondExpirationDate', info.PDiamondExpirationDate + days * DAY)
   } else {

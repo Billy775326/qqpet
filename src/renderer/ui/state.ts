@@ -9,6 +9,7 @@ import './css/state.css'
 import { button, div, img } from './dom'
 import { frame } from './frame'
 import { openPetInfo } from './petinfo'
+import { openPinkDiamondPurchase } from './pink-diamond'
 import { progress } from './progress'
 import { windowView } from './window-view'
 
@@ -81,7 +82,8 @@ function bar(label: string, n: number, m: number, onClick: () => void, text?: st
 function render(): void {
   if (!panel) return
   const c = save.petComputedlInfo
-  const diamond = div('pinkDiamond')
+  const diamond = button('pinkDiamond', openPinkDiamondPurchase)
+  diamond.title = '点击开通或续费粉钻'
   diamond.style.backgroundImage = `url(pet/info/${info.pinkDiamond ? 'u' : 'n'}${info.PDiamondLevel || 1}.svg)`
   const timed = Object.entries(save.selfGoodUseOption).flatMap(([type, t]) => {
     if (!t) return []

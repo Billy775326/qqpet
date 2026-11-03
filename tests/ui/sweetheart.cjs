@@ -12,8 +12,9 @@ app.setPath('sessionData', profile)
 app.setAppLogsPath(join(profile, 'logs'))
 let disk = {
   settings: { hd: false, paused: false }, activeOption: { work: null, study: null, trip: null, ill: null, die: null },
-  petInfo: { name: '隔离宠物', sex: 'GG', growth: 0, hunger: 1000, clean: 1000, mood: 1000, health: 5, yb: 100000, sweetHeart: false, sweetHeartOverTime: 0, onLineTime: 0, onlineDataTime: 0 },
+  petInfo: { name: '隔离宠物', host: '测试主人', birthDay:1700000000,intel:0,strong:0,charm:0,PDgrowth:0,PDiamondLevel:1,PDgrowthValue:0,PDgrowthValue_next:100,PDiamondBeginDate:0,PDiamondExpirationDate:0,pinkDiamond:false, sex: 'GG', growth: 0, hunger: 1000, clean: 1000, mood: 1000, health: 5, yb: 100000, sweetHeart: false, sweetHeartOverTime: 0, onLineTime: 0, onlineDataTime: 0 },
   petComputedlInfo: { level: 1, hungerMax: 1100, cleanMax: 1100, moodMax: 1000, upGrowth: 0, nextGrowth: 100 },
+  studyInfo: {}, gameSaveDatas: {travel_china_num:0,ddw:0,yyds:0},
   selfGoodUseOption: { background: null },
 }
 ipcMain.handle('fixture:load', () => structuredClone(disk))

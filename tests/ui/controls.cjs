@@ -63,7 +63,7 @@ app.whenReady().then(async () => {
           assert.ok(Math.abs(hover.items[j].x-baseline.items[j].x)<.2&&Math.abs(hover.items[j].y-baseline.items[j].y)<.2,name+' hovering moved another control')
           assert.ok(hover.icons[j].width<=32.1&&hover.icons[j].height<=32.1,name+' icon spills beyond its hit box')
         }
-        const index=[0,2,3,4].indexOf(i)
+        const index=[0,1,2,3,4].indexOf(i)
         if(index>=0){
           const child=hover.children[index]
           fits(child,width,height,name+' flyout '+i)
@@ -90,6 +90,17 @@ app.whenReady().then(async () => {
     }
     console.log('Adaptive controls checked at',width,height)
   }
+  await resizeViewport(win,800,560)
+  await win.webContents.executeJavaScript('fixture.position(300,250)')
+  await forceHover('.menuItem:nth-child(2)',true)
+  assert.deepEqual(await win.webContents.executeJavaScript(`[...document.querySelectorAll('.menuItem:nth-child(2) .childrenMenuLabel')].map(e=>e.textContent)`),['粉钻充值','贴心宝贝','打开商城'])
+  assert.deepEqual(await win.webContents.executeJavaScript('fixture.actions()'),[],'hovering the parent must not purchase anything')
+  for(const [index,action] of [[1,'openPinkDiamondPurchase'],[2,'openSweetHeartPurchase'],[3,'openShop']]){
+    await win.webContents.executeJavaScript('document.querySelector(".menuItem:nth-child(2) .childrenMenuItem:nth-child('+index+')").click()')
+    assert.equal((await win.webContents.executeJavaScript('fixture.actions()')).at(-1),action)
+  }
+  await forceHover('.menuItem:nth-child(2)',false)
+
   // Inspect real artwork in an isolated fixture, with a marked pet silhouette.
   await resizeViewport(win,720,500)
   await win.webContents.executeJavaScript(`fixture.position(0,177);(()=>{const b=fixture.state().action,e=document.createElement('div');e.textContent='动画画布范围';Object.assign(e.style,{position:'absolute',left:b.left+'px',top:b.top+'px',width:b.width+'px',height:b.height+'px',border:'1px dashed #888',color:'#666',fontSize:'10px'});document.body.append(e)})()`)

@@ -6,6 +6,8 @@ export async function prepareSweetHeart() {
   const entry = `
     import {openSweetHeartPurchase} from './sweetheart';
     import {openState} from './state';
+    import {openPinkDiamondPurchase} from './pink-diamond';
+    import {openPetInfo} from './petinfo';
     import {info,setInfo} from '../pet/store';
     import {addSweetHeart,dayStart} from '../pet/vip';
     import {sweetHeartCapacity} from '../../shared/sweetheart';
@@ -15,21 +17,23 @@ export async function prepareSweetHeart() {
     window.fixtureNow=Date.now();
     Date.now=()=>window.fixtureNow;
     window.fixture={
-      open:openSweetHeartPurchase,openState,addSweetHeart,timerCount:()=>timers.size,
+      open:openSweetHeartPurchase,openState,openPink:openPinkDiamondPurchase,openPetInfo,addSweetHeart,timerCount:()=>timers.size,
       reset:(expires,balance=100000,on=true)=>{setInfo('sweetHeartOverTime',expires);setInfo('yb',balance);setInfo('sweetHeart',on)},
+      resetPink:(patch)=>Object.entries(patch).forEach(([k,v])=>setInfo(k,v)),
+      pinkState:()=>({expires:info.PDiamondExpirationDate,began:info.PDiamondBeginDate,balance:info.yb,growth:info.PDgrowth,active:info.pinkDiamond,fishResets:window.fishResets||0}),
       state:()=>({expires:info.sweetHeartOverTime,balance:info.yb,on:info.sweetHeart}),
       now:()=>Date.now()/1000,advance:seconds=>{window.fixtureNow+=seconds*1000},
       base:()=>dayStart(),capacity:()=>sweetHeartCapacity(info.sweetHeartOverTime),
     };
   `
   const stub = `
-    export const resetFish=()=>{},speak=speech=>{window.lastSpeech=speech.s};
+    export const resetFish=()=>{window.fishResets=(window.fishResets||0)+1},diploma=()=>null,speak=speech=>{window.lastSpeech=speech.s};
     export const elapsed=()=>0,stopTask=()=>null,openGoods=()=>{},openPetInfo=()=>{};
     export const goodOf=()=>({name:'测试商品',url:''}),durationText=()=>'';
     export const floatMood=async()=>{},DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
     export const addGood=()=>{},hasGood=()=>false,startTimed=()=>{},takeGood=()=>false,addCount=()=>{};
   `
-  const allowed = ['./sweetheart','./state','../pet/store','./store','../pet/vip','../pet/items','../../shared/sweetheart','./box','./dom','../ui/dom','./window-view','../ui/window-view','./frame','./progress','./date','./level']
+  const allowed = ['./pink-diamond','../../shared/pink-diamond','./petinfo','./sweetheart','./state','../pet/store','./store','../pet/vip','../pet/items','../../shared/sweetheart','./box','./dom','../ui/dom','./window-view','../ui/window-view','./frame','./progress','./date','./level']
   const result = await build({
     stdin: { contents: entry, resolveDir: resolve('src/renderer/ui'), loader: 'ts' },
     bundle: true, write: false, format: 'esm',
@@ -41,6 +45,6 @@ export async function prepareSweetHeart() {
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub }))
     } }],
   })
-  const css = ['base.css','style.css','ui/css/window.css','ui/css/state.css','ui/css/frame.css','ui/css/progress.css'].map(p=>readFileSync('src/renderer/'+p,'utf8')).join('\n')
+  const css = ['base.css','style.css','ui/css/window.css','ui/css/state.css','ui/css/frame.css','ui/css/progress.css','ui/css/petinfo.css'].map(p=>readFileSync('src/renderer/'+p,'utf8')).join('\n')
   writeFileSync('dist/ui-sweetheart-prepared.json',JSON.stringify({code:result.outputFiles[0].text,css}))
 }

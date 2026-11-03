@@ -7,6 +7,8 @@ import { formatDate } from './date'
 import { button, div, img, touch, typeable } from './dom'
 import { progress } from './progress'
 import { age, status } from './state'
+import { openPinkDiamondPurchase } from './pink-diamond'
+import { openSweetHeartPurchase } from './sweetheart'
 
 let close = (): void => {}
 
@@ -67,16 +69,24 @@ export function openPetInfo(): void {
 
   const diamond = div('pinkDiamond')
   diamond.style.backgroundImage = `url(pet/info/${info.pinkDiamond ? 'u' : 'n'}${info.PDiamondLevel || 1}.svg)`
-  const pd = div(
+  const pdGrowth = div('pinkDiamondUP px8')
+  const pd = button(
     'pinkDiamondMain fcc',
+    openPinkDiamondPurchase,
     diamond,
-    div(info.pinkDiamond ? 'pinkDiamondUP px8 pinkDiamondUPs' : 'pinkDiamondUP px8', `${info.PDgrowth} / ${info.PDgrowthValue_next}`),
+    pdGrowth,
   )
-  pd.title = info.pinkDiamond ? `当前成长速度：${info.PDgrowthValue}/每天,到期时间：${formatDate(info.PDiamondExpirationDate)}` : '当前未开通粉钻'
-
-  const heart = div('sweetHeart')
-  heart.style.backgroundImage = `url(pet/stateInfo/${info.sweetHeart ? 'h_up' : 'h_down'}.png)`
-  heart.title = info.sweetHeartOverTime ? `过期时间：${formatDate(info.sweetHeartOverTime)}` : '当前未开启贴心宝贝'
+  const heart = button('sweetHeart', openSweetHeartPurchase)
+  const refreshServices = (): void => {
+    const active = info.PDiamondExpirationDate > Date.now() / 1000
+    diamond.style.backgroundImage = `url(pet/info/${active ? 'u' : 'n'}${info.PDiamondLevel || 1}.svg)`
+    pdGrowth.classList.toggle('pinkDiamondUPs', active)
+    pdGrowth.textContent = `${info.PDgrowth} / ${info.PDgrowthValue_next}`
+    pd.title = active ? `粉钻${info.PDiamondLevel}级，到期：${formatDate(info.PDiamondExpirationDate)}；点击续费` : '点击开通粉钻'
+    heart.style.backgroundImage = `url(pet/stateInfo/${info.sweetHeart ? 'h_up' : 'h_down'}.png)`
+    heart.title = info.sweetHeartOverTime > Date.now() / 1000 ? `到期：${formatDate(info.sweetHeartOverTime)}；点击续费` : '点击开通贴心宝贝'
+  }
+  refreshServices()
 
   const lucky = Object.assign(document.createElement('span'), { title: '幸运值越高，旅游奇遇，抽奖概率越高', textContent: `幸运值：${luck()}` })
   const tired = Object.assign(document.createElement('span'), { title: '疲倦值越高，宠越容易生病', textContent: `疲倦值：${fatigue()}` })
@@ -88,15 +98,20 @@ export function openPetInfo(): void {
   const diplomas = Object.entries(save.studyInfo)
     .map(([k, v]) => diploma(k, v))
     .filter(Boolean)
+  const balance = small('yb', '元宝：', info.yb)
   const stats = div('stats')
   fillStats(stats)
-  const timer = setInterval(() => fillStats(stats), 1000)
+  const timer = setInterval(() => {
+    fillStats(stats)
+    refreshServices()
+    balance.querySelector('.smallValue')!.textContent = String(info.yb)
+  }, 1000)
 
   const main = div(
     'petInfoMain focusPress',
     button('close', () => close()),
     head,
-    ...(info.PDiamondLevel ? [pd] : []),
+    pd,
     title,
     div('service fcc', heart),
     div('luckyFatigue toe fcc', lucky, '\u00a0\u00a0\u00a0\u00a0\u00a0', tired),
@@ -105,7 +120,7 @@ export function openPetInfo(): void {
     small('sex', '性别：', info.sex),
     birthday,
     small('level', '等级：', save.petComputedlInfo.level),
-    small('yb', '元宝：', info.yb),
+    balance,
     div('rightRow attributeValue', div('label', '个人能力')),
     small('intel', '智力：', info.intel),
     small('strong', '武力：', info.strong),
