@@ -5,9 +5,11 @@ import { build } from 'esbuild'
 export async function prepareShop() {
   const entry = `
     import {openShop} from './shop';
+    import {windowView} from './window-view';
     import {openSetup} from './setup';
     import {info,setInfo,save} from '../pet/store';
     window.fixture={openShop,openSetup,
+      openQuantity:(max,sweet)=>windowView({max,sweet,msg:'托管费用：300元宝/一天',ok:(close,num)=>{window.quantitySubmitted=num;close()}}),
       closeShop:()=>document.querySelector('.ui-shop .close')?.click(),
       closeSetup:()=>document.querySelector('.ui-setup .close')?.click(),
       balance:()=>info.yb,setBalance:yb=>setInfo('yb',yb),

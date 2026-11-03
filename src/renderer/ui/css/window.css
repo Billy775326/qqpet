@@ -162,3 +162,44 @@
 .ui-window .sweetHeart .title {
   display: none;
 }
+
+/* Keep the original artwork while using native disabled button behavior. */
+.ui-window .quantityButton {
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  cursor: inherit;
+}
+.ui-window .quantityButton:disabled {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.ui-window .quantityButton:focus-visible {
+  outline: 2px solid #b96e21;
+  outline-offset: 2px;
+}
+.ui-window .cutUpOver,
+.ui-window .addUpOver {
+  transition: transform 120ms ease-out, filter 120ms ease-out;
+}
+.ui-window .cutUpOver:not(:disabled):hover {
+  transform: translateX(-2px) scale(1.12);
+  filter: brightness(1.15);
+}
+.ui-window .addUpOver:not(:disabled):hover {
+  transform: translateX(2px) scale(1.12);
+  filter: brightness(1.15);
+}
+.ui-window .cutUpOver:not(:disabled):active,
+.ui-window .addUpOver:not(:disabled):active {
+  transform: scale(0.86);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-window .cutUpOver,
+  .ui-window .addUpOver {
+    transition: none;
+    transform: none !important;
+  }
+}
