@@ -43,24 +43,34 @@ export function windowView(d: Dialog): void {
       count.textContent = String(num)
       for (const { element, delta } of controls) element.disabled = delta < 0 ? num <= 1 : num >= max
     }
-    const adjust = (cls: string, delta: number, label: string): HTMLButtonElement => {
+    const adjust = (cls: string, delta: number, label: string, icon: string): HTMLButtonElement => {
       const element = document.createElement('button')
       element.type = 'button'
       element.className = `quantityButton ${cls}`
+      element.textContent = icon
       element.title = label
       element.setAttribute('aria-label', label)
       // Quantity controls must not start dragging the surrounding frame.
       element.addEventListener('pointerdown', (event) => event.stopPropagation())
       element.addEventListener('click', () => {
         if (element.disabled) return
-        if (!Number.isFinite(delta) && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (!reducedMotion) {
           element.animate([
             { transform: 'translateX(0) scale(1)' },
-            { transform: `translateX(${Math.sign(delta) * 3}px) scale(0.86)`, offset: 0.4 },
+            { transform: `translateX(${Number.isFinite(delta) ? 0 : Math.sign(delta) * 3}px) scale(0.86)`, offset: 0.4 },
             { transform: 'translateX(0) scale(1)' },
           ], { duration: 200, easing: 'ease-out' })
         }
         step(delta)
+        if (!reducedMotion) {
+          const style = getComputedStyle(count)
+          count.animate([
+            { color: style.color, transform: 'scale(1)' },
+            { color: style.getPropertyValue('--quantity-highlight').trim(), transform: 'scale(1.15)', offset: 0.4 },
+            { color: style.color, transform: 'scale(1)' },
+          ], { duration: 200, easing: 'ease-out' })
+        }
       })
       controls.push({ element, delta })
       return element
@@ -68,13 +78,13 @@ export function windowView(d: Dialog): void {
     main.append(
       div(
         'chooseNum fc',
-        adjust('cutUpOver', -Infinity, '选择最小数量'),
-        adjust('cutUp', -10, '减少 10'),
-        adjust('cut', -1, '减少 1'),
+        adjust('cutUpOver', -Infinity, '选择最小数量', '«'),
+        adjust('cutUp', -10, '减少 10', '−10'),
+        adjust('cut', -1, '减少 1', '−'),
         count,
-        adjust('add', 1, '增加 1'),
-        adjust('addUp', 10, '增加 10'),
-        adjust('addUpOver', Infinity, '选择最大数量'),
+        adjust('add', 1, '增加 1', '+'),
+        adjust('addUp', 10, '增加 10', '+10'),
+        adjust('addUpOver', Infinity, '选择最大数量', '»'),
       ),
     )
     step(0)

@@ -96,6 +96,47 @@ app.whenReady().then(async () => {
     await click('.windowViewBut')
     results.push({ sweet, bounds: true, animation: true, submit: true, singleQuantity: true })
   }
+
+  // Exercise the complete pointer sequence, including release outside the button.
+  const expected = { cutUpOver: 1, cutUp: 10, cut: 19, add: 21, addUp: 30, addUpOver: 30 }
+  for (const [cls, after] of Object.entries(expected)) {
+    await open(30, true)
+    await click('.cutUp')
+    await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 })
+    await pause(230)
+    const baseColors = await evaluate('[...document.querySelectorAll(".quantityButton")].map(e=>getComputedStyle(e).color)')
+    assert.equal(new Set(baseColors).size, 1, 'all enabled quantity buttons share one base color')
+    assert.equal(await value(), 20)
+    const point = await move('.' + cls)
+    await pause(150)
+    const hoverColor = await evaluate('getComputedStyle(document.querySelector(".' + cls + '")).color')
+    assert.notEqual(hoverColor, baseColors[0], 'hover uses the second color on ' + cls)
+    assert.equal(await value(), 20, 'hover alone does not change the quantity')
+    if (cls === 'add') writeFileSync('dist/quantity-hover.png', (await win.webContents.capturePage()).toPNG())
+    await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 })
+    await pause(150)
+    assert.equal(await value(), 20, 'press waits for release before committing the quantity')
+    const pressed = await evaluate('(()=>{const s=getComputedStyle(document.querySelector(".' + cls + '"));return{background:s.backgroundColor,transform:s.transform}})()')
+    assert.equal(pressed.background, hoverColor, 'press fills the button with the highlight color')
+    assert.notEqual(pressed.transform, 'none', 'press has visible motion feedback')
+    if (cls === 'add') writeFileSync('dist/quantity-pressed.png', (await win.webContents.capturePage()).toPNG())
+    await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 })
+    assert.equal(await value(), after, 'release commits exactly one quantity change')
+    assert.ok(await evaluate('document.querySelector(".' + cls + '").getAnimations().some(a=>a.effect.getKeyframes().length===3)'), 'every button plays release feedback')
+    assert.ok(await evaluate('document.querySelector(".chooseNum .content").getAnimations().length>0'), 'the updated quantity receives matching feedback')
+    if (cls === 'add') {
+      await pause(80)
+      writeFileSync('dist/quantity-updated.png', (await win.webContents.capturePage()).toPNG())
+    }
+  }
+  await open(30, true)
+  await click('.cutUp')
+  const cancelPoint = await move('.add')
+  await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', ...cancelPoint, button: 'left', clickCount: 1 })
+  await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 })
+  await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 0, y: 0, button: 'left', clickCount: 1 })
+  assert.equal(await value(), 20, 'releasing outside cancels the pending change')
+
   await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
   await open(30, true)
   await click('.cutUpOver')
@@ -123,7 +164,7 @@ app.whenReady().then(async () => {
   await click('.addUpOver')
   await pause(230)
   writeFileSync('dist/quantity-maximum.png', (await win.webContents.capturePage()).toPNG())
-  writeFileSync('dist/quantity-results.json', JSON.stringify({ results, layouts, reducedMotion: true }, null, 2))
-  console.log('Quantity picker passed:', JSON.stringify({ results, layouts, reducedMotion: true }))
+  writeFileSync('dist/quantity-results.json', JSON.stringify({ results, layouts, reducedMotion: true, colorStates: true, pointerSequence: true, cancelledPress: true }, null, 2))
+  console.log('Quantity picker passed:', JSON.stringify({ results, layouts, reducedMotion: true, colorStates: true, pointerSequence: true, cancelledPress: true }))
   app.exit(0)
 }).catch(error => { console.error(error); app.exit(1) })
