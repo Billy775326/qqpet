@@ -48,6 +48,12 @@ app.whenReady().then(async()=>{
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.ui-setup .lm_once')].map(e=>e.textContent)"),['全局设置','存档','工具','AI','关于'])
   assert.equal(await evaluate("document.querySelector('.ui-setup').textContent.includes('作弊')"),false)
   await evaluate('fixture.closeSetup();fixture.openShop()');await pause(80)
+  for(const [background,expected] of [[{id:'b0000001',left:86400},'60天'],[{id:'b0000001',left:1441},'2天'],[{id:'b0000000',left:5},null],[null,null]]){
+    await evaluate('fixture.closeShop();fixture.setBackground('+JSON.stringify(background)+');fixture.openShop()')
+    const text=await evaluate("document.querySelector('.backgroundTime')?.textContent??null")
+    if(expected===null)assert.equal(text,null,'no background must omit the remaining duration')
+    else assert.ok(text.includes(expected)&&!text.includes('分钟'),'background countdown must use remaining days')
+  }
   assert.equal(await evaluate("document.querySelectorAll('.rechargeEntry').length"),1)
   assert.equal(await evaluate("document.querySelectorAll('.rechargePlus').length"),0)
   await click('.balanceAmount')
