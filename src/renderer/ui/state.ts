@@ -1,5 +1,5 @@
 import { elapsed, stopTask } from '../pet/activity'
-import { goodOf, type TimedType } from '../pet/data/goods'
+import { durationText, goodOf, type TimedType } from '../pet/data/goods'
 import { pay } from '../pet/items'
 import { speak } from '../pet/pet'
 import { activity, growthPerMinute, info, onInfoChange, save, setInfo } from '../pet/store'
@@ -99,7 +99,9 @@ function render(): void {
   const timed = Object.entries(save.selfGoodUseOption).flatMap(([type, t]) => {
     if (!t) return []
     const g = goodOf(type as TimedType, t.id)
-    return [Object.assign(img('groupIcons', g.url), { title: `${g.name}：${g.group}*${t.left | 0}分钟` })]
+    const duration = type === 'background' ? durationText(g, t.left) : ''
+    const title = type === 'background' ? `${g.name}${duration ? `：剩余${duration}` : ''}` : `${g.name}：${g.group}*${t.left | 0}分钟`
+    return [Object.assign(img('groupIcons', g.url), { title })]
   })
   const heart = div('sweetHeart')
   heart.style.backgroundImage = `url(pet/stateInfo/${info.sweetHeart ? 'h_up' : 'h_down'}.png)`

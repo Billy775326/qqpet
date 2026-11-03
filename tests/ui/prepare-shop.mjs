@@ -6,16 +6,18 @@ export async function prepareShop() {
   const entry = `
     import {openShop} from './shop';
     import {openSetup} from './setup';
-    import {info,setInfo} from '../pet/store';
+    import {info,setInfo,save} from '../pet/store';
     window.fixture={openShop,openSetup,
       closeShop:()=>document.querySelector('.ui-shop .close')?.click(),
       closeSetup:()=>document.querySelector('.ui-setup .close')?.click(),
       balance:()=>info.yb,setBalance:yb=>setInfo('yb',yb),
+      setBackground:background=>{save.selfGoodUseOption.background=background},
       retainSubmit:()=>window.staleSubmit=document.querySelector('.localRecharge .windowViewButSubmit')};
   `
   const stub = `
     export const speak=speech=>{window.lastSpeech=speech.s},readopt=()=>{},setHidden=()=>{},setFaceClick=()=>{},weatherNow=async()=>'';
     export const goodOf=(type,id)=>({type,id,name:'测试商品',num:1,price:12,url:'pet/img_res/food/102010001.gif'});
+    export {durationText} from '../pet/data/goods.ts';
     export const TYPE_NAMES={food:'食物',clean:'日用品',medicine:'药品',toy:'玩具',nums:'属性',background:'背景'};
     import {save} from '../pet/store';
     export const listGoods=(type,page,size)=>({list:save.selfGoodDatas[type].slice((page-1)*size,page*size).map(g=>({...goodOf(type,g.id),num:g.num})),totalPage:Math.max(1,Math.ceil(save.selfGoodDatas[type].length/size))}),describe=()=>['隔离商品'],onGoodsChange=()=>{};
@@ -27,7 +29,7 @@ export async function prepareShop() {
     bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'isolated-shop-source', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (['./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
+        if (['./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../pet/data/goods.ts', './goods.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub, resolveDir: resolve('src/renderer/ui') }))

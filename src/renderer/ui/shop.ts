@@ -1,4 +1,4 @@
-import { describe, goodOf, TYPE_NAMES, type Good, type GoodType } from '../pet/data/goods'
+import { describe, durationText, goodOf, TYPE_NAMES, type Good, type GoodType } from '../pet/data/goods'
 import SHOP from '../pet/data/shop.json'
 import { listGoods, onGoodsChange } from '../pet/goods'
 import { buy, price, useItem } from '../pet/items'
@@ -144,12 +144,16 @@ export function openShop(): void {
     mine.page = Math.min(mine.page, Math.max(Math.ceil(save.selfGoodDatas[type].length / 6), 1))
     const { list, totalPage } = listGoods(type, mine.page, 6)
     const bg = save.selfGoodUseOption.background
+    const backgroundDuration = bg ? durationText(goodOf('background', bg.id), bg.left) : ''
     left.replaceChildren(
       div(
         'leftSelfHead',
         div(
           'leftSelfHeadBk por',
-          ...(bg ? [div('backgroundTime', ` 背景剩余时间： ${bg.left | 0}分钟 `), img('backgroundImg', goodOf('background', bg.id).url)] : []),
+          ...(bg ? [
+            ...(backgroundDuration ? [div('backgroundTime', ` 背景剩余时间： ${backgroundDuration} `)] : []),
+            img('backgroundImg', goodOf('background', bg.id).url),
+          ] : []),
           div('petImgBox fcc', img('petImg penguin_breathe', avatar())),
         ),
       ),

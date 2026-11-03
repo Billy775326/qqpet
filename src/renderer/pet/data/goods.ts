@@ -46,7 +46,16 @@ export interface Good {
   num: number
 }
 
-const TABLE = GOODS as unknown as Record<GoodType, Record<string, Omit<Good, 'num'>>>
+const MINUTES_PER_DAY = 24 * 60
+// Background catalogue values are days. Normalize once so active effects and
+// existing save files continue using minutes, like the other timed goods.
+const TABLE = {
+  ...GOODS,
+  background: Object.fromEntries(Object.entries(GOODS.background).map(([key, g]) => [key, {
+    ...g,
+    useTimeing: g.id === 'b0000000' ? g.useTimeing : g.useTimeing * MINUTES_PER_DAY,
+  }])),
+} as unknown as Record<GoodType, Record<string, Omit<Good, 'num'>>>
 
 export const goodOf = (type: GoodType, id: string, num = 1): Good => ({
   ...TABLE[type][`_${id}`],
@@ -82,17 +91,24 @@ export const attrs = (g: Good): string =>
     .map(([k, v]) => ` ${k}+${v}`)
     .join('')
 
+/** Backgrounds use whole remaining days; other effects keep their minute units. */
+export function durationText(g: Good, minutes = g.useTimeing): string {
+  if (!minutes || minutes <= 0 || g.type === 'background' && g.id === 'b0000000') return ''
+  return g.type === 'background' ? `${Math.ceil(minutes / MINUTES_PER_DAY)}天` : `${minutes}分钟`
+}
+
 /** Tooltip lines of a good, as in the original's item panels. */
 export function describe(g: Good): string[] {
   if (g.type === 'nums') return [`获得${g.name}*${g.value}`, g.desc ?? '']
   const a = attrs(g)
+  const duration = durationText(g)
   const lines = [
     g.desc,
     g.hunger && `饥饿：${g.hunger}`,
     g.clean && `清洁：${g.clean}`,
     a && `属性：${a}`,
     g.group && `成长值：${g.group}`,
-    g.useTimeing && `持续时间：${g.useTimeing}分钟`,
+    duration && `持续时间：${duration}`,
   ]
   return lines.filter((l): l is string => Boolean(l))
 }
