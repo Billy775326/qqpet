@@ -89,6 +89,48 @@
   text-align: center;
   width: 100%;
 }
+.ui-window .cut {
+  background-image: url(/pet/shppingMall/bk/shoping_07.gif);
+  width: 18px;
+  height: 18px;
+  background-size: 100% 100%;
+  margin-right: 5px;
+}
+.ui-window .add {
+  background-image: url(/pet/shppingMall/bk/shoping_09.gif);
+  width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  background-size: 100% 100%;
+}
+.ui-window .cutUp {
+  background-image: url(/pet/shppingMall/cut.svg);
+  width: 18px;
+  height: 18px;
+  background-size: 100% 100%;
+  margin-right: 5px;
+}
+.ui-window .addUp {
+  background-image: url(/pet/shppingMall/add.svg);
+  width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  background-size: 100% 100%;
+}
+.ui-window .cutUpOver {
+  background-image: url(/pet/shppingMall/left.svg);
+  width: 18px;
+  height: 18px;
+  background-size: 100% 100%;
+  margin-right: 5px;
+}
+.ui-window .addUpOver {
+  background-image: url(/pet/shppingMall/right.svg);
+  width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  background-size: 100% 100%;
+}
 .ui-window .content {
   color: #3a3a3a97;
   width: 80px;
@@ -121,61 +163,35 @@
   display: none;
 }
 
-/* A shared two-color palette keeps every quantity action visually consistent. */
+/* Tint the original artwork without replacing its shapes or bevels. */
 .ui-window .chooseNum {
-  --quantity-color: #b36a1b;
-  --quantity-highlight: #c74372;
-}
-.ui-window .chooseNum .content {
-  width: 80px;
-  color: var(--quantity-color);
-  font-variant-numeric: tabular-nums;
+  --quantity-highlight: #d64f83;
 }
 .ui-window .quantityButton {
-  width: 24px;
-  height: 24px;
   padding: 0;
-  border: 1px solid currentColor;
-  border-radius: 5px;
-  background: #fff7ec;
-  color: var(--quantity-color);
-  font: 700 12px/22px Arial, sans-serif;
-  text-align: center;
+  border: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
   flex-shrink: 0;
   cursor: inherit;
-  transition: color 120ms ease-out, background-color 120ms ease-out, transform 120ms ease-out;
-}
-.ui-window .cutUpOver,
-.ui-window .cutUp,
-.ui-window .cut {
-  margin-right: 3px;
-}
-.ui-window .addUpOver,
-.ui-window .addUp,
-.ui-window .add {
-  margin-left: 3px;
-}
-.ui-window .cutUpOver,
-.ui-window .addUpOver {
-  font-size: 20px;
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(140deg);
+  transition: filter 120ms ease-out, transform 120ms ease-out;
 }
 .ui-window .quantityButton:not(:disabled):is(:hover, :focus-visible) {
-  color: var(--quantity-highlight);
-  background-color: #fff0f5;
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(285deg);
   transform: translateY(-1px);
 }
 .ui-window .quantityButton:not(:disabled):active {
-  color: #fff;
-  border-color: var(--quantity-highlight);
-  background-color: var(--quantity-highlight);
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(285deg) brightness(0.85);
   transform: translateY(1px) scale(0.9);
 }
 .ui-window .quantityButton:disabled {
   opacity: 0.35;
+  transition: none;
   filter: grayscale(1);
 }
 .ui-window .quantityButton:focus-visible {
-  outline: 2px solid var(--quantity-highlight);
+  outline: 1px dotted #00b3eb;
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {

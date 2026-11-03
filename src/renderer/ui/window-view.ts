@@ -43,11 +43,10 @@ export function windowView(d: Dialog): void {
       count.textContent = String(num)
       for (const { element, delta } of controls) element.disabled = delta < 0 ? num <= 1 : num >= max
     }
-    const adjust = (cls: string, delta: number, label: string, icon: string): HTMLButtonElement => {
+    const adjust = (cls: string, delta: number, label: string): HTMLButtonElement => {
       const element = document.createElement('button')
       element.type = 'button'
       element.className = `quantityButton ${cls}`
-      element.textContent = icon
       element.title = label
       element.setAttribute('aria-label', label)
       // Quantity controls must not start dragging the surrounding frame.
@@ -78,13 +77,13 @@ export function windowView(d: Dialog): void {
     main.append(
       div(
         'chooseNum fc',
-        adjust('cutUpOver', -Infinity, '选择最小数量', '«'),
-        adjust('cutUp', -10, '减少 10', '−10'),
-        adjust('cut', -1, '减少 1', '−'),
+        adjust('cutUpOver', -Infinity, '选择最小数量'),
+        adjust('cutUp', -10, '−10（减少 10）'),
+        adjust('cut', -1, '减少 1'),
         count,
-        adjust('add', 1, '增加 1', '+'),
-        adjust('addUp', 10, '增加 10', '+10'),
-        adjust('addUpOver', Infinity, '选择最大数量', '»'),
+        adjust('add', 1, '增加 1'),
+        adjust('addUp', 10, '+10（增加 10）'),
+        adjust('addUpOver', Infinity, '选择最大数量'),
       ),
     )
     step(0)
