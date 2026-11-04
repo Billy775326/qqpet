@@ -428,6 +428,11 @@
   flex: 0 0 20px;
   margin: 0;
 }
+/* The profile badge includes lettering; its left square contains only the heart. */
+.ui-control .childrenMenuItemIcon[src$="/stateInfo/h_up.png"] {
+  object-fit: cover;
+  object-position: left center;
+}
 .ui-control .childrenMenuLabel {
   flex: 1;
   min-width: 0;
