@@ -54,6 +54,7 @@ interface Entry {
 }
 
 const activeIcon = (n: number): string => `${ICONS}active/${n}.svg`
+const menuIcon = (icon: string): string => icon.startsWith('pet/') ? icon : ICONS + icon
 
 const inventory = (type: GoodType, icon: number, stat: Stat) => (): void =>
   openPanel({
@@ -91,9 +92,9 @@ const MENU: { name: string; icon: string; children?: Entry[]; run?: () => void }
     name: '粉钻',
     icon: 'fenzhuan.png',
     children: [
-      { name: '粉钻充值', icon: 'fenzhuan.png', run: openPinkDiamondPurchase },
-      { name: '贴心宝贝', icon: 'chongwu.png', run: openSweetHeartPurchase },
-      { name: '打开商城', icon: 'songli.png', run: openShop },
+      { name: '粉钻', icon: 'fenzhuan.png', run: openPinkDiamondPurchase },
+      { name: '贴心宝贝', icon: 'pet/stateInfo/h_up.png', run: openSweetHeartPurchase },
+      { name: '商城', icon: 'songli.png', run: openShop },
     ],
   },
   {
@@ -248,14 +249,14 @@ const icons: HTMLElement[] = []
 const menus = div(
   'menus fcc',
   ...MENU.map((g) => {
-    const icon = div('menuItemIconBox', img('menuItemIcon', ICONS + g.icon))
+    const icon = div('menuItemIconBox', img('menuItemIcon', menuIcon(g.icon)))
     icons.push(icon)
     const item = div(
       'menuItem fcc focusPress',
       div('menuTip', g.name),
       icon,
       ...(g.children
-        ? [div('childrenMenu', ...g.children.map((c) => button('childrenMenuItem fc', () => pick(c.run), img('childrenMenuItemIcon', ICONS + c.icon), div('childrenMenuLabel', c.name))))]
+        ? [div('childrenMenu', ...g.children.map((c) => button('childrenMenuItem fc', () => pick(c.run), img('childrenMenuItemIcon', menuIcon(c.icon)), div('childrenMenuLabel', c.name))))]
         : []),
     )
     item.dataset.menu = g.name

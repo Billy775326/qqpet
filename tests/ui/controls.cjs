@@ -93,7 +93,8 @@ app.whenReady().then(async () => {
   await resizeViewport(win,800,560)
   await win.webContents.executeJavaScript('fixture.position(300,250)')
   await forceHover('.menuItem:nth-child(2)',true)
-  assert.deepEqual(await win.webContents.executeJavaScript(`[...document.querySelectorAll('.menuItem:nth-child(2) .childrenMenuLabel')].map(e=>e.textContent)`),['粉钻充值','贴心宝贝','打开商城'])
+  assert.deepEqual(await win.webContents.executeJavaScript(`[...document.querySelectorAll('.menuItem:nth-child(2) .childrenMenuLabel')].map(e=>e.textContent)`),['粉钻','贴心宝贝','商城'])
+  assert.ok(await win.webContents.executeJavaScript(`(async()=>{const image=document.querySelector('.menuItem:nth-child(2) .childrenMenuItem:nth-child(2) img');await image.decode();return image.src.endsWith('/pet/stateInfo/h_up.png')&&image.naturalWidth>0})()`),'sweetheart menu uses the original profile heart artwork')
   assert.deepEqual(await win.webContents.executeJavaScript('fixture.actions()'),[],'hovering the parent must not purchase anything')
   for(const [index,action] of [[1,'openPinkDiamondPurchase'],[2,'openSweetHeartPurchase'],[3,'openShop']]){
     await win.webContents.executeJavaScript('document.querySelector(".menuItem:nth-child(2) .childrenMenuItem:nth-child('+index+')").click()')
