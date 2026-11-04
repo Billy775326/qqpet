@@ -3,6 +3,19 @@
   border-radius: 60px;
   overflow: hidden;
 }
+/* Keep the bitmap caps at their native width: flex shrink can leave a one-pixel seam. */
+.ui-progress .background_line {
+  overflow: hidden;
+}
+.ui-progress .b_left,
+.ui-progress .b_right {
+  flex-shrink: 0;
+}
+.ui-progress .b_center {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
 .ui-progress .progress .hoverNum {
   opacity: 0;
 }

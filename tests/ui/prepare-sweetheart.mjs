@@ -8,6 +8,7 @@ export async function prepareSweetHeart() {
     import {openState} from './state';
     import {openPinkDiamondPurchase} from './pink-diamond';
     import {openPetInfo} from './petinfo';
+    import {progress} from './progress';
     import {info,setInfo} from '../pet/store';
     import {addSweetHeart,dayStart} from '../pet/vip';
     import {sweetHeartCapacity} from '../../shared/sweetheart';
@@ -17,7 +18,7 @@ export async function prepareSweetHeart() {
     window.fixtureNow=Date.now();
     Date.now=()=>window.fixtureNow;
     window.fixture={
-      open:openSweetHeartPurchase,openState,openPink:openPinkDiamondPurchase,openPetInfo,addSweetHeart,timerCount:()=>timers.size,
+      open:openSweetHeartPurchase,openState,openPink:openPinkDiamondPurchase,openPetInfo,progress,addSweetHeart,timerCount:()=>timers.size,
       reset:(expires,balance=100000,on=true)=>{setInfo('sweetHeartOverTime',expires);setInfo('yb',balance);setInfo('sweetHeart',on)},
       resetPink:(patch)=>Object.entries(patch).forEach(([k,v])=>setInfo(k,v)),
       pinkState:()=>({expires:info.PDiamondExpirationDate,began:info.PDiamondBeginDate,balance:info.yb,growth:info.PDgrowth,active:info.pinkDiamond,fishResets:window.fishResets||0}),
