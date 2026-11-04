@@ -27,12 +27,13 @@ app.whenReady().then(() => {
   }
 
   const win = createPetWindow()
+  const priority = menuPriority(win)
   const tray = createPetTray((click) => {
+    if (click.kind === 'state' && getSave().havePet) priority.reveal('state')
     const b = win.getBounds()
     win.webContents.send(IPC.trayClick, click.x === undefined ? click : { ...click, x: click.x - b.x, y: click.y! - b.y })
   })
   app.on('before-quit', () => tray.destroy())
-  const priority = menuPriority(win)
   const valid = (event: Electron.IpcMainEvent, on: unknown): on is boolean =>
     event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && typeof on === 'boolean'
   ipcMain.on(IPC.showTrayMenu, (event, on: unknown) => {
@@ -40,6 +41,7 @@ app.whenReady().then(() => {
     if (on) tray.openMenu(); else tray.closeMenu()
   })
   ipcMain.on(IPC.setMenuOpen, (event, on: unknown) => { if (valid(event, on)) priority.setOpen(on) })
+  ipcMain.on(IPC.setStatusOpen, (event, on: unknown) => { if (valid(event, on)) priority.setOpen(on, 'state') })
 
   let copied = ''
   setInterval(async () => {

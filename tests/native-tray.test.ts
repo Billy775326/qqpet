@@ -46,3 +46,22 @@ test('HTML menu priority is temporary and repeated opens retain the original win
   priority.setOpen(false)
   assert.ok(focusable && onTop, 'preexisting user window state must survive a menu cycle')
 })
+
+test('status and context popups share priority until the last owner closes', () => {
+  let focusable = false, onTop = false, raised = 0
+  const priority = menuPriority({
+    isFocusable: () => focusable, isAlwaysOnTop: () => onTop,
+    setFocusable: value => { focusable = value }, setAlwaysOnTop: value => { onTop = value },
+    show() {}, moveTop() { raised++ }, focus() {},
+  })
+  priority.reveal('state')
+  priority.reveal('state')
+  assert.equal(raised, 2, 'a second tray click must rise above a newly opened shell popup')
+  priority.setOpen(true, 'menu')
+  priority.setOpen(false, 'state')
+  assert.ok(priority.open && focusable && onTop)
+  priority.setOpen(false, 'menu')
+  assert.equal(priority.open, false)
+  assert.equal(focusable, false)
+  assert.equal(onTop, false)
+})

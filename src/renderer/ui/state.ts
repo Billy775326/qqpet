@@ -129,8 +129,20 @@ function render(): void {
 }
 
 export function closeState(): void {
+  if (panel) window.qqpet.setStatusOpen?.(false)
+  document.removeEventListener('pointerdown', dismissState)
+  document.removeEventListener('keydown', stateKey)
+  window.removeEventListener('blur', closeState)
   panel?.parentElement!.remove()
   panel = null
+}
+
+function dismissState(event: PointerEvent): void {
+  if (panel && event.target instanceof Node && !panel.contains(event.target)) closeState()
+}
+
+function stateKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') closeState()
 }
 
 /** Opens the status panel from tray point (x, y), toward the screen's middle. */
@@ -144,6 +156,10 @@ export function openState(x: number, y: number): void {
   else panel.style.bottom = `${Math.max(innerHeight - y, 0)}px`
   document.body.appendChild(div('ui-state', panel))
   render()
+  window.qqpet.setStatusOpen?.(true)
+  document.addEventListener('pointerdown', dismissState)
+  document.addEventListener('keydown', stateKey)
+  window.addEventListener('blur', closeState)
 }
 
 let queued = 0

@@ -236,7 +236,14 @@ function place(): void {
     const r=tip.getBoundingClientRect();
     tip.style.transform="translate("+(clamp(r.left,EDGE,innerWidth-EDGE-r.width)-r.left)/scale+"px,"+(clamp(r.top,EDGE,innerHeight-EDGE-r.height)-r.top)/scale+"px)";
   }
-  setBubbleLift(placement==="above"?Math.max(0,body.top-y):0);
+  const occupied = [(open ? list! : menus).getBoundingClientRect()];
+  for (const popup of control.querySelectorAll<HTMLElement>('.childrenMenu, .goodInfo, .menuTip')) {
+    const rect = popup.getBoundingClientRect();
+    const style = getComputedStyle(popup);
+    const visible = !popup.matches('.childrenMenu, .menuTip') || popup.parentElement!.matches(':hover');
+    if (visible && style.display !== 'none' && style.visibility !== 'hidden' && rect.width && rect.height) occupied.push(rect);
+  }
+  setBubbleLift(placement==="above"?Math.max(0,body.top-y):0, occupied);
 }
 
 /** A tap leaves its menu hovered, children shown: on touch the bar goes once a child is picked, unless it opened a goods panel. */
@@ -272,6 +279,7 @@ const menus = div(
 )
 control.appendChild(menus)
 control.addEventListener('pointerover', place)
+control.addEventListener('pointerout', () => requestAnimationFrame(place))
 control.addEventListener('pointerenter', () => clearTimeout(hideTimer))
 control.addEventListener('pointerleave', scheduleHide)
 window.addEventListener('resize', place)
