@@ -1,8 +1,9 @@
 import { petVisibleRect } from '../pet/geometry'
 import { info } from '../pet/store'
 import { SwfPlayer } from '../swf/player'
-import { bubblePosition } from '../../shared/bubble-placement'
 
+const W = 261
+const H = 183
 const SHOW_MS = 5000
 
 const el = document.createElement('div')
@@ -35,14 +36,12 @@ window.BubbleAPI = {
 const skinOf = (): number => (info.pinkDiamond ? (info.sweetHeart ? 4 : 2) : info.sweetHeart ? 3 : 1)
 
 let lift = 0
-let obstacles: readonly DOMRect[] = []
 /**
  * Room the action bar takes above the pet (0 when it is hidden or below).
  * The bar calls this whenever the pet moves or grows, so the bubble follows.
  */
-export function setBubbleLift(px: number, controls: readonly DOMRect[] = []): void {
+export function setBubbleLift(px: number): void {
   lift = px
-  obstacles = controls
   place()
 }
 
@@ -50,11 +49,10 @@ window.addEventListener('qqpet:pet-layout', place)
 
 function place(): void {
   const body = petVisibleRect()
-  const { left, top, scale } = bubblePosition(body, obstacles, innerWidth, innerHeight, lift)
+  const left = Math.max(0, Math.min((body.left + body.right - W) / 2, innerWidth - W))
+  const top = Math.max(0, Math.min(body.top < H ? body.bottom : body.top - H - lift, innerHeight - H))
   el.style.left = `${left}px`
   el.style.top = `${top}px`
-  el.style.transformOrigin = '0 0'
-  el.style.transform = `scale(${scale})`
 }
 
 export async function say(text: string, buttons: string[], onButton: (() => void)[] = []): Promise<void> {

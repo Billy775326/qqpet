@@ -29,20 +29,21 @@ app.whenReady().then(async()=>{
  const root=(await cdp('DOM.getDocument')).root.nodeId
  const hover=async(index,on)=>{const {nodeId}=await cdp('DOM.querySelector',{nodeId:root,selector:'.menuItem:nth-child('+index+')'});await cdp('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:on?['hover']:[]});await evaluate('fixture.reflow()')}
  const rects=()=>evaluate(`(()=>{const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom}};return {bubble:rect(document.querySelector('#talk')),controls:[rect(document.querySelector('.menus')),...[...document.querySelectorAll('.childrenMenu')].filter(e=>e.parentElement.matches(':hover')&&getComputedStyle(e).display!=='none').map(rect)]}})()`)
- const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))
  const cases=[]
  for(const[w,h]of[[1920,1040],[800,560],[320,480]]){
   await resizeViewport(win,w,h)
   for(const[x,y]of[[w/2,h/2],[0,30],[w-120,h-160]]){
    await evaluate('fixture.position('+x+','+y+');fixtureSay()')
    const baselineBubble=(await rects()).bubble
+   const original=await evaluate(`(()=>{const s=fixture.state(),body=s.body,y=parseFloat(document.querySelector('.control').style.top),lift=s.placement==='above'?Math.max(0,Math.max(0,s.action.top)-y):0;return {left:Math.max(0,Math.min((body.left+body.right-261)/2,innerWidth-261)),top:Math.max(0,Math.min(body.top<183?body.bottom:body.top-183-lift,innerHeight-183))}})()`)
+   assert.ok(Math.abs(baselineBubble.left-original.left)<.1&&Math.abs(baselineBubble.top-original.top)<.1,'speech retains its original pet-relative placement')
    for(const index of[1,2,3,4,5]){
     await hover(index,true)
     const boxes=await rects()
     assert.ok(boxes.bubble.left>=-.1&&boxes.bubble.top>=-.1&&boxes.bubble.right<=w+.1&&boxes.bubble.bottom<=h+.1,'speech stays inside the work area')
-    for(const control of boxes.controls)assert.equal(overlap(boxes.bubble,control),0,'speech must not cover the menu or flyout: '+JSON.stringify({w,h,x,y,index,boxes}))
+    assert.deepEqual(boxes.bubble,baselineBubble,'opening flyouts must not move the speech bubble')
     await hover(index,false)
-    assert.deepEqual((await rects()).bubble,baselineBubble,'closed flyouts must release their speech avoidance space')
+    assert.deepEqual((await rects()).bubble,baselineBubble,'closing flyouts must not move the speech bubble')
    }
    const button=await evaluate(`(()=>{const r=document.querySelector('.bubbleTestButton').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`)
    assert.equal(await evaluate(`document.elementFromPoint(${button.x},${button.y}).className`),'bubbleTestButton','speech confirmation receives input')
@@ -95,6 +96,6 @@ $tray=[PopupOrder]::FindWindow('Shell_TrayWnd',$null)
    priority.setOpen(false,'menu');assert.equal(popup.isAlwaysOnTop(),false);assert.equal(popup.isFocusable(),false)
   }finally{popup.destroy();shell.destroy()}
  }
- const report={speechCases:cases.length,flyoutCases:cases.length*5,speechButtons:true,stacking:true,statusLifecycle:true,native}
+ const report={speechCases:cases.length,flyoutCases:cases.length*5,originalPosition:true,speechButtons:true,stacking:true,statusLifecycle:true,native}
  writeFileSync('dist/popups-results.json',JSON.stringify(report,null,2));console.log('Popup priority passed:',JSON.stringify(report));app.quit()
 }).catch(error=>{console.error(error);app.exit(1)})
