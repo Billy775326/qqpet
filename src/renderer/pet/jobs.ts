@@ -118,7 +118,9 @@ export const studyGoods = (): Good[] =>
 
 export function describeStudy(g: Good): string[] {
   const a = attrs(g)
-  const lines = [g.desc, `课时：${g.classNum}`, `已学课时：${lessons(g)}`, a && `属性：${a}`, `学习时长：${g.useTime}分钟`]
+  const learned = lessons(g)
+  const exam = !g.id.startsWith('xwzj-') && learned === g.classNum ? '（准备考试）' : ''
+  const lines = [g.desc, `课时：${g.classNum}`, `已学课时：${learned}${exam}`, a && `属性：${a}`, `学习时长：${g.useTime}分钟`]
   return lines.filter((l): l is string => Boolean(l))
 }
 

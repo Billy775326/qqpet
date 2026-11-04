@@ -55,9 +55,11 @@ test('random study lines keep the original single-bubble interaction and start o
 
 test('lesson completion explains the exam and awards the diploma only after passing', async () => {
   const { state, api } = await learning(8)
+  assert.ok(api.describeStudy(api.studyGoods()[0]).includes('已学课时：8'))
   api.study(api.studyGoods()[0])
   state.tasks[0].task.end(false)
   assert.equal(state.save.studyInfo.chinese, 9)
+  assert.ok(api.describeStudy(api.studyGoods()[0]).includes('已学课时：9（准备考试）'))
   const prompt = state.messages.at(-1)!
   assert.equal(prompt.line.b, '我要考试')
   assert.match(prompt.line.s, /3题全对.*这科的学历/)
@@ -67,16 +69,24 @@ test('lesson completion explains the exam and awards the diploma only after pass
   state.exams[0].pass()
   assert.equal(state.save.studyInfo.chinese, 10)
   assert.equal(api.diploma('chinese', 10), '小学语文')
+  assert.equal(api.studyGoods()[0].id, 'zx-chinese')
+  assert.ok(api.describeStudy(api.studyGoods()[0]).includes('已学课时：0'))
   assert.match(state.messages.at(-1)!.line.s, /档案.*这科的学历/)
 })
 
 test('completed stages reopen the exam and continuing study never promises a higher diploma', async () => {
-  const exam = await learning(9)
-  assert.equal(exam.api.study(exam.api.studyGoods()[0]), false)
-  assert.equal(exam.state.tasks.length, 0)
-  assert.equal(exam.state.messages[0].line.b, '我要考试')
+  for (const [progress, lessons] of [[9, 9], [30, 20], [71, 40], [167, 95]]) {
+    const exam = await learning(progress)
+    const course = exam.api.studyGoods()[0]
+    assert.ok(exam.api.describeStudy(course).includes(`已学课时：${lessons}（准备考试）`))
+    assert.equal(exam.api.study(course), false)
+    assert.equal(exam.state.tasks.length, 0)
+    assert.equal(exam.state.messages[0].line.b, '我要考试')
+    assert.equal(exam.api.describeStudy(course).filter((line: string) => line.includes('准备考试')).length, 1)
+  }
   const continuing = await learning(168, 2)
   assert.equal(continuing.api.study(continuing.api.studyGoods()[0]), true)
   assert.match(continuing.state.messages[0].line.s, /研究生.*最高学历/)
   assert.equal(continuing.state.messages[0].hooks.ok, undefined)
+  assert.ok(continuing.api.describeStudy(continuing.api.studyGoods()[0]).includes('已学课时：0'))
 })
