@@ -432,6 +432,7 @@
 .ui-control .childrenMenuItemIcon[src$="/stateInfo/h_up.png"] {
   object-fit: cover;
   object-position: left center;
+  transform: scale(.75);
 }
 .ui-control .childrenMenuLabel {
   flex: 1;
