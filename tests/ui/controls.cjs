@@ -111,6 +111,7 @@ app.whenReady().then(async () => {
   writeFileSync('dist/source-control-fixture.png',image.toPNG())
   await forceHover('.menuItem:nth-child(1)',false)
   await forceHover('.menuItem:nth-child(2)',true)
+  await new Promise(r=>setTimeout(r,200))
   writeFileSync('dist/source-vip-control-fixture.png',(await win.webContents.capturePage()).toPNG())
   writeFileSync('dist/source-control-test-results.json',JSON.stringify({cases:results.length,checks:'full animation canvas clearance of 10 px, compact 192 px span, stable hover positions, no flyout/action overlaps, edges and center, inventory switching',results},null,2))
   console.log('Adaptive controls passed',results.length,'viewport and position combinations')
