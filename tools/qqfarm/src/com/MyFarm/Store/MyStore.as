@@ -248,21 +248,10 @@ package com.MyFarm.Store
          var k:uint = 0;
          while(k < param1.item.length())
          {
-            if(canBuy(param1.item[k]))
-            {
-               order.push(k);
-            }
+            order.push(k);
             k++;
          }
-         k = 0;
-         while(k < param1.item.length())
-         {
-            if(!canBuy(param1.item[k]))
-            {
-               order.push(k);
-            }
-            k++;
-         }
+         order.sort(compareGoods);
          var changedOrder:Boolean = !sameTab || renderedOrder != order.join(",");
          for(var position:int = 0;position < order.length;position++)
          {
@@ -364,6 +353,22 @@ package com.MyFarm.Store
       private function canBuy(param1:XML) : Boolean
       {
          return int(param1.@rank) <= rank && int(param1.@price) <= int(install._user.wealth);
+      }
+
+      private function compareGoods(first:uint, second:uint) : Number
+      {
+         var lhs:XML = currentXML.item[first];
+         var rhs:XML = currentXML.item[second];
+         // Affordability only affects appearance and purchase validation.
+         // Spending money must not move the product the player is browsing.
+         var difference:Number = Number(int(lhs.@rank) > rank) - Number(int(rhs.@rank) > rank);
+         if(difference != 0) return difference;
+         difference = int(lhs.@rank) - int(rhs.@rank);
+         if(difference != 0) return difference;
+         difference = Number(lhs.@prices) - Number(rhs.@prices);
+         if(difference != 0) return difference;
+         difference = Number(lhs.@price) - Number(rhs.@price);
+         return difference != 0 ? difference : Number(first) - Number(second);
       }
       
       private function tabChange(param1:MouseEvent) : void

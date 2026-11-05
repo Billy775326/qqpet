@@ -16,6 +16,15 @@ assert.ok(java && compiler && browser, 'Set QQPET_TEST_JAVA, QQPET_FFDEC_JAR and
 mkdirSync(resolve(root, 'dist'), { recursive: true })
 const output = mkdtempSync(resolve(root, 'dist/farm-popup-'))
 const requests = {}
+const seedXml = readFileSync(resolve(root, 'resources/pet/qqfarm/com/MyFarm/data/xml/seed.xml'), 'utf8')
+let alternateSeeds = false
+const alternateSeedXml = seedXml.replace(/<item\b[^>]*>/g, tag => {
+  if (tag.includes('object="GrapeSeed"')) return tag.replace(/prices="[^"]*"/, 'prices="30"')
+  if (tag.includes('object="StrawberrySeed"')) return tag.replace(/rank="[^"]*"/, 'rank="1"').replace(/price="[^"]*"/, 'price="5000"')
+  return tag
+})
+const seeds = [...seedXml.matchAll(/<item\b([^>]*)>/g)].map(([, attrs]) => Object.fromEntries([...attrs.matchAll(/(\w+)="([^"]*)"/g)].map(m => [m[1], m[2]])))
+const expectedNames = ['葡萄','苹果','白萝卜','桃子','胡萝卜','西瓜','香蕉','辣椒','土豆','西红柿','菠萝','茄子','豌豆','玉米','柚子','草莓','橘子','南瓜','石榴','椰子']
 let source = readFileSync(resolve(root, 'tools/qqfarm/src/com/MyFarm/FarmMain.as'), 'utf8')
 source = source.replace('import flash.display.Loader;', 'import flash.display.Loader;\n   import flash.display.DisplayObject;\n   import flash.utils.Dictionary;\n   import flash.external.ExternalInterface;\n   import flash.events.MouseEvent;')
 source = source.replace('super();', 'super();\n         ExternalInterface.addCallback("farmProbe",farmProbe);')
@@ -31,6 +40,7 @@ const server = createServer((req, res) => {
     const url = decodeURIComponent(req.url.split('?')[0])
     requests[url] = (requests[url] ?? 0) + 1
     if (url === '/') { res.setHeader('Content-Type', 'text/html'); res.end(html); return }
+    if (alternateSeeds && url === '/farm/com/MyFarm/data/xml/seed.xml') { res.setHeader('Content-Type', 'application/xml'); res.end(alternateSeedXml); return }
     let file, base
     if (url === '/farm/Farm.swf') file = resolve(output, 'probe.swf')
     else if (url === '/pet/qqfont.ttf') file = resolve(root, 'resources/pet/qqfont.ttf')
@@ -84,12 +94,14 @@ try {
   await send('Runtime.enable')
   await send('Emulation.setDeviceMetricsOverride', { width: 800, height: 650, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + '/' })
-  let ready = false
-  for (let i = 0; i < 150; i++) {
-    if (await evaluate('typeof player!=="undefined"&&typeof player.farmProbe==="function"')) if ((await probe())?.ready) { ready = true; break }
-    await pause(200)
+  const waitForFarm = async (search = '') => {
+    for (let i = 0; i < 150; i++) {
+      if (await evaluate('location.search===' + JSON.stringify(search) + '&&typeof player!=="undefined"&&typeof player.farmProbe==="function"')) if ((await probe())?.ready) return
+      await pause(200)
+    }
+    assert.fail('The real farm must finish initialization')
   }
-  assert.ok(ready, 'The real farm must finish initialization')
+  await waitForFarm()
   const measure = process.argv.includes('--measure')
   const settled = async () => {
     for (let i = 0; i < 100; i++) { const state = await probe(); if (state.count > 0 && state.shopScaleX === 1) return state; await pause(20) }
@@ -120,6 +132,7 @@ try {
   await probe('open'); await pause(900)
   const original = await probe()
   assert.ok(original.count >= 6)
+  assert.deepEqual(original.indices.map(i => seeds[i].name), expectedNames, 'Default order uses unlock level, sale unit price, purchase price and stable catalogue ties')
   if (!measure) {
     await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 215, y: 245 })
     await probe('hover', 0)
@@ -184,7 +197,11 @@ try {
     assert.equal(requests['/farm/com/MyFarm/data/xml/seed.xml'], 1, 'Seed catalogue is loaded once per farm session')
     assert.ok((requests['/farm/com/MyFarm/data/xml/props.xml'] ?? 0) <= 2, 'Completed catalogues are cached, with at most one canceled initial request')
     await probe('budget', 0); await pause(100)
-    assert.equal((await probe()).available, 0, 'External balance changes refresh affordability')
+    const emptyWallet = await probe()
+    assert.equal(emptyWallet.available, 0, 'External balance changes refresh affordability')
+    assert.deepEqual(emptyWallet.cards, bought.cards, 'Insufficient funds must not move any product')
+    assert.deepEqual(emptyWallet.indices, original.indices)
+    assert.equal(emptyWallet.scrollY, bought.scrollY, 'A balance change keeps the browsing position')
     await probe('item', 0); await pause(200)
     assert.equal((await probe()).popups[0].confirmEnabled, false)
     await probe('buy'); assert.equal((await probe()).balance, 0, 'Unavailable goods cannot be bought through a retained handler')
@@ -195,12 +212,30 @@ try {
     await probe('item', 0); await pause(200)
     assert.equal((await probe()).popups[0].confirmEnabled, true, 'A reused fertilizer dialog recovers when funds are sufficient')
     await probe('cancel'); await pause(200)
+    await probe('tab', 1); await probe('rank', 9); await pause(100)
+    const unlocked = await probe()
+    assert.equal(unlocked.available, 20, 'Level changes still update unlock availability')
+    assert.deepEqual(unlocked.indices, original.indices)
     await probe('closeShop'); await probe('warehouse'); await pause(650)
     assert.equal((await probe()).warehouseVisible, true, 'The shared scrollbar still loads in the warehouse')
     await probe('closeWarehouse'); assert.equal((await probe()).warehouseVisible, false)
   }
+  // Distinct sale prices and an unlocked but unaffordable seed prove the third
+  // key takes precedence over purchase price and that funds do not group items.
+  alternateSeeds = true
+  await send('Network.enable')
+  await send('Network.setCacheDisabled', { cacheDisabled: true })
+  await send('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + '/?sort=fixture' })
+  await waitForFarm('?sort=fixture')
+  await probe('open'); await settled()
+  const alternate = await probe()
+  assert.deepEqual(alternate.indices.slice(0, 4).map(i => seeds[i].name), ['苹果', '白萝卜', '草莓', '葡萄'])
+  await probe('item', 2); await pause(200)
+  assert.equal((await probe()).popups[0].confirmEnabled, false, 'An unlocked expensive seed keeps its position but cannot be bought')
+  await probe('cancel'); await pause(200); await probe('budget', 0); await pause(100)
+  assert.deepEqual((await probe()).indices, alternate.indices)
   assert.deepEqual(errors, [], 'The farm must not log runtime errors')
-  writeFileSync(resolve(output, 'results.json'), JSON.stringify({ metrics, results, earlyCancel: true, singlePurchase: true, cleanup: true }, null, 2))
+  writeFileSync(resolve(output, 'results.json'), JSON.stringify({ metrics, results, earlyCancel: true, singlePurchase: true, cleanup: true, stableSorting: true }, null, 2))
   console.log('Farm popup regression passed:', output)
   await send('Browser.close')
 } finally {

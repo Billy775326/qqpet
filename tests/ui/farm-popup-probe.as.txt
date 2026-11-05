@@ -9,6 +9,7 @@
          if(action == "closeShop") face._shop.close_btn.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
          if(action == "tab") face._shop["tab" + index].dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
          if(action == "budget") face._user.wealth = String(index);
+         if(action == "rank") face._user.rank = String(index);
          if(action == "wheel") face._shop.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_WHEEL,true,false,0,0,null,false,false,false,false,index));
          if(action == "warehouse") face._title.getChildByName("ButtonWarehouse").dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
          if(action == "closeWarehouse") face._warehouse.close_btn.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
@@ -16,6 +17,7 @@
          if(action == "item" && container != null) container.getChildAt(index).dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
          if(action == "hover" && container != null) container.getChildAt(index).dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER,true));
          var cards:Array = [];
+         var indices:Array = [];
          var availableCards:int = 0;
          if(container != null)
          {
@@ -24,6 +26,7 @@
                var card:DisplayObject = container.getChildAt(cardIndex);
                if(farmProbeIds[card] == undefined) farmProbeIds[card] = ++farmProbeCreated;
                cards.push(farmProbeIds[card]);
+               indices.push(int(card.name));
                if(card.hasOwnProperty("available") && Object(card).available) availableCards++;
             }
          }
@@ -47,5 +50,5 @@
          }
          var label:DisplayObject = face._shop.getChildByName("shopStatus");
          var hover:Sprite = stage.getChildByName("shopHint") as Sprite;
-         return {ready:true,count:container == null ? 0 : container.numChildren,popups:popups,balance:Number(face._user.wealth),children:stage.numChildren,successTips:successTips,cards:cards,created:farmProbeCreated,scrollY:container == null ? 0 : container.y,shopScaleX:face._shop.scaleX,shopVisible:face._shop.visible,status:label == null ? "" : Object(label).text,hint:hover != null,hintText:hover == null ? "" : Object(hover.getChildAt(0)).text,available:availableCards,warehouseVisible:face._warehouse.visible};
+         return {ready:true,count:container == null ? 0 : container.numChildren,popups:popups,balance:Number(face._user.wealth),children:stage.numChildren,successTips:successTips,cards:cards,indices:indices,created:farmProbeCreated,scrollY:container == null ? 0 : container.y,shopScaleX:face._shop.scaleX,shopVisible:face._shop.visible,status:label == null ? "" : Object(label).text,hint:hover != null,hintText:hover == null ? "" : Object(hover.getChildAt(0)).text,available:availableCards,warehouseVisible:face._warehouse.visible};
       }
