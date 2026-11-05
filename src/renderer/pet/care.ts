@@ -40,8 +40,9 @@ function careItem(need: CareNeed): Good | undefined {
   return candidate && buy(candidate, 1, true) ? { ...candidate, num: 1 } : undefined
 }
 
-/** Uses a configured supply through the normal item/animation path. */
+/** Every automatic caller shares the same trigger limit before using or buying supplies. */
 export function performCare(need: CareNeed): boolean {
+  if (info[need.stat] / save.petComputedlInfo[`${need.stat}Max`] >= (save.settings[need.percent] ?? 60) / 100) return false
   const g = careItem(need)
   if (!g) return false
   useItem(g, false, `[host]，我可以自己${need.act}哦！~~使用了：${g.name}`)
@@ -52,7 +53,6 @@ export function performCare(need: CareNeed): boolean {
 export function selfCare(): boolean {
   if (!info.sweetHeart || info.sweetHeartOverTime <= Date.now() / 1000 || save.settings.paused || info.health <= 0) return false
   for (const need of CARE_NEEDS) {
-    if (info[need.stat] / save.petComputedlInfo[`${need.stat}Max`] >= (save.settings[need.percent] ?? 60) / 100) continue
     if (performCare(need)) return true
   }
   return false

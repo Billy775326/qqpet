@@ -31,11 +31,13 @@ export function openCareSettings(): void {
   }
   const section = (title: string, ...children: (Node | string)[]): HTMLElement => div('careSection', div('careLabel', title), ...children)
   const details = div('careDetails')
+  const restocking = div('careRestocking')
   const tabs = div('careTabs')
   tabs.setAttribute('role', 'tablist')
   tabs.setAttribute('aria-label', '托管类别')
   const selectTab = (type: string): void => {
     details.dataset.type = type
+    restocking.hidden = type === 'daily'
     for (const tab of tabs.children) tab.setAttribute('aria-selected', String((tab as HTMLElement).dataset.type === type))
   }
   const render = (need: CareNeed): void => {
@@ -94,8 +96,8 @@ export function openCareSettings(): void {
     label.className = 'careToggle'
     label.append(daily, div('', '自动完成每日任务并领奖'))
     details.replaceChildren(
-      section('今日任务', label, div('careHint', '空闲时自动喂食、清洁、玩耍、逗乐，或开始学习、打工、旅游；完成后领取今日任务奖励。')),
-      div('careHint careDailyHint', '按正常耗时执行，用品选择和购买沿用托管设置。小游戏与升学考试仍需手动操作。'),
+      section('今日任务', label, div('careHint', '空闲时按需喂食、清洁、玩耍，或自动逗乐、学习、打工、旅游；完成后领取今日任务奖励。')),
+      div('careHint careDailyHint', '喂养任务遵守对应限额、用品选择和补货设置，未到限额时等待。小游戏与升学考试仍需手动操作。'),
       div('careHint careDailyHint', '已有活动或正在操作界面时不启动新任务。关闭后停止新增任务，已开始的活动正常结束。'),
     )
   })
@@ -113,6 +115,7 @@ export function openCareSettings(): void {
   const toggle = document.createElement('label')
   toggle.className = 'careToggle'
   toggle.append(autoBuy, div('', '自动购买托管用品'))
+  restocking.append(section('库存不足时', toggle, div('careHint', '适用于食物、清洁用品和玩具。开启后缺货按需买一份；自动选择时购买当前类别可买的最低单价用品。')))
   const error = div('careError')
   error.setAttribute('role', 'alert')
   const content = div(
@@ -120,7 +123,7 @@ export function openCareSettings(): void {
     div('careHeader', div('careTitle', '托管设置'), action('关闭', 'careClose', () => close())),
     tabs,
     details,
-    section('库存不足时', toggle, div('careHint', '适用于食物、清洁用品和玩具。开启后缺货按需买一份；自动选择时购买当前类别可买的最低单价用品。')),
+    restocking,
     div('careHint careNotice', '设置仅在贴心宝贝已开启且未到期时生效。'),
     error,
     div('careActions', action('取消', 'careCancel', () => close()), action('保存设置', 'careSave', () => {

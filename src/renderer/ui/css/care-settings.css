@@ -55,7 +55,7 @@
   cursor: inherit;
 }
 .careSection + .careSection {margin-top: 12px}
-.careDetails + .careSection {margin-top: 12px}
+.careRestocking {margin-top: 12px}
 .careDailyHint {margin-top: 7px}
 .careLabel {margin-bottom: 5px; font-weight: 700}
 .careHint {color: #946d60; font-size: 11px; line-height: 1.6}

@@ -60,6 +60,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('select option[value="10013006"]').disabled`), false, 'owned food remains usable even when not sold')
   await click('.careTab[data-type=daily]')
   assert.equal(await evaluate('document.querySelector("[data-setting=careAutoDaily]").checked'), false)
+  assert.equal(await evaluate('document.querySelector("[data-setting=careAutoBuy]").getClientRects().length'), 0, 'the task tab has no purchase control')
   assert.match(await evaluate('document.querySelector(".careDetails").textContent'), /小游戏与升学考试仍需手动/)
   await click('.careTab[data-type=food]')
   await draft(75, '102010003', true)
@@ -125,6 +126,7 @@ app.whenReady().then(async () => {
     await resizeViewport(win, width, height, scale)
     for (const type of ['food', 'clean', 'toy', 'daily']) {
       await click('.careTab[data-type=' + type + ']')
+      assert.equal(await evaluate('document.querySelector("[data-setting=careAutoBuy]").getClientRects().length>0'), type !== 'daily', 'restocking is shown only on supply tabs')
       const selectors = ['.sweetHeartCareSettings', '.careTabs', '.careDetails', '.careActions', ...(type === 'daily' ? ['[data-setting=careAutoDaily]'] : ['.careRange', '.sweetHeartCareSettings select'])]
       const boxes = await evaluate(JSON.stringify(selectors) + '.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
       for (const b of boxes) {

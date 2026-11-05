@@ -62,6 +62,7 @@ test('automatic daily completion defaults off and persists only after explicit c
 
 test('daily feeding consumes a real configured item and rewards are claimed exactly once', async () => {
   const { save, api, run } = await dailyCare(['Eat'])
+  save.petInfo.hunger = 599
   save.settings.careFoodId = '102010001'
   save.selfGoodDatas.food = ['_102010001*2']
   assert.equal(run(), true)
@@ -77,6 +78,7 @@ test('daily feeding consumes a real configured item and rewards are claimed exac
 
 test('daily supplies honor the purchase switch and skip blocked needs without fake progress', async () => {
   const { save, api, state, run } = await dailyCare(['Eat', 'Clean'])
+  Object.assign(save.petInfo, { hunger: 599, clean: 599 })
   save.settings.careFoodId = '102010001'
   save.selfGoodDatas.food = []
   save.settings.careCleanId = '102020003'
@@ -90,6 +92,36 @@ test('daily supplies honor the purchase switch and skip blocked needs without fa
   assert.equal(api.count('Eat'), 1)
   assert.equal(api.count('Clean'), 0, 'one round cannot consume multiple categories')
   assert.equal(state.alerts, 0)
+})
+
+test('daily supply tasks respect each trigger limit before consuming stock or buying', async () => {
+  const cases = [
+    ['Eat', 'hunger', 'food', 'careHungerPercent', 'careFoodId', '102010001', 5],
+    ['Clean', 'clean', 'clean', 'careCleanPercent', 'careCleanId', '102020003', 5],
+    ['Toy', 'mood', 'toy', 'careMoodPercent', 'careToyId', 't0002', 20],
+  ] as const
+  for (const [counter, stat, type, limit, itemKey, id, cost] of cases) for (const owned of [false, true]) {
+    const { save, api, run } = await dailyCare([counter])
+    save.petComputedlInfo.level = 5
+    save.settings.careAutoBuy = true
+    save.settings[limit] = 70
+    save.settings[itemKey] = id
+    save.petInfo[stat] = 700
+    save.selfGoodDatas[type] = owned ? [`_${id}*2`] : []
+    const balance = save.petInfo.yb
+    assert.equal(run(), false, 'the boundary must not use or purchase supplies')
+    assert.equal(api.count(counter), 0)
+    assert.equal(save.petInfo.yb, balance)
+    assert.deepEqual(Array.from(save.selfGoodDatas[type]), owned ? [`_${id}*2`] : [])
+    save.petInfo[stat] = 900
+    assert.equal(run(), false, 'a sufficient stat must not be lowered to meet a task count')
+    assert.equal(save.petInfo.yb, balance)
+    save.petInfo[stat] = 699
+    assert.equal(run(), true, 'a real need below the configured limit can advance the task')
+    assert.equal(api.count(counter), 1)
+    assert.equal(save.petInfo.yb, balance - (owned ? 0 : cost))
+    assert.deepEqual(Array.from(save.selfGoodDatas[type]), owned ? [`_${id}*1`] : [])
+  }
 })
 
 test('work, study and travel keep their real timers and do not replace a running activity', async () => {
