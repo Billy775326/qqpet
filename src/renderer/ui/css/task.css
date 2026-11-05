@@ -1,32 +1,12 @@
 .ui-task {position:relative}
-.ui-task .task {width:607px;height:455px;background-color:#fdecdd;font-size:12px;color:#65513f}
-.ui-task .t_top {padding:0 12px 10px;border-radius:8px;min-width:0}
-.ui-task .t_title {padding:7px 3px;color:#ae6328;font-size:14px;font-weight:700}
-.ui-task .t_tabs,.ui-task .taskFilters {display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.ui-task .t_tab {display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #dfb184;border-radius:5px;background:#fff5e9;color:#8a542b;cursor:pointer}
-.ui-task .active.t_tab {background:#edbd8c;color:#593714;border-color:#cf9560;font-weight:700}
-.ui-task .taskBadge {min-width:16px;padding:0 4px;line-height:16px;border-radius:8px;background:#b45b22;color:#fff;font-size:11px;text-align:center}
-.ui-task .taskHint {margin:7px 0 5px;line-height:17px;color:#785a42}
-.ui-task .taskFilters {gap:4px}
-.ui-task .taskFilter {padding:2px 7px;border-radius:4px;cursor:pointer;color:#84572e}
-.ui-task .taskFilter.active {background:#f5d5b4;color:#663910}
-.ui-task .taskSummary {padding:5px 1px;color:#967354;font-size:11px}
-.ui-task .tasks {border:1px solid #e1b181;border-radius:6px;overflow:hidden auto;padding:0 9px;background:#fff9f0}
-.ui-task .taskOnce {display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px;padding:9px 0;border-bottom:1px solid #edd1b4;align-items:center}
-.ui-task .taskOnce:last-child {border-bottom:0}
-.ui-task .taskOnce.claimed {opacity:.65}
-.ui-task .taskHeading {display:flex;align-items:baseline;justify-content:space-between;gap:6px}
-.ui-task .to_label {color:#ad5a19;font-size:13px;font-weight:600;overflow-wrap:anywhere}
-.ui-task .taskProgress {color:#916d4d;font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.ui-task .ready .taskProgress {color:#4b7a35;font-weight:700}
-.ui-task .to_msg {margin-top:3px;font-size:12px;line-height:17px;color:#756451;overflow-wrap:anywhere}
-.ui-task .taskSource {margin-top:2px;font-size:10px;color:#a48a70}
-.ui-task .to_right {display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
-.ui-task .taskRewards {display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;min-width:0}
-.ui-task .taskReward {display:flex;align-items:center;gap:1px;white-space:nowrap;font-size:11px;color:#92683d}
-.ui-task .goodImg {width:25px;height:25px;object-fit:contain}
-.ui-task .taskClaim {flex-shrink:0;text-align:center}
-.ui-task .taskClaim.disable {cursor:default}
-.ui-task .taskEmpty {padding:35px 10px;text-align:center;color:#967354}
-.ui-task .taskFootnote {margin-top:6px;line-height:16px;font-size:11px;color:#95775c}
-.ui-task [role=button]:focus-visible {outline:2px solid #af6d31;outline-offset:2px}
+.ui-task .task {width:607px;height:455px;background-color:#fdecdd;font-size:12px;color:#202020b5}
+.ui-task .t_top {padding:0 12px 12px;border-radius:8px}
+.ui-task .t_title {padding:8px 3px;color:#edbd8c;font-size:14px;font-weight:700;text-shadow:.2px .2px 1px #000}
+.ui-task .taskOnce {padding:5px 0;border-bottom:1px solid #f1ac65}
+.ui-task .tasks {border:1px solid #f1ac65;border-radius:8px;overflow:hidden auto;padding:16px}
+.ui-task .to_label {color:#f18922;font-size:14px;font-weight:500;text-shadow:.2px .2px 1px #000}
+.ui-task .to_msg {font-size:12px;font-weight:500;color:#535353c2}
+.ui-task .goodImg {width:30px;height:30px;margin-right:5px}
+.ui-task .t_tabs {white-space:nowrap}
+.ui-task .t_tab {display:inline-block;padding:3px 5px;border-radius:5px}
+.ui-task .active.t_tab {background-color:#edbd8c;color:#fff}
