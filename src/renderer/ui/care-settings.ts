@@ -86,7 +86,7 @@ export function openCareSettings(): void {
   daily.addEventListener('change', () => { draft.careAutoDaily = daily.checked })
   const dailyLabel = document.createElement('label')
   dailyLabel.className = 'careToggle careDailyToggle'
-  dailyLabel.append(daily, div('', '自动完成每日任务并领奖'))
+  dailyLabel.append(daily, div('', '自动完成今日委托并领奖'))
 
   const autoBuy = document.createElement('input')
   autoBuy.type = 'checkbox'
@@ -105,7 +105,7 @@ export function openCareSettings(): void {
   rules.append(
     summary,
     div('careHint', '指定用品后仅使用该用品；自动选择优先使用背包。缺货且允许购买时，自动选择会购买当前类别可买的最低单价用品，遵循商城、等级、粉钻和余额限制。'),
-    div('careHint', '今日任务可自动喂食、清洁、玩耍、逗乐、学习、打工和旅游并领奖。照料未低于限额时等待，不消耗或购买用品。小游戏与升学考试仍需手动操作。'),
+    div('careHint', '每日任务中的「今日委托」可自动喂食、清洁、玩耍、逗乐、学习、打工和旅游并领奖。照料未低于限额时等待，不消耗或购买用品；其他任务手动领奖。小游戏与升学考试仍需手动操作。'),
     div('careHint', '已有活动或正在操作界面时不启动新任务；关闭自动任务后，已开始的活动正常结束。'),
   )
   const error = div('careError')

@@ -33,7 +33,7 @@ async function dailyCare(kinds: string[]) {
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
   const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount} from './tasks';export {advanceTask} from './activity';export {resumeTask} from './jobs';export {goodOf} from './data/goods';`
-  const allowed = ['./daily-care', './care', './jobs', './items', './goods', './tasks', './activity', './data/goods', './vip', '../../shared/sweetheart']
+  const allowed = ['./daily-care', './care', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
       if (!args.importer || allowed.includes(args.path) || args.path.endsWith('.json')) return
