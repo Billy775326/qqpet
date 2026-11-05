@@ -9,6 +9,7 @@ import { IDLE, rephrase } from './ai'
 import { dateTalk, festival, greeting, loadCalendar } from './calendar'
 import { tickTimed } from './goods'
 import { selfCare } from './care'
+import { runDailyCare } from './daily-care'
 import { deliverMails } from './mail'
 import { Machine, type Pose } from './machine'
 import { rand } from './rand'
@@ -184,7 +185,8 @@ function tick(): void {
     addInfo('onLineTime', minutes)
     tickGift(minutes)
     // Work, study and travel wear the pet out faster.
-    const extra = busy() ? 1 : 0
+    const wasBusy = busy()
+    const extra = wasBusy ? 1 : 0
     const moodRate = rand(1, 2) + extra
     // Growth only counts the minutes the mood lasted; an activity stops when it runs out.
     const grown = Math.min(minutes, info.mood / moodRate)
@@ -196,9 +198,11 @@ function tick(): void {
     setInfo('hunger', Math.max(info.hunger - (rand(2, 3) + extra) * minutes, 0))
     setInfo('clean', Math.max(info.clean - (rand(2, 3) + extra) * minutes, 0))
     addInfo('growth', +(growthPerMinute() * grown).toFixed(8))
-    if (info.sweetHeart) selfCare()
+    const cared = info.sweetHeart && selfCare()
     for (const type of tickTimed(grown)) speak({ c: 'state', s: `${type}Over`, now: true }, 'speak')
     advanceTask(grown)
+    // Start after accounting for elapsed time, so a new activity gets no retroactive minutes.
+    if (info.sweetHeart && !cared && !wasBusy) runDailyCare()
   }
   lastTick = now
   update('nowTimeLine', now)

@@ -43,6 +43,10 @@ app.whenReady().then(async () => {
     const root=document.querySelector('.sweetHeartCareSettings'),range=root.querySelector('input[type=range]'),select=root.querySelector('select'),toggle=root.querySelector('input[type=checkbox]');
     range.value=${percent};range.dispatchEvent(new Event('input'));select.value=${JSON.stringify(food)};select.dispatchEvent(new Event('change'));toggle.checked=${buy};toggle.dispatchEvent(new Event('change'));return true;
   })()`)
+  const setDaily = async enabled => {
+    await click('.careTab[data-type=daily]')
+    await evaluate(`(()=>{const e=document.querySelector('[data-setting=careAutoDaily]');e.checked=${enabled};e.dispatchEvent(new Event('change'));return true})()`)
+  }
   const original = await state(), balance = disk.petInfo.yb
   await evaluate('document.querySelector(".sweetHeartCareEntry").style.visibility="hidden";true')
   writeFileSync('dist/care-original-artwork.png', (await win.webContents.capturePage()).toPNG())
@@ -54,11 +58,16 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('document.querySelector("input[type=checkbox]").checked'), false)
   assert.equal(await evaluate(`document.querySelector('select option[value="102010002"]').disabled`), true, 'locked food is not selectable')
   assert.equal(await evaluate(`document.querySelector('select option[value="10013006"]').disabled`), false, 'owned food remains usable even when not sold')
+  await click('.careTab[data-type=daily]')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careAutoDaily]").checked'), false)
+  assert.match(await evaluate('document.querySelector(".careDetails").textContent'), /小游戏与升学考试仍需手动/)
+  await click('.careTab[data-type=food]')
   await draft(75, '102010003', true)
   await click('.careTab[data-type=clean]')
   await draft(65, '102020003', true)
   await click('.careTab[data-type=toy]')
   await draft(70, 't0002', true)
+  await setDaily(true)
   await click('.careCancel')
   assert.deepEqual(await state(), original)
   await click('.sweetHeartCareEntry')
@@ -67,6 +76,7 @@ app.whenReady().then(async () => {
   await draft(65, '102020003', true)
   await click('.careTab[data-type=toy]')
   await draft(70, 't0002', true)
+  await setDaily(true)
   await click('.careSave')
   assert.equal(disk.settings.careHungerPercent, 75)
   assert.equal(disk.settings.careFoodId, '102010003')
@@ -75,10 +85,12 @@ app.whenReady().then(async () => {
   assert.equal(disk.settings.careCleanId, '102020003')
   assert.equal(disk.settings.careMoodPercent, 70)
   assert.equal(disk.settings.careToyId, 't0002')
+  assert.equal(disk.settings.careAutoDaily, true)
   const saved = await state()
   assert.equal(disk.petInfo.yb, balance, 'editing policy never buys items')
   await click('.sweetHeartCareEntry')
   await draft(90, '', false)
+  await setDaily(false)
   await click('.careTab[data-type=clean]')
   await draft(90, '', false)
   failSave = true
@@ -106,12 +118,15 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('document.querySelector("select").value'), item)
     writeFileSync('dist/care-' + type + '.png', (await win.webContents.capturePage()).toPNG())
   }
+  await click('.careTab[data-type=daily]')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careAutoDaily]").checked'), true, 'the automatic daily preference survives a reload')
   const layouts = []
   for (const [width, height, scale] of [[800,600,1],[320,480,1.25],[320,240,2]]) {
     await resizeViewport(win, width, height, scale)
-    for (const type of ['food', 'clean', 'toy']) {
+    for (const type of ['food', 'clean', 'toy', 'daily']) {
       await click('.careTab[data-type=' + type + ']')
-      const boxes = await evaluate('[".sweetHeartCareSettings",".careTabs",".careRange",".sweetHeartCareSettings select",".careToggle",".careActions"].map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
+      const selectors = ['.sweetHeartCareSettings', '.careTabs', '.careDetails', '.careActions', ...(type === 'daily' ? ['[data-setting=careAutoDaily]'] : ['.careRange', '.sweetHeartCareSettings select'])]
+      const boxes = await evaluate(JSON.stringify(selectors) + '.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
       for (const b of boxes) {
         assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
         assert.equal(b.clipped, false)

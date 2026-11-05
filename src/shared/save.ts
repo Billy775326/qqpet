@@ -112,6 +112,8 @@ export interface Settings {
   careToyId: string
   /** Buy one matching care item when needed and none is owned. */
   careAutoBuy: boolean
+  /** Perform supported daily tasks and claim their rewards while sweetheart is active. */
+  careAutoDaily: boolean
 }
 
 export interface SaveData {

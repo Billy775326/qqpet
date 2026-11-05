@@ -28,6 +28,11 @@ export class Machine {
   private next: Pose | null = null
   private changing = false
 
+  /** No current action, pending transition or queued user animation. */
+  get idle(): boolean {
+    return this.pose.a === 'normal' && !this.next && !this.changing && this.queue.length === 0
+  }
+
   constructor(
     private swf: PetSwf,
     private onChange: (over: Pose, next: Pose) => void,

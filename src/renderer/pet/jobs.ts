@@ -83,13 +83,18 @@ export function describeWork(g: Good): string[] {
   return lines.filter((l): l is string => Boolean(l))
 }
 
+/** Eligibility without opening a refusal bubble, for unattended job selection. */
+export function workBlocked(g: Good): string {
+  if (g.needLevel! > save.petComputedlInfo.level) return '[host]，我等级不够哦~'
+  if (Object.entries(g.useArtt ?? {}).some(([k, v]) => v > info[k as 'charm'])) return '[host]，我还需要多吃，才能胜任这个工作哦！~'
+  if (Object.entries(g.education ?? {}).some(([k, v]) => v > save.studyInfo[k as Subject])) return '[host]，书到用时方恨少啊，我一定要好好念书！~'
+  return ''
+}
+
 /** Returns whether the pet went to work. */
 export function work(g: Good): boolean {
   if (cannot('工作')) return false
-  let no = ''
-  if (g.needLevel! > save.petComputedlInfo.level) no = '[host]，我等级不够哦~'
-  else if (Object.entries(g.useArtt ?? {}).some(([k, v]) => v > info[k as 'charm'])) no = '[host]，我还需要多吃，才能胜任这个工作哦！~'
-  else if (Object.entries(g.education ?? {}).some(([k, v]) => v > save.studyInfo[k as Subject])) no = '[host]，书到用时方恨少啊，我一定要好好念书！~'
+  const no = workBlocked(g)
   if (no) {
     speak({ s: no, now: true }, 'speak')
     return false
@@ -123,6 +128,9 @@ export function describeStudy(g: Good): string[] {
   const lines = [g.desc, `课时：${g.classNum}`, `已学课时：${learned}${exam}`, a && `属性：${a}`, `学习时长：${g.useTime}分钟`]
   return lines.filter((l): l is string => Boolean(l))
 }
+
+/** Automatic study waits for manual promotion exams instead of reopening them repeatedly. */
+export const canStudyCourse = (g: Good): boolean => lessons(g) < g.classNum!
 
 /** All lessons of a school done: the pet asks for its exam. */
 function examPrompt(g: Good): void {

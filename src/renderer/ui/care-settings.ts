@@ -18,6 +18,7 @@ export function openCareSettings(): void {
     careMoodPercent: save.settings.careMoodPercent ?? 60,
     careToyId: save.settings.careToyId ?? '',
     careAutoBuy: save.settings.careAutoBuy ?? false,
+    careAutoDaily: save.settings.careAutoDaily ?? false,
   })
   const draft = preferences()
   const action = (label: string, cls: string, run: () => void): HTMLButtonElement => {
@@ -33,9 +34,12 @@ export function openCareSettings(): void {
   const tabs = div('careTabs')
   tabs.setAttribute('role', 'tablist')
   tabs.setAttribute('aria-label', '托管类别')
+  const selectTab = (type: string): void => {
+    details.dataset.type = type
+    for (const tab of tabs.children) tab.setAttribute('aria-selected', String((tab as HTMLElement).dataset.type === type))
+  }
   const render = (need: CareNeed): void => {
-    details.dataset.type = need.type
-    for (const tab of tabs.children) tab.setAttribute('aria-selected', String((tab as HTMLElement).dataset.type === need.type))
+    selectTab(need.type)
     const slider = document.createElement('input')
     slider.type = 'range'
     slider.min = '1'
@@ -78,12 +82,33 @@ export function openCareSettings(): void {
     tab.setAttribute('role', 'tab')
     tabs.append(tab)
   }
+  const dailyTab = action('任务', 'careTab', () => {
+    selectTab('daily')
+    const daily = document.createElement('input')
+    daily.type = 'checkbox'
+    daily.checked = draft.careAutoDaily
+    daily.setAttribute('aria-label', '自动完成每日任务')
+    daily.dataset.setting = 'careAutoDaily'
+    daily.addEventListener('change', () => { draft.careAutoDaily = daily.checked })
+    const label = document.createElement('label')
+    label.className = 'careToggle'
+    label.append(daily, div('', '自动完成每日任务并领奖'))
+    details.replaceChildren(
+      section('今日任务', label, div('careHint', '空闲时自动喂食、清洁、玩耍、逗乐，或开始学习、打工、旅游；完成后领取今日任务奖励。')),
+      div('careHint careDailyHint', '按正常耗时执行，用品选择和购买沿用托管设置。小游戏与升学考试仍需手动操作。'),
+      div('careHint careDailyHint', '已有活动或正在操作界面时不启动新任务。关闭后停止新增任务，已开始的活动正常结束。'),
+    )
+  })
+  dailyTab.dataset.type = 'daily'
+  dailyTab.setAttribute('role', 'tab')
+  tabs.append(dailyTab)
   render(CARE_NEEDS[0])
 
   const autoBuy = document.createElement('input')
   autoBuy.type = 'checkbox'
   autoBuy.checked = draft.careAutoBuy
   autoBuy.setAttribute('aria-label', '自动购买托管用品')
+  autoBuy.dataset.setting = 'careAutoBuy'
   autoBuy.addEventListener('change', () => { draft.careAutoBuy = autoBuy.checked })
   const toggle = document.createElement('label')
   toggle.className = 'careToggle'

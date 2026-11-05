@@ -145,6 +145,9 @@ export function addCount(obj: Exclude<Counter, 'Travel2'>, n = 1): void {
 
 export const tasks = (tab: Tab) => defs(tab).map((t, i) => ({ ...t, ...progress.taskList[tab][i], done: count(t.obj) }))
 
+/** Stale tasks must not be performed or claimed before the new day's list arrives. */
+export const todayTasks = () => progress.dailyDay === dayStart() ? tasks('daily') : []
+
 /** Hands out a finished task's goods; false when it is not finished yet. */
 export function claim(tab: Tab, i: number): Good[] | false {
   const t = defs(tab)[i]

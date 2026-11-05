@@ -102,6 +102,7 @@ const RULES: Record<string, Record<string, Rule>> = {
     careMoodPercent: (v) => isNum(v) && Number.isInteger(v) && v >= 1 && v <= 100 ? v : 60,
     careToyId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
     careAutoBuy: bool,
+    careAutoDaily: bool,
   },
 }
 
@@ -179,6 +180,7 @@ function fresh(): SaveData {
       careMoodPercent: 60,
       careToyId: '',
       careAutoBuy: false,
+      careAutoDaily: false,
     },
   }
 }
