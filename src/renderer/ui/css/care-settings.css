@@ -105,7 +105,9 @@
   .careRestocking > .careHint {margin-left: 20px}
 }
 
-.careRange .carePercent {
+.careStepper {
+  display: flex;
+  align-items: center;
   width: 50px;
   min-width: 0;
   height: 24px;
@@ -118,5 +120,16 @@
   text-align: center;
   cursor: inherit;
 }
-.carePercent::-webkit-inner-spin-button {opacity: 1}
-.carePercent:invalid {border-color: #b33253}
+.carePercent {flex: 1; min-width: 0; font-variant-numeric: tabular-nums}
+.careStepControls {display: flex; flex-direction: column; align-self: stretch; width: 13px}
+.careStep {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #946d60;
+  font: 8px/1 sans-serif;
+  cursor: inherit;
+}
+.careStep:hover:not(:disabled) {background: #f5c7da; color: #8e3d5c}
+.careStep:disabled {color: #cbb8be}
