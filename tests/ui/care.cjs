@@ -35,12 +35,20 @@ app.whenReady().then(async () => {
   await pause(100)
   const click = async selector => {
     const point = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`)
-    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point })
     for (const type of ['mousePressed', 'mouseReleased']) await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: 'left', clickCount: 1 })
     await pause(40)
   }
-  const spinPercent = (type, direction) => click('.careRow[data-type=' + type + '] ' + (direction > 0 ? '.careIncrease' : '.careDecrease'))
-
+  const fineTune = async (type, direction) => {
+    const point = await evaluate('(()=>{const r=document.querySelector(".careRow[data-type=' + type + '] input[type=range]").getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()')
+    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point })
+    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseWheel', ...point, deltaX: 0, deltaY: -direction * 100 })
+    await pause(80)
+  }
+  const keyStep = async key => {
+    await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").focus();true')
+    for (const type of ['keyDown', 'keyUp']) await win.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: key === 'ArrowRight' ? 39 : 37 })
+  }
+  const percent = () => evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value')
   const state = () => evaluate('fixture.careState()')
   const draft = async (type, percent, food, buy) => evaluate(`(()=>{
     const root=document.querySelector('.careRow[data-type=${type}]'),range=root.querySelector('input[type=range]'),select=root.querySelector('select'),toggle=document.querySelector('[data-setting=careAutoBuy]');
@@ -66,22 +74,30 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('document.querySelector(".careDaily [data-setting=careAutoBuy]")'), null, 'purchasing belongs to supplies, not daily tasks')
   assert.match(await evaluate('document.querySelector(".careRules").textContent'), /小游戏与升学考试仍需手动/)
   assert.equal(await evaluate('document.querySelector(".careRules").open'), false)
+  assert.equal(await evaluate('document.querySelectorAll(".careRange input:not([type=range]), .careRange button").length'), 0, 'thresholds retain only their original sliders and labels')
   await draft('food', 79, '', false)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '79', 'slider keeps the displayed percentage in sync')
-  await spinPercent('food', 1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '80', 'one mouse spin-button click reaches exactly eighty percent')
-  await spinPercent('food', -1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '79')
-  assert.equal(await evaluate('document.querySelectorAll(".careRange input:not([type=range]), .careRange [contenteditable=true]").length'), 0, 'thresholds have no direct text entry')
-  assert.equal(await evaluate('document.querySelector(".carePercent").tagName'), 'OUTPUT')
-  await spinPercent('food', 1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '80', 'mouse adjustment reaches the exact percentage without typing')
-  assert.match(await evaluate('document.querySelector(".careRow[data-type=food] .careThreshold").title'), /80%/)
+  await fineTune('food', 1)
+  assert.equal(await percent(), '80', 'one wheel event raises the threshold by exactly one percent')
+  assert.equal(await evaluate('document.querySelector(".careThreshold").textContent'), '80%')
+  await fineTune('food', -1)
+  assert.equal(await percent(), '79')
+  await keyStep('ArrowRight')
+  assert.equal(await percent(), '80', 'arrow keys also change one percent')
+  await keyStep('ArrowLeft')
+  assert.equal(await percent(), '79')
+  await draft('food', 1, '', false)
+  await fineTune('food', -1)
+  await keyStep('ArrowLeft')
+  assert.equal(await percent(), '1', 'wheel and keyboard cannot go below the lower limit')
+  await draft('food', 100, '', false)
+  await fineTune('food', 1)
+  await keyStep('ArrowRight')
+  assert.equal(await percent(), '100', 'wheel and keyboard cannot exceed the upper limit')
   await click('.careCancel')
-  assert.deepEqual(await state(), original, 'precise editing remains a draft until saved')
+  assert.deepEqual(await state(), original, 'fine adjustments remain a draft until saved')
   await click('.sweetHeartCareEntry')
-
-  await draft('food', 75, '102010003', true)
+  await draft('food', 79, '102010003', true)
+  await fineTune('food', 1)
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
   await setDaily(true)
@@ -89,7 +105,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(await state(), original)
   await click('.sweetHeartCareEntry')
   await draft('food', 79, '102010003', true)
-  await spinPercent('food', 1)
+  await fineTune('food', 1)
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
   await setDaily(true)
@@ -114,25 +130,6 @@ app.whenReady().then(async () => {
   assert.match(await evaluate('document.querySelector(".careError").textContent'), /保存失败/)
   assert.deepEqual(await state(), saved, 'failed save restores every category of the active policy')
   await click('.careCancel')
-  await click('.sweetHeartCareEntry')
-  await draft('food', 1, '102010003', true)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careDecrease").disabled'), true)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careIncrease").disabled'), false)
-  await spinPercent('food', -1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '1')
-  await spinPercent('food', 1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careDecrease").disabled'), false)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '2')
-  await draft('food', 100, '102010003', true)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careIncrease").disabled'), true)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careDecrease").disabled'), false)
-  await spinPercent('food', 1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '100')
-  await spinPercent('food', -1)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .careIncrease").disabled'), false)
-  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '99')
-  await click('.careCancel')
-
   for (let i = 0; i < 3; i++) {
     await click('.sweetHeartCareEntry')
     await evaluate('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}));true')
@@ -143,7 +140,7 @@ app.whenReady().then(async () => {
   await evaluate('(async()=>{' + prepared.code + ';fixture.open();return true})()')
   await pause(100)
   await click('.sweetHeartCareEntry')
-  assert.equal(await evaluate('document.querySelector("input[type=range]").value'), '80', 'reloading reads the saved exact threshold')
+  assert.equal(await evaluate('document.querySelector("input[type=range]").value'), '80', 'reloading reads the saved threshold')
   assert.equal(await evaluate('document.querySelector("select").value'), '102010003')
   assert.equal(await evaluate('document.querySelector("input[type=checkbox]").checked'), true)
   for (const [type, percent, item] of [['clean', '65', '102020003'], ['toy', '70', 't0002']]) {
@@ -160,7 +157,7 @@ app.whenReady().then(async () => {
     for (const expanded of [false, true]) {
       await evaluate(`document.querySelector('.careRules').open=${expanded};true`)
       await pause(80)
-      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] .carePercent`, `.careRow[data-type=${type}] select`])]
+      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] select`])]
       const boxes = await evaluate(JSON.stringify(selectors) + '.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{selector:s,x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
       for (const b of boxes) {
         assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
@@ -175,7 +172,7 @@ app.whenReady().then(async () => {
   await click('.careClose')
   await click('.windowViewBut')
   assert.equal(await evaluate('fixture.timerCount()'), 0)
-  const report = { hotspot: true, exactPercent: 80, mouseSpin: true, directInput: false, rangeButtons: true, saveCancel: true, persistence: true, failedSave: true, cleanup: true, layouts }
+  const report = { hotspot: true, wheelStep: 1, keyboardStep: 1, directInput: false, extraButtons: false, saveCancel: true, persistence: true, failedSave: true, cleanup: true, layouts }
   writeFileSync('dist/care-results.json', JSON.stringify(report, null, 2))
   console.log('Sweetheart care settings verified:', JSON.stringify(report))
   win.destroy()

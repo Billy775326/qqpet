@@ -43,35 +43,24 @@ export function openCareSettings(): void {
     slider.step = '1'
     slider.value = String(draft[need.percent])
     slider.setAttribute('aria-label', `自动${need.label}限额`)
-    const percent = document.createElement('output')
-    percent.className = 'carePercent'
-    percent.setAttribute('aria-label', `自动${need.label}限额百分比`)
-    const adjust = (step: number): void => {
-      slider.stepUp(step)
-      slider.dispatchEvent(new Event('input'))
-    }
-    const increase = action('▲', 'careStep careIncrease', () => adjust(1))
-    const decrease = action('▼', 'careStep careDecrease', () => adjust(-1))
-    increase.setAttribute('aria-label', `自动${need.label}限额增加 1%`)
-    decrease.setAttribute('aria-label', `自动${need.label}限额减少 1%`)
-    increase.title = '增加 1%'
-    decrease.title = '减少 1%'
-    const stepper = div('careStepper', percent, div('careStepControls', increase, decrease))
-    const threshold = div('careThreshold', stepper, div('carePercentUnit', '%'))
+    const threshold = div('careThreshold')
     const describeThreshold = (): void => {
-      percent.value = slider.value
-      increase.disabled = Number(slider.value) >= Number(slider.max)
-      decrease.disabled = Number(slider.value) <= Number(slider.min)
+      threshold.textContent = `${slider.value}%`
       const description = `${need.statLabel}值低于上限的 ${slider.value}%（当前约 ${Math.round(save.petComputedlInfo[`${need.stat}Max`] * Number(slider.value) / 100)}）时${need.label}`
       slider.setAttribute('aria-valuetext', description)
-      percent.setAttribute('aria-valuetext', description)
-      percent.title = '可用上下按钮逐 1% 微调；' + description
-      slider.title = threshold.title = description
+      threshold.title = description
+      slider.title = description + '；滚轮或方向键每次微调 1%'
     }
     slider.addEventListener('input', () => {
       draft[need.percent] = Number(slider.value)
       describeThreshold()
     })
+    slider.addEventListener('wheel', event => {
+      if (!event.deltaY) return
+      event.preventDefault()
+      slider.stepUp(event.deltaY < 0 ? 1 : -1)
+      slider.dispatchEvent(new Event('input'))
+    }, { passive: false })
     describeThreshold()
     const items = document.createElement('select')
     items.setAttribute('aria-label', need.itemLabel)
