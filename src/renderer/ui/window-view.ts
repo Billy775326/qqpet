@@ -13,6 +13,8 @@ interface Dialog {
   ok?: (close: () => void, num: number) => void
   /** The sweetheart skin. */
   sweet?: boolean
+  /** Settings hotspot in the sweetheart skin's baked-in text. */
+  sweetSettings?: () => void
 }
 
 let closeCurrent = (): void => {}
@@ -99,6 +101,17 @@ export function windowView(d: Dialog): void {
   }
 
   const view = div(d.sweet ? 'windowView sweetHeart' : 'windowView', ...(d.title ? [div('title', d.title)] : []), main)
+  if (d.sweet && d.sweetSettings) {
+    const entry = document.createElement('button')
+    entry.type = 'button'
+    entry.className = 'sweetHeartCareEntry'
+    entry.textContent = '托管'
+    entry.title = '托管设置'
+    entry.setAttribute('aria-label', '托管设置')
+    entry.addEventListener('pointerdown', event => event.stopPropagation())
+    entry.addEventListener('click', d.sweetSettings)
+    view.append(entry)
+  }
   const closeFrame = openFrame(div('ui-window', view), d.sweet ? 'pet/windowTip/sweetHeart/sweetHeart.png' : 'pet/windowTip/alert/bg.png')
   let refresher: ReturnType<typeof setInterval> | undefined
   const close = (): void => {

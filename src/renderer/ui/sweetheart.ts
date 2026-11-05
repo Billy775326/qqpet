@@ -5,6 +5,7 @@ import { info } from '../pet/store'
 import { addSweetHeart } from '../pet/vip'
 import { formatDate } from './date'
 import { div } from './dom'
+import { openCareSettings } from './care-settings'
 import { windowView } from './window-view'
 
 /** Buying or extending a booking shares the same cap on the actual remaining period. */
@@ -28,6 +29,7 @@ export function openSweetHeartPurchase(): void {
     },
     max: () => capacity().availableDays,
     sweet: true,
+    sweetSettings: openCareSettings,
     ok: (close, days) => {
       // The balance must not change when another renewal has consumed the remaining capacity.
       if (!Number.isInteger(days) || days < 1 || days > capacity().availableDays) return

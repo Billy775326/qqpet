@@ -7,8 +7,8 @@ import { TALK, type Line } from './data/talk'
 import { advanceTask, stopTask } from './activity'
 import { IDLE, rephrase } from './ai'
 import { dateTalk, festival, greeting, loadCalendar } from './calendar'
-import { listGoods, tickTimed } from './goods'
-import { useItem } from './items'
+import { tickTimed } from './goods'
+import { selfCare } from './care'
 import { deliverMails } from './mail'
 import { Machine, type Pose } from './machine'
 import { rand } from './rand'
@@ -202,21 +202,6 @@ function tick(): void {
   }
   lastTick = now
   update('nowTimeLine', now)
-}
-
-/** The first need under 60% (food before cleaning before play), with the words the pet says. */
-const NEEDS = [
-  { stat: 'hunger', type: 'food', act: '吃东西' },
-  { stat: 'clean', type: 'clean', act: '洗白白' },
-  { stat: 'mood', type: 'toy', act: '玩玩具' },
-] as const
-
-/** Sweetheart: the pet tends its most urgent need with the first matching good it owns. */
-function selfCare(): void {
-  const need = NEEDS.find((n) => info[n.stat] / save.petComputedlInfo[`${n.stat}Max`] < 0.6)
-  if (!need) return
-  const g = listGoods(need.type, 1, 1).list[0]
-  if (g) useItem(g, false, `[host]，我可以自己${need.act}哦！~~使用了：${g.name}`)
 }
 
 /** Random illness for a tired pet, and further health loss once ill. */

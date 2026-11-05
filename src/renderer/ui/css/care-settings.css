@@ -1,0 +1,79 @@
+.ui-window .sweetHeartCareEntry {
+  position: absolute;
+  left: 138px;
+  top: 226px;
+  width: 34px;
+  height: 19px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dotted #df5e95;
+  background: #fffafb;
+  color: #ff69a3;
+  font: 15px/18px sans-serif;
+  cursor: inherit;
+}
+.ui-window .sweetHeartCareEntry:is(:hover, :focus-visible) {
+  color: #bd2e71;
+  border-bottom-style: solid;
+  outline: none;
+}
+.sweetHeartCareSettings {
+  width: 350px;
+  padding: 15px 18px;
+  border: 1px solid #ce8aa6;
+  border-radius: 12px;
+  background: linear-gradient(#fff8fb, #ffe7f0);
+  box-shadow: 2px 3px 5px #0004;
+  color: #754236;
+  font: 12px/1.5 sans-serif;
+}
+.careHeader, .careRange, .careActions, .careToggle {
+  display: flex;
+  align-items: center;
+}
+.careHeader {justify-content: space-between; margin-bottom: 12px}
+.careTitle {font-size: 16px; font-weight: 700; color: #a04463}
+.careClose {
+  width: 23px;
+  height: 23px;
+  border: 0;
+  padding: 0;
+  background: url(/pet/windowTip/sweetHeart/rightclose.gif) center/contain no-repeat;
+  font-size: 0;
+  cursor: inherit;
+}
+.careSection + .careSection {margin-top: 12px}
+.careLabel {margin-bottom: 5px; font-weight: 700}
+.careHint {color: #946d60; font-size: 11px; line-height: 1.6}
+.careRange {gap: 10px; margin-top: 6px}
+.careRange input {width: 150px; margin: 0; accent-color: #c5638c}
+.careThreshold {white-space: nowrap; color: #a04463; font-variant-numeric: tabular-nums}
+.sweetHeartCareSettings select {
+  width: 100%;
+  height: 30px;
+  margin-bottom: 5px;
+  padding: 0 6px;
+  border: 1px solid #d5a1b5;
+  border-radius: 5px;
+  background: #fffafb;
+  color: #754236;
+  font: inherit;
+}
+.careToggle {gap: 6px; margin-bottom: 4px}
+.careToggle input {margin: 0; accent-color: #c5638c}
+.careNotice {margin-top: 12px}
+.careError {min-height: 0; color: #b33253}
+.careError:not(:empty) {margin-top: 5px}
+.careActions {justify-content: flex-end; gap: 9px; margin-top: 12px}
+.careActions button {
+  min-width: 74px;
+  padding: 5px 10px;
+  border: 1px solid #cf8caa;
+  border-radius: 5px;
+  background: linear-gradient(#fffafd, #f9d8e6);
+  color: #8e3d5c;
+  font: inherit;
+  cursor: inherit;
+}
+.careActions .careSave {font-weight: 700}
+.careActions button:hover {background: #f5c7da}

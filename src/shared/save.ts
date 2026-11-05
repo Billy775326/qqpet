@@ -102,6 +102,12 @@ export interface Settings {
   aiModel: string
   /** City for weather news; empty locates by IP. */
   weatherCity: string
+  /** Feed below this percentage of hungerMax, 1..100. */
+  careHungerPercent: number
+  /** Empty chooses an owned food automatically; otherwise use only this food. */
+  careFoodId: string
+  /** Buy one food when needed and none is owned. */
+  careAutoBuy: boolean
 }
 
 export interface SaveData {

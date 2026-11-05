@@ -4,6 +4,7 @@ import { durationText, goodOf, type TimedType } from '../pet/data/goods'
 import { speak } from '../pet/pet'
 import { activity, growthPerMinute, info, onInfoChange, save, setInfo } from '../pet/store'
 import { openSweetHeartPurchase } from './sweetheart'
+import { openCareSettings } from './care-settings'
 import { openGoods } from './control'
 import './css/state.css'
 import { button, div, img } from './dom'
@@ -63,6 +64,7 @@ function sweetHeart(): void {
     title: '贴心宝贝',
     msg: on ? '当前贴心宝贝已开启，开启自动喂食以及贴心宝贝效果，是否继续？~~' : '关闭后只是关闭自动喂养功能，是否继续？~~',
     sweet: true,
+    sweetSettings: openCareSettings,
     ok: (close) => {
       speak({ s: on ? '[host],开启了贴心宝贝，我真是太爱你了！~' : '[host],我依然还是爱你的，天地可鉴！~', now: true }, 'speak')
       setInfo('sweetHeart', on)
