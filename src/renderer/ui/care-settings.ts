@@ -35,6 +35,7 @@ export function openCareSettings(): void {
   const columns = div('careGrid careColumns', div('', '项目'), div('', '触发限额'), div('', '使用用品'))
   columns.setAttribute('aria-hidden', 'true')
   care.append(div('careSectionHeading', div('careLabel', '日常照料'), div('careHint', '低于限额时自动照料')), columns)
+  const percentFields: HTMLInputElement[] = []
   for (const need of CARE_NEEDS) {
     const slider = document.createElement('input')
     slider.type = 'range'
@@ -43,11 +44,23 @@ export function openCareSettings(): void {
     slider.step = '1'
     slider.value = String(draft[need.percent])
     slider.setAttribute('aria-label', `自动${need.label}限额`)
-    const threshold = div('careThreshold')
+    const percent = document.createElement('input')
+    percent.type = 'number'
+    percent.className = 'carePercent'
+    percent.min = '1'
+    percent.max = '100'
+    percent.step = '1'
+    percent.required = true
+    percent.value = slider.value
+    percent.setAttribute('aria-label', `自动${need.label}限额百分比`)
+    percentFields.push(percent)
+    const threshold = div('careThreshold', percent, div('carePercentUnit', '%'))
     const describeThreshold = (): void => {
-      threshold.textContent = `${slider.value}%`
+      percent.value = slider.value
       const description = `${need.statLabel}值低于上限的 ${slider.value}%（当前约 ${Math.round(save.petComputedlInfo[`${need.stat}Max`] * Number(slider.value) / 100)}）时${need.label}`
       slider.setAttribute('aria-valuetext', description)
+      percent.setAttribute('aria-valuetext', description)
+      percent.title = '输入 1–100 的整数，可用上下按钮逐 1% 微调；' + description
       slider.title = threshold.title = description
     }
     slider.addEventListener('input', () => {
@@ -55,6 +68,13 @@ export function openCareSettings(): void {
       describeThreshold()
     })
     describeThreshold()
+    percent.addEventListener('input', () => {
+      error.textContent = ''
+      if (!percent.validity.valid) return
+      draft[need.percent] = percent.valueAsNumber
+      slider.value = percent.value
+      describeThreshold()
+    })
     const items = document.createElement('select')
     items.setAttribute('aria-label', need.itemLabel)
     items.add(new Option('自动选择', ''))
@@ -119,6 +139,12 @@ export function openCareSettings(): void {
     rules,
     error,
     div('careActions', action('取消', 'careCancel', () => close()), action('保存设置', 'careSave', () => {
+      const invalid = percentFields.find(field => !field.validity.valid)
+      if (invalid) {
+        error.textContent = '触发限额请输入 1–100 的整数。'
+        invalid.focus()
+        return
+      }
       const previous = preferences()
       try {
         update('settings', draft)

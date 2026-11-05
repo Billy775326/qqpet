@@ -45,14 +45,14 @@
 }
 .careSectionHeading {justify-content: space-between; gap: 6px; margin-bottom: 4px}
 .careLabel {font-weight: 700; color: #9a4e68}
-.careGrid {display: grid; grid-template-columns: 32px 120px minmax(0, 1fr); gap: 7px; align-items: center}
+.careGrid {display: grid; grid-template-columns: 32px 150px minmax(0, 1fr); gap: 7px; align-items: center}
 .careColumns {color: #ac8790; font-size: 10px; padding-bottom: 3px}
 .careRow {padding: 5px 0; border-top: 1px solid #eaced9}
 .careCategory {font-weight: 700}
 .careHint {color: #946d60; font-size: 11px; line-height: 1.5}
 .careRange {gap: 5px; min-width: 0}
-.careRange input {width: 80px; min-width: 0; margin: 0; accent-color: #c5638c}
-.careThreshold {white-space: nowrap; color: #a04463; font-variant-numeric: tabular-nums}
+.careRange input[type=range] {flex: 1; width: 80px; min-width: 0; margin: 0; accent-color: #c5638c}
+.careThreshold {display: flex; align-items: center; gap: 2px; flex-shrink: 0; white-space: nowrap; color: #a04463; font-variant-numeric: tabular-nums}
 .sweetHeartCareSettings select {
   width: 100%;
   min-width: 0;
@@ -94,15 +94,29 @@
 .sweetHeartCareSettings :is(button, input, select, summary):focus-visible {outline: 2px solid #b5527c; outline-offset: 2px}
 @media (max-width: 430px) {
   .sweetHeartCareSettings {padding: 12px}
-  .careGrid {grid-template-columns: 30px 104px minmax(0, 1fr); gap: 6px}
-  .careRange input {width: 66px}
+  .careGrid {grid-template-columns: 30px 138px minmax(0, 1fr); gap: 6px}
 }
 @media (max-width: 350px) {
   .careGrid {grid-template-columns: 34px minmax(0, 1fr)}
   .careColumns {display: none}
   .careRow select {grid-column: 2}
   .careCategory {grid-row: span 2}
-  .careRange input {width: calc(100% - 42px)}
   .careRestocking {flex-wrap: wrap}
   .careRestocking > .careHint {margin-left: 20px}
 }
+
+.careRange .carePercent {
+  width: 50px;
+  min-width: 0;
+  height: 24px;
+  padding: 1px 2px;
+  border: 1px solid #d5a1b5;
+  border-radius: 4px;
+  background: #fffafb;
+  color: #a04463;
+  font: inherit;
+  text-align: center;
+  cursor: inherit;
+}
+.carePercent::-webkit-inner-spin-button {opacity: 1}
+.carePercent:invalid {border-color: #b33253}

@@ -35,9 +35,25 @@ app.whenReady().then(async () => {
   await pause(100)
   const click = async selector => {
     const point = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`)
+    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point })
     for (const type of ['mousePressed', 'mouseReleased']) await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: 'left', clickCount: 1 })
     await pause(40)
   }
+  const editPercent = async (type, text) => {
+    await click('.careRow[data-type=' + type + '] .carePercent')
+    for (const event of ['keyDown', 'keyUp'])
+      await win.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { type: event, key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 })
+    for (const event of ['keyDown', 'keyUp'])
+      await win.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { type: event, key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8 })
+    if (text) await win.webContents.debugger.sendCommand('Input.insertText', { text })
+  }
+  const spinPercent = async (type, direction) => {
+    const point = await evaluate('(()=>{const r=document.querySelector(".careRow[data-type=' + type + '] .carePercent").getBoundingClientRect();return{x:r.right-6,y:r.y+r.height*' + (direction > 0 ? 0.25 : 0.75) + '}})()')
+    for (const event of ['mouseMoved', 'mousePressed', 'mouseReleased'])
+      await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: event, ...point, button: event === 'mouseMoved' ? 'none' : 'left', clickCount: 1 })
+    await pause(40)
+  }
+
   const state = () => evaluate('fixture.careState()')
   const draft = async (type, percent, food, buy) => evaluate(`(()=>{
     const root=document.querySelector('.careRow[data-type=${type}]'),range=root.querySelector('input[type=range]'),select=root.querySelector('select'),toggle=document.querySelector('[data-setting=careAutoBuy]');
@@ -63,6 +79,19 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('document.querySelector(".careDaily [data-setting=careAutoBuy]")'), null, 'purchasing belongs to supplies, not daily tasks')
   assert.match(await evaluate('document.querySelector(".careRules").textContent'), /小游戏与升学考试仍需手动/)
   assert.equal(await evaluate('document.querySelector(".careRules").open'), false)
+  await draft('food', 79, '', false)
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '79', 'slider keeps the exact number field in sync')
+  await spinPercent('food', 1)
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '80', 'one mouse spin-button click reaches exactly eighty percent')
+  await spinPercent('food', -1)
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '79')
+  await editPercent('food', '80')
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] input[type=range]").value'), '80', 'typing the exact percentage updates the slider')
+  assert.match(await evaluate('document.querySelector(".careRow[data-type=food] .careThreshold").title'), /80%/)
+  await click('.careCancel')
+  assert.deepEqual(await state(), original, 'precise editing remains a draft until saved')
+  await click('.sweetHeartCareEntry')
+
   await draft('food', 75, '102010003', true)
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
@@ -71,11 +100,12 @@ app.whenReady().then(async () => {
   assert.deepEqual(await state(), original)
   await click('.sweetHeartCareEntry')
   await draft('food', 75, '102010003', true)
+  await editPercent('food', '80')
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
   await setDaily(true)
   await click('.careSave')
-  assert.equal(disk.settings.careHungerPercent, 75)
+  assert.equal(disk.settings.careHungerPercent, 80)
   assert.equal(disk.settings.careFoodId, '102010003')
   assert.equal(disk.settings.careAutoBuy, true)
   assert.equal(disk.settings.careCleanPercent, 65)
@@ -95,6 +125,22 @@ app.whenReady().then(async () => {
   assert.match(await evaluate('document.querySelector(".careError").textContent'), /保存失败/)
   assert.deepEqual(await state(), saved, 'failed save restores every category of the active policy')
   await click('.careCancel')
+  await click('.sweetHeartCareEntry')
+  for (const value of ['', '0', '101', '79.5']) {
+    await editPercent('food', value)
+    await click('.careSave')
+    assert.equal(await evaluate('document.querySelectorAll(".sweetHeartCareSettings").length'), 1, 'invalid percentages keep the editor open')
+    assert.match(await evaluate('document.querySelector(".careError").textContent'), /1–100/)
+    assert.deepEqual(await state(), saved, 'invalid percentages never update active settings')
+  }
+  await editPercent('food', '1')
+  await spinPercent('food', -1)
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '1')
+  await editPercent('food', '100')
+  await spinPercent('food', 1)
+  assert.equal(await evaluate('document.querySelector(".careRow[data-type=food] .carePercent").value'), '100')
+  await click('.careCancel')
+
   for (let i = 0; i < 3; i++) {
     await click('.sweetHeartCareEntry')
     await evaluate('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}));true')
@@ -105,7 +151,7 @@ app.whenReady().then(async () => {
   await evaluate('(async()=>{' + prepared.code + ';fixture.open();return true})()')
   await pause(100)
   await click('.sweetHeartCareEntry')
-  assert.equal(await evaluate('document.querySelector("input[type=range]").value'), '75', 'reloading reads the saved threshold')
+  assert.equal(await evaluate('document.querySelector("input[type=range]").value'), '80', 'reloading reads the saved exact threshold')
   assert.equal(await evaluate('document.querySelector("select").value'), '102010003')
   assert.equal(await evaluate('document.querySelector("input[type=checkbox]").checked'), true)
   for (const [type, percent, item] of [['clean', '65', '102020003'], ['toy', '70', 't0002']]) {
@@ -122,7 +168,7 @@ app.whenReady().then(async () => {
     for (const expanded of [false, true]) {
       await evaluate(`document.querySelector('.careRules').open=${expanded};true`)
       await pause(80)
-      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] select`])]
+      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] .carePercent`, `.careRow[data-type=${type}] select`])]
       const boxes = await evaluate(JSON.stringify(selectors) + '.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{selector:s,x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
       for (const b of boxes) {
         assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
@@ -137,7 +183,7 @@ app.whenReady().then(async () => {
   await click('.careClose')
   await click('.windowViewBut')
   assert.equal(await evaluate('fixture.timerCount()'), 0)
-  const report = { hotspot: true, saveCancel: true, persistence: true, failedSave: true, cleanup: true, layouts }
+  const report = { hotspot: true, exactPercent: 80, mouseSpin: true, directInput: true, invalidRangeGuard: true, saveCancel: true, persistence: true, failedSave: true, cleanup: true, layouts }
   writeFileSync('dist/care-results.json', JSON.stringify(report, null, 2))
   console.log('Sweetheart care settings verified:', JSON.stringify(report))
   win.destroy()
