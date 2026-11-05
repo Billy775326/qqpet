@@ -123,6 +123,8 @@ npm run test:ui
 
 Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `npm run test:taskbar -- --allow-taskbar-changes`。脚本会短暂切换当前桌面的任务栏常显、自动隐藏与鼠标唤出，使用隔离透明窗口运行生产窗口逻辑，并在结束时恢复原自动隐藏状态与鼠标位置。报告为 `dist/desktop-workarea-results.json`；普通单元测试和界面测试不切换系统任务栏设置。此项只验证实际连接的主屏及当前系统缩放。
 
+农场商店和购买弹窗可单独运行 `node scripts/test-farm-popup.mjs`。先将 `QQPET_TEST_JAVA`、`QQPET_FFDEC_JAR` 和 `QQPET_TEST_BROWSER` 分别设为 Java、JPEXS FFDec JAR 和 Chrome/Chromium 可执行文件路径。测试仅在 `dist/` 中生成带测试入口的 Flash 副本，使用独立浏览器存储验证默认排序、余额变化时的位置稳定、目录及卡片复用、快速切换、滚轮边界、滚动位置、数量范围、连续点击及重复确认；不会操作真实农场存档或物理鼠标。报告和截图保存在输出的 `dist/farm-popup-*` 目录。优化前后测量与默认排序见[农场商店说明](docs/farm-shop-performance.md)。
+
 ## 构建
 
 ```bash
@@ -150,9 +152,9 @@ Android 版本地调试用 `npm run android`（debug 包，输出到 `android/ap
 |---|---|
 | `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序、同等级鱼的出售单价升序排列，不计产量，移除特殊鱼置顶；可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁，角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用 |
 | `resources/pet/mstx/qq_mstx.swf` | 隐藏需要联网的「兑换礼包」「魔法爱情石」按钮 |
-| `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店可买的种子排前、其余置灰，购买后弹出提示；商店、仓库的弹出动画改为缩放比例，不再被异步加载的图片压窄 |
-| `resources/pet/qqfarm/com/MyFarm/data/xml/seed.xml` | 种子按等级、同等级作物的出售单价升序排列，不计产量；农场商店在此顺序上优先展示满足等级和余额条件的种子，可用 `node tools/sort-farm-seeds.mjs` 重新排序，不修改各项属性 |
-| `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」 |
+| `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店按解锁状态、等级、出售单价和购买价稳定排序，余额只更新灰显及购买提示；复用目录、卡片和提示层，支持滚轮并保留购买前的滚动位置；商店、仓库和购买弹窗按缩放比例播放动画，购买弹窗防止重复打开和重复确认 |
+| `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」；原滚动条增加内容与滑块同步滚动接口 |
+| `resources/pet/qqfarm/com/MyFarm/data/xml/seed.xml` | 种子目录按等级及作物出售单价升序排列，可用 `node tools/sort-farm-seeds.mjs` 重新整理，不修改物品属性；实际商店另按解锁状态、等级、出售单价及购买价稳定排序，余额不参与位置排序 |
 | `resources/pet/smallGame/{100ceng,ball,paopao2}/` 下读屏幕尺寸的 26 个 SWF | `Capabilities.screenResolutionX/Y` 改为 `ExternalInterface.call("API.GetScreenWidth/Height")`（Ruffle 返回的是播放器自身尺寸） |
 
 ## 目录

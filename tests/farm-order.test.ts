@@ -17,7 +17,7 @@ test('farm catalogue preserves level and crop sale unit price order within both 
   assert.equal(new Set(seeds.map(s => s.id)).size, seeds.length)
   for (const level of [1, 2, 4, 7, 9]) for (const balance of [0, 75, 100, 50000]) {
     const canBuy = (s: typeof seeds[number]) => s.level <= level && s.price <= balance
-    // MyStore.getXML performs these two stable passes; no compiler changes are needed.
+    // Stable subsets retain catalogue order; the live shop ordering is checked by the Ruffle regression.
     const shown = [...seeds.filter(canBuy), ...seeds.filter(s => !canBuy(s))]
     let locked = false, previous = { level: -1, unitPrice: -1 }
     for (const seed of shown) {

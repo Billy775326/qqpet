@@ -36,11 +36,19 @@ package com.MyFarm.Store.view
       private var _x:Number;
       
       private var _y:Number;
+
+      private var closing:Boolean = false;
+
+      private const OPEN_TIME:Number = 0.15;
+
+      private const CLOSE_TIME:Number = 0.12;
       
       public function ShowBox(param1:MovieClip, param2:String, param3:String, param4:DisplayObject, param5:Object, param6:Function)
       {
          super();
          mc = param1;
+         mc.scaleX = 1;
+         mc.scaleY = 1;
          _width = mc.width;
          _height = mc.height;
          str = param2;
@@ -75,6 +83,10 @@ package com.MyFarm.Store.view
       
       private function beginComplete() : void
       {
+         if(closing)
+         {
+            return;
+         }
          if(img != null)
          {
             img.x = 19;
@@ -91,8 +103,11 @@ package com.MyFarm.Store.view
             displayObject.y = 40 + (80 - displayObject.height) / 2;
             mc.addChild(displayObject);
          }
-         bg = createShape(2000,2000,0,0);
-         mc.parent.addChildAt(bg,mc.parent.numChildren - 1);
+      }
+
+      public function get isOpen() : Boolean
+      {
+         return mc != null;
       }
       
       public function release() : void
@@ -115,6 +130,9 @@ package com.MyFarm.Store.view
       private function init(param1:String, param2:String, param3:String, param4:String, param5:String, param6:String, param7:String, param8:String, param9:String, param10:String) : void
       {
          mc.stepper.textField.maxChars = 2;
+         mc.stepper.textField.restrict = "0-9";
+         mc.stepper.minimum = 1;
+         mc.stepper.maximum = 99;
          mc.type_txt.mouseEnabled = false;
          mc.type_txt.text = param4;
          mc.maturation_txt.mouseEnabled = false;
@@ -138,22 +156,23 @@ package com.MyFarm.Store.view
       
       private function enterFrameHandler(param1:Event) : void
       {
-         if(mc.stepper.textField.text.length < 1)
-         {
-            mc.stepper.textField.text = "1";
-            mc.price_txt.text = price + " 元宝";
-            mc.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);
-         }
-         else
-         {
-            mc.price_txt.text = price * int(mc.stepper.textField.text) + " 元宝";
-            mc.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);
-         }
+         syncQuantity();
+         mc.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);
+      }
+
+      private function syncQuantity() : void
+      {
+         var selected:uint = uint(Math.max(1,Math.min(99,int(mc.stepper.textField.text))));
+         mc.stepper.value = selected;
+         mc.price_txt.text = price * selected + " 元宝";
       }
       
       private function init2(param1:String, param2:String, param3:String, param4:String) : void
       {
          mc.stepper.textField.maxChars = 2;
+         mc.stepper.textField.restrict = "0-9";
+         mc.stepper.minimum = 1;
+         mc.stepper.maximum = 99;
          mc.title_txt.text = param1;
          mc.title_txt.mouseEnabled = false;
          mc.price_txt.text = param2 + "元宝";
@@ -190,16 +209,16 @@ package com.MyFarm.Store.view
       
       private function endComplete() : void
       {
-         if(img != null)
+         if(img != null && img.parent == mc)
          {
             mc.removeChild(img);
          }
-         else if(displayObject != null)
+         else if(displayObject != null && displayObject.parent == mc)
          {
             mc.removeChild(displayObject);
          }
-         mc.height *= 10;
-         mc.width *= 10;
+         mc.scaleX = 1;
+         mc.scaleY = 1;
          mc.parent.removeChild(bg);
          mc.parent.removeChild(mc);
          release();
@@ -214,13 +233,18 @@ package com.MyFarm.Store.view
       
       private function closeClick(param1:MouseEvent = null) : void
       {
+         if(closing || mc == null)
+         {
+            return;
+         }
+         closing = true;
          Tweener.addTween(mc,{
-            "width":mc.width / 10,
-            "height":mc.height / 10,
+            "scaleX":0.1,
+            "scaleY":0.1,
             "alpha":0,
-            "time":1,
-            "x":_x + (mc.width - mc.width / 10) / 2,
-            "y":_y + (mc.height - mc.height / 10) / 2,
+            "time":CLOSE_TIME,
+            "x":_x + _width * 0.9 / 2,
+            "y":_y + _height * 0.9 / 2,
             "onComplete":endComplete
          });
       }
@@ -234,16 +258,19 @@ package com.MyFarm.Store.view
       {
          _x = mc.x;
          _y = mc.y;
-         mc.width /= 10;
-         mc.height /= 10;
+         // Block the underlying shop throughout the opening animation.
+         bg = createShape(2000,2000,0,0);
+         mc.parent.addChildAt(bg,mc.parent.getChildIndex(mc));
+         mc.scaleX = 0.1;
+         mc.scaleY = 0.1;
          mc.x += (_width - mc.width) / 2;
          mc.y += (_height - mc.height) / 2;
          mc.alpha = 0;
          Tweener.addTween(mc,{
-            "width":_width,
-            "height":_height,
+            "scaleX":1,
+            "scaleY":1,
             "alpha":1,
-            "time":1,
+            "time":OPEN_TIME,
             "x":_x,
             "y":_y,
             "onComplete":beginComplete
@@ -260,9 +287,14 @@ package com.MyFarm.Store.view
       
       private function defineClick(param1:MouseEvent) : void
       {
+         if(closing || mc == null)
+         {
+            return;
+         }
          var _loc2_:uint = 0;
          if(str != "tab3")
          {
+            syncQuantity();
             _loc2_ = uint(int(mc.price_txt.text.slice(0,mc.price_txt.text.indexOf("元"))));
             fun(int(info.id),_loc2_);
          }
@@ -279,7 +311,7 @@ package com.MyFarm.Store.view
       
       private function stepperChange(param1:Event) : void
       {
-         mc.price_txt.text = price * int(mc.stepper.textField.text) + " 元宝";
+         syncQuantity();
       }
       
       private function textInputHandler(param1:TextEvent) : void

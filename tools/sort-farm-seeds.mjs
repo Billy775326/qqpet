@@ -1,5 +1,5 @@
-// Farm.swf partitions this catalogue into buyable and unavailable seeds,
-// preserving catalogue order inside each group. Sort its numeric keys here.
+// Sort the XML catalogue by numeric level and crop sale unit price.
+// The live shop applies its own unlock, purchase-price and availability rules.
 // Usage: node tools/sort-farm-seeds.mjs [path/to/seed.xml]
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -23,4 +23,4 @@ entries.sort((a, b) => a.level - b.level || a.unitPrice - b.unitPrice)
 let index = 0
 const output = input.replace(item, () => entries[index++].xml)
 if (output !== input) writeFileSync(file, output)
-console.log('Farm seeds: increasing level, then increasing crop sale unit price; existing availability grouping retained')
+console.log('Farm seed XML: increasing level, then increasing crop sale unit price')
