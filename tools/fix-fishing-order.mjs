@@ -1,5 +1,5 @@
 // Usage: node tools/fix-fishing-order.mjs [path/to/main.swf]
-// Remove the legacy featured-fish overrides from FishShopData.setData.
+// Order the pond's real FryData objects by eligibility, level and harvest income.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { inflateSync, deflateSync } from 'node:zlib'
 import { fileURLToPath } from 'node:url'
@@ -13,28 +13,57 @@ const original = Buffer.from([
   '2400736306102c000009d066ba15620666bb156037878037d6d2668307240114100000d066ba15620624014fbe1502100f0000c2066206d066ba1566bf1515c7ffffd2120d0000d066ba15d24fc01501100a000060eb022cc9114fcc0801',
   'd0d3d066ba1546d3100161ba15602746c80b0066c1155d08600866a80c4a08014fc2150147',
 ].join(''), 'hex')
-const updated = Buffer.from(original)
+const previous = Buffer.from(original)
 // NOP the branch which diverts fry IDs 33/34 into a featured list, and the
-// loop which promotes one diamond fish. Keep every instruction/branch offset,
-// ABC body length and SWF tag length unchanged. The existing sortOn remains:
-// canSelected descending, then level numeric ascending (legacy tie breakers).
-updated.fill(0x02, 132, 166)
-updated.fill(0x02, 230, 324)
+// loop which promotes one diamond fish. Keep every original branch target,
+// ABC body length and SWF tag length unchanged.
+previous.fill(0x02, 132, 166)
+previous.fill(0x02, 230, 324)
+const updated = Buffer.from(previous)
+// Replace Array.sortOn with Array.sort(this.sortBySelected). The old method
+// only compared checkbox selection; it is repurposed below as a numeric comparator.
+updated.fill(0x02, 186, 230)
+Buffer.from('d066ba15d0669c064faf1301', 'hex').copy(updated, 186)
+const oldCompare = Buffer.from('d030ef01ae140000ef01af140100d166880726ab2a1207000029d266880727ab1203000024ff48d166880727ab2a1207000029d266880726ab12030000240148240048', 'hex')
+const compare = []
+const labels = new Map(), branches = []
+const emit = (...bytes) => compare.push(...bytes)
+const property = (local, id) => emit(local, 0x66, (id & 127) | 128, id >> 7)
+const nextIfEqual = label => { emit(0x2a, 0x12); branches.push([compare.length, label]); emit(0, 0, 0, 0x48); labels.set(label, compare.length); emit(0x29) }
+emit(0xd0, 0x30)
+// b.canSelected - a.canSelected puts eligible items before locked items.
+property(0xd2, 905); emit(0x73); property(0xd1, 905); emit(0x73, 0xa1); nextIfEqual('level')
+property(0xd1, 897); property(0xd2, 897); emit(0xa1); nextIfEqual('income')
+// Gross income from one harvest, not purchase cost or hourly/net profit.
+// The old method declares a maximum stack depth of two and three locals.
+// Its receiver is already in scope; reuse local 0 for the first product.
+property(0xd1, 898); property(0xd1, 483); emit(0xa2, 0xd4)
+property(0xd2, 898); property(0xd2, 483); emit(0xa2, 0xd0, 0x2b, 0xa1, 0x48)
+for (const [offset, label] of branches) {
+  const delta = labels.get(label) - (offset + 3)
+  compare.splice(offset, 3, delta & 255, (delta >> 8) & 255, (delta >> 16) & 255)
+}
+assert.ok(compare.length <= oldCompare.length, 'Comparator must fit the original method body')
+const newCompare = Buffer.alloc(oldCompare.length, 0x02)
+Buffer.from(compare).copy(newCompare)
 
 const file = process.argv[2] ?? fileURLToPath(new URL('../resources/pet/fishing/main.swf', import.meta.url))
 const input = readFileSync(file)
 assert.equal(input.subarray(0, 3).toString(), 'CWS', 'Expected a compressed pond SWF')
 const body = inflateSync(input.subarray(8))
 assert.equal(input.readUInt32LE(4), body.length + 8, 'Invalid SWF length')
-const at = body.indexOf(original)
-if (at < 0) {
-  const patched = body.indexOf(updated)
-  assert.ok(patched >= 0 && body.indexOf(updated, patched + 1) < 0, 'Unrecognized pond shop method')
-  console.log('Pond shop ordering is already fixed')
-} else {
-  assert.equal(body.indexOf(original, at + 1), -1, 'Expected one pond shop method')
-  const output = Buffer.from(body)
-  updated.copy(output, at)
+const recognized = (variants, label) => {
+  const matches = variants.flatMap(bytes => { const at = body.indexOf(bytes); if (at < 0) return []; assert.equal(body.indexOf(bytes, at + 1), -1, `Duplicate ${label}`); return [{ at, bytes }] })
+  assert.equal(matches.length, 1, `Unrecognized pond ${label}`)
+  return matches[0]
+}
+const main = recognized([original, previous, updated], 'shop method')
+const comparator = recognized([oldCompare, newCompare], 'comparator')
+const output = Buffer.from(body)
+updated.copy(output, main.at)
+newCompare.copy(output, comparator.at)
+if (output.equals(body)) console.log('Pond shop ordering is already fixed')
+else {
   writeFileSync(file, Buffer.concat([input.subarray(0, 8), deflateSync(output)]))
-  console.log('Pond shop: eligible fish first, then increasing level; featured overrides removed')
+  console.log('Pond shop: eligible first, increasing level, then increasing harvest income')
 }

@@ -138,9 +138,10 @@ Android 版本地调试用 `npm run android`（debug 包，输出到 `android/ap
 
 | 文件 | 改动 |
 |---|---|
-| `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序排列，移除特殊鱼置顶，可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁；角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用 |
+| `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序、同等级收获收入升序排列；收入按产量 × 收获单价计算，移除特殊鱼置顶，可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁；角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用 |
 | `resources/pet/mstx/qq_mstx.swf` | 隐藏需要联网的「兑换礼包」「魔法爱情石」按钮 |
 | `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店可买的种子排前、其余置灰，购买后弹出提示；商店、仓库的弹出动画改为缩放比例，不再被异步加载的图片压窄 |
+| `resources/pet/qqfarm/com/MyFarm/data/xml/seed.xml` | 种子按等级、同等级单次收获收入（产量 × 单价）升序排列，农场商店在此顺序上优先展示满足等级和余额条件的种子；可用 `node tools/sort-farm-seeds.mjs` 重新排序，不修改各项属性 |
 | `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」 |
 | `resources/pet/smallGame/{100ceng,ball,paopao2}/` 下读屏幕尺寸的 26 个 SWF | `Capabilities.screenResolutionX/Y` 改为 `ExternalInterface.call("API.GetScreenWidth/Height")`（Ruffle 返回的是播放器自身尺寸） |
 

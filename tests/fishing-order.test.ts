@@ -5,7 +5,7 @@ import { inflateSync, deflateSync } from 'node:zlib'
 import { spawnSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 
-type Fry = { fryid: number; level: number; flag: number; canSelected?: boolean }
+type Fry = { fryid: number; level: number; flag: number; quantity: number; sell_price: number; canSelected?: boolean }
 const catalogue: Fry[] = JSON.parse(readFileSync('src/renderer/pet/data/fries.json', 'utf8'))
 const resource = readFileSync('resources/pet/fishing/main.swf')
 const bodyOf = (swf: Buffer): Buffer => inflateSync(swf.subarray(8))
@@ -23,14 +23,23 @@ const methodAt = (body: Buffer): number => {
  */
 function displayed(input: Fry[]): number[] {
   const body = bodyOf(resource), code = body.subarray(methodAt(body), methodAt(body) + 361)
-  const stack: any[] = [], locals: any[] = [{}, input.map(f => ({ ...f }))]
-  const names: Record<number, string> = { 55: 'FryData', 1938: 'sortOn', 2200: 'NUMERIC', 2202: 'DESCENDING', 2746: 'arr', 2747: '*', 2748: 'push', 2749: 'sortOn', 2131: 'concat' }
+  const at = body.indexOf(Buffer.from('d030d266890773d166890773a1', 'hex'))
+  assert.ok(at >= 0, 'Recognize the movie comparator')
+  const compare = body.subarray(at, at + 67)
+  const holder = { sortBySelected: (a: Fry, b: Fry) => execute(compare, [null, a, b], 0, 67) }
+  return execute(code, [holder, input.map(f => ({ ...f }))], 63, 337).arr.map((f: Fry) => f.fryid)
+}
+
+function execute(code: Buffer, locals: any[], start: number, stop: number): any {
+  const stack: any[] = []
+  const names: Record<number, string> = { 55: 'FryData', 483: 'quantity', 796: 'sortBySelected', 897: 'level', 898: 'sell_price', 905: 'canSelected', 1938: 'sortOn', 2200: 'NUMERIC', 2202: 'DESCENDING', 2479: 'sort', 2746: 'arr', 2747: '*', 2748: 'push', 2749: 'sortOn', 2131: 'concat' }
   const strings: Record<number, string> = { 907: 'level', 915: 'canSelected', 910: 'qbFlag', 909: 'flag' }
-  let pc = 63, steps = 0
+  let pc = start, steps = 0
   const u30 = (): number => { let n = 0, shift = 0, b; do { b = code[pc++]!; n |= (b & 127) << shift; shift += 7 } while (b & 128); return n }
   const args = (n: number): any[] => stack.splice(stack.length - n, n)
-  while (pc < 337) {
+  while (pc < stop) {
     assert.ok(++steps < 10000, 'Sorting must terminate')
+    if (start === 0) assert.ok(stack.length <= 2 && locals.length <= 3, 'Comparator must fit the original AVM2 stack and local limits')
     const op = code[pc++]!
     if (op === 0x02 || op === 0x09 || op === 0x80) { if (op === 0x80) u30(); continue }
     if (op >= 0xd0 && op <= 0xd3) { stack.push(locals[op - 0xd0]); continue }
@@ -40,6 +49,10 @@ function displayed(input: Fry[]): number[] {
     if (op === 0x24) { stack.push(code.readInt8(pc++)); continue }
     if (op === 0x2c) { const id = u30(); assert.ok(id in strings); stack.push(strings[id]); continue }
     if (op === 0x2a) { stack.push(stack.at(-1)); continue }
+    if (op === 0x2b) { const right = stack.pop(), left = stack.pop(); stack.push(right, left); continue }
+    if (op === 0x29 || op === 0x30) { stack.pop(); continue }
+    if (op === 0x48) return stack.pop()
+    if (op === 0xa1 || op === 0xa2) { const right = stack.pop(), left = stack.pop(); stack.push(op === 0xa1 ? left - right : left * right); continue }
     if (op === 0x56) { stack.push(args(u30())); continue }
     if (op === 0x60) { assert.equal(u30(), 54); stack.push({ NUMERIC: 16, DESCENDING: 2 }); continue }
     if (op === 0x5d) { assert.equal(u30(), 55); stack.push(null); continue }
@@ -63,7 +76,7 @@ function displayed(input: Fry[]): number[] {
           }
           return 0
         })
-      } else { assert.ok(name === 'push' || name === 'concat'); value = target[name](...a) }
+      } else { assert.ok(name === 'push' || name === 'concat' || name === 'sort'); value = target[name](...a) }
       if (op === 0x46) stack.push(value)
       continue
     }
@@ -80,7 +93,7 @@ function displayed(input: Fry[]): number[] {
     }
     assert.fail(`Unsupported AVM2 opcode ${op.toString(16)} at ${pc - 1}`)
   }
-  return locals[0].arr.map((f: Fry) => f.fryid)
+  return locals[0]
 }
 
 test('the pond movie groups eligible fish first and sorts every group by increasing level', () => {
@@ -101,6 +114,12 @@ test('the pond movie groups eligible fish first and sorts every group by increas
   }
 })
 
+test('the actual Flash comparator orders equal-level fish by total harvest income', () => {
+  const fish = (fryid: number, quantity: number, sell_price: number, canSelected = true): Fry => ({ fryid, level: 3, flag: 0, quantity, sell_price, canSelected })
+  assert.deepEqual(displayed([fish(100, 1, 100), fish(101, 10, 5), fish(102, 2, 5), fish(103, 1, 1, false)]), [102, 101, 100, 103])
+  assert.deepEqual(displayed([fish(100, 1, 100, false), fish(101, 10, 5, false), fish(102, 2, 5, false)]), [102, 101, 100])
+})
+
 test('pond ordering patch is repeatable and preserves unrelated movie content', () => {
   mkdirSync('dist', { recursive: true })
   const file = join(mkdtempSync(resolve('dist/pond-order-')), 'main.swf')
@@ -109,9 +128,10 @@ test('pond ordering patch is repeatable and preserves unrelated movie content', 
   run(); assert.deepEqual(readFileSync(file), resource)
   const patched = bodyOf(resource), legacy = Buffer.from(patched), at = methodAt(patched)
   Buffer.from('d266df032421ab2a1108000029d266df032422ab120a0000d3d24fcd0e0110090000', 'hex').copy(legacy, at + 132)
+  Buffer.from('d066ba152c93072c8b072c8e072c8d0756046036669a1160366698116036669a116036669a1156044fbd1502', 'hex').copy(legacy, at + 186)
   Buffer.from('2400736306102c000009d066ba15620666bb156037878037d6d2668307240114100000d066ba15620624014fbe1502100f0000c2066206d066ba1566bf1515c7ffffd2120d0000d066ba15d24fc01501100a000060eb022cc9114fcc0801', 'hex').copy(legacy, at + 230)
   writeFileSync(file, Buffer.concat([resource.subarray(0, 8), deflateSync(legacy)]))
-  run(); assert.deepEqual(bodyOf(readFileSync(file)), patched, 'Only the featured-fish overrides may change')
+  run(); assert.deepEqual(bodyOf(readFileSync(file)), patched, 'Patch the recognized legacy shop without changing unrelated content')
   run(); assert.deepEqual(bodyOf(readFileSync(file)), patched)
   legacy[at + 20] ^= 1
   const unknown = Buffer.concat([resource.subarray(0, 8), deflateSync(legacy)])
