@@ -1,9 +1,10 @@
-import { SWEETHEART_DAILY_PRICE, sweetHeartCapacity } from '../../shared/sweetheart'
+import { SWEETHEART_DAILY_PRICE, SWEETHEART_MAX_DAYS, sweetHeartCapacity } from '../../shared/sweetheart'
 import { pay } from '../pet/items'
 import { speak } from '../pet/pet'
 import { info } from '../pet/store'
 import { addSweetHeart } from '../pet/vip'
 import { formatDate } from './date'
+import { div } from './dom'
 import { windowView } from './window-view'
 
 /** Buying or extending a booking shares the same cap on the actual remaining period. */
@@ -12,9 +13,18 @@ export function openSweetHeartPurchase(): void {
   windowView({
     msg: () => {
       const { remainingDays, availableDays } = capacity()
-      return availableDays
-        ? `剩余约${remainingDays}天，最多可续${availableDays}天\n托管费用：${SWEETHEART_DAILY_PRICE}元宝/一天`
-        : `剩余约${remainingDays}天，暂无可充值天数\n剩余时长上限为30天`
+      const value = (n: number): HTMLElement => div('sweetHeartValue', String(n))
+      return div(
+        'sweetHeartSummary',
+        div(
+          'sweetHeartPeriod',
+          div('sweetHeartRemaining', '剩余约', value(remainingDays), '天'),
+          div('sweetHeartAvailable', ...(availableDays ? ['最多可续', value(availableDays), '天'] : ['暂不可续费'])),
+        ),
+        availableDays
+          ? div('sweetHeartPrice', '托管费用：', value(SWEETHEART_DAILY_PRICE), ' 元宝 / 天')
+          : div('sweetHeartPrice', '剩余时长上限 ', value(SWEETHEART_MAX_DAYS), ' 天'),
+      )
     },
     max: () => capacity().availableDays,
     sweet: true,

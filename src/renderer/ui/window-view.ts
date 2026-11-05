@@ -5,7 +5,7 @@ import { button, div, img } from './dom'
 
 interface Dialog {
   title?: string
-  msg: string | (() => string)
+  msg: string | (() => string | HTMLElement)
   goods?: Pick<Good, 'url' | 'name'>[]
   /** Quantity range 1..max (initially max); a live limit of 0 disables purchasing. */
   max?: number | (() => number)
@@ -108,7 +108,7 @@ export function windowView(d: Dialog): void {
   closeCurrent = close
   const refresh = (): void => {
     refreshQuantity()
-    if (typeof d.msg === 'function') message.textContent = d.msg()
+    if (typeof d.msg === 'function') message.replaceChildren(d.msg())
   }
   submit = button('windowViewButSubmit', () => {
     const selected = num

@@ -58,7 +58,9 @@ app.whenReady().then(async () => {
   await pause(60)
   await click('.ui-state .sweetHeart')
   assert.equal(await count(), 20, 'remaining ten days leaves twenty purchasable days')
-  assert.match(await evaluate('document.querySelector(".msg").textContent'), /剩余约10天，最多可续20天/)
+  assert.equal(await evaluate('document.querySelector(".sweetHeartRemaining").textContent'), '剩余约10天')
+  assert.equal(await evaluate('document.querySelector(".sweetHeartAvailable").textContent'), '最多可续20天')
+  assert.equal(await evaluate('document.querySelector(".sweetHeartPrice").textContent'), '托管费用：300 元宝 / 天')
   assert.deepEqual(await buttons(), [false, false, true, true])
   await click('.cutUpOver')
   assert.equal(await count(), 10)
@@ -164,14 +166,21 @@ app.whenReady().then(async () => {
   const layouts = []
   for (const [width, height, scale] of [[800,600,1],[320,240,1.25],[426,234,3]]) {
     await resizeViewport(win,width,height,scale)
-    await reset(10)
-    await open()
-    const boxes = await evaluate('[".msg",".chooseNum",".windowViewButSubmit"].map(s=>{const r=document.querySelector(".ui-window "+s).getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom}})')
-    for (const b of boxes) assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width && b.bottom <= height)
-    assert.ok(boxes[0].bottom <= boxes[1].y + 0.5, 'remaining time message does not cover quantity controls')
-    assert.ok(boxes[1].bottom <= boxes[2].y + 0.5, 'quantity controls do not cover confirmation')
-    layouts.push({width,height,scale})
-    await close()
+    for (const days of [0, 10, 30, 60]) {
+      await reset(days)
+      await open()
+      const boxes = await evaluate('[".sweetHeart",".sweetHeartPeriod",".sweetHeartPrice",".chooseNum",".windowViewButSubmit"].map(s=>{const r=document.querySelector(".ui-window "+s).getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,height:r.height}})')
+      const [skin, period, price, quantity, submit] = boxes
+      for (const b of boxes) assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width && b.bottom <= height)
+      // The baked-in explanation and its border occupy the first 294px of the 405px skin.
+      assert.ok(period.y >= skin.y + skin.height * 294 / 405, 'remaining time stays below the original artwork lettering')
+      assert.ok(period.bottom <= price.y + 0.5, 'remaining time and daily price occupy separate lines')
+      assert.ok(price.bottom <= quantity.y + 0.5, 'price does not cover quantity controls')
+      assert.ok(quantity.bottom <= submit.y + 0.5, 'quantity controls do not cover confirmation')
+      assert.equal(await evaluate('document.querySelector(".sweetHeartSummary").scrollWidth <= document.querySelector(".sweetHeartSummary").clientWidth'), true, 'summary text fits without horizontal clipping')
+      layouts.push({width,height,scale,days})
+      await close()
+    }
   }
   await resizeViewport(win,800,600)
   await reset(10)

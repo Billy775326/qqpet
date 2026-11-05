@@ -149,6 +149,67 @@
   display: none;
 }
 
+/* The purchase details start below the lettering baked into the original skin. */
+.ui-window .sweetHeart:has(.sweetHeartSummary) .main {
+  padding: 296px 32px 55px;
+  justify-content: flex-start;
+  gap: 2px;
+}
+.ui-window .sweetHeartSummary {
+  width: 100%;
+  color: #754236;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 17px;
+  text-align: center;
+}
+.ui-window .sweetHeart:has(.sweetHeartSummary) .msg {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.ui-window .sweetHeartPeriod {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.ui-window .sweetHeartAvailable,
+.ui-window .sweetHeartPrice {
+  color: #946d60;
+}
+.ui-window .sweetHeartValue {
+  display: inline;
+  margin: 0 3px;
+  color: #a04463;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ui-window .sweetHeart:has(.sweetHeartSummary) .chooseNum {
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.ui-window .sweetHeart:has(.sweetHeartSummary) .chooseNum::before {
+  content: '续费';
+  margin-right: 6px;
+  color: #754236;
+  font-weight: 400;
+}
+.ui-window .sweetHeart:has(.sweetHeartSummary) .chooseNum::after {
+  content: '天';
+  margin-left: 6px;
+  color: #754236;
+  font-weight: 400;
+}
+.ui-window .sweetHeart:has(.sweetHeartSummary) .chooseNum .content {
+  width: 56px;
+  color: #a04463;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Preserve the original highlights and shadows while changing only icon hue. */
 .ui-window .chooseNum {
   --quantity-highlight: #e7b235;
