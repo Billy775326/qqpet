@@ -1,4 +1,4 @@
-import { CARE_NEEDS, canBuyCareGood, careGoods, type CareNeed } from '../pet/care'
+import { CARE_NEEDS, canBuyCareGood, careGoods } from '../pet/care'
 import { price } from '../pet/items'
 import { save, update } from '../pet/store'
 import { openFrame } from './box'
@@ -29,19 +29,13 @@ export function openCareSettings(): void {
     b.addEventListener('click', run)
     return b
   }
-  const section = (title: string, ...children: (Node | string)[]): HTMLElement => div('careSection', div('careLabel', title), ...children)
-  const details = div('careDetails')
-  const restocking = div('careRestocking')
-  const tabs = div('careTabs')
-  tabs.setAttribute('role', 'tablist')
-  tabs.setAttribute('aria-label', '托管类别')
-  const selectTab = (type: string): void => {
-    details.dataset.type = type
-    restocking.hidden = type === 'daily'
-    for (const tab of tabs.children) tab.setAttribute('aria-selected', String((tab as HTMLElement).dataset.type === type))
-  }
-  const render = (need: CareNeed): void => {
-    selectTab(need.type)
+  const care = div('careSupplies')
+  care.setAttribute('role', 'group')
+  care.setAttribute('aria-label', '日常照料')
+  const columns = div('careGrid careColumns', div('', '项目'), div('', '触发限额'), div('', '使用用品'))
+  columns.setAttribute('aria-hidden', 'true')
+  care.append(div('careSectionHeading', div('careLabel', '日常照料'), div('careHint', '低于限额时自动照料')), columns)
+  for (const need of CARE_NEEDS) {
     const slider = document.createElement('input')
     slider.type = 'range'
     slider.min = '1'
@@ -51,7 +45,10 @@ export function openCareSettings(): void {
     slider.setAttribute('aria-label', `自动${need.label}限额`)
     const threshold = div('careThreshold')
     const describeThreshold = (): void => {
-      threshold.textContent = `${slider.value}%（当前约 ${Math.round(save.petComputedlInfo[`${need.stat}Max`] * Number(slider.value) / 100)}）`
+      threshold.textContent = `${slider.value}%`
+      const description = `${need.statLabel}值低于上限的 ${slider.value}%（当前约 ${Math.round(save.petComputedlInfo[`${need.stat}Max`] * Number(slider.value) / 100)}）时${need.label}`
+      slider.setAttribute('aria-valuetext', description)
+      slider.title = threshold.title = description
     }
     slider.addEventListener('input', () => {
       draft[need.percent] = Number(slider.value)
@@ -60,7 +57,7 @@ export function openCareSettings(): void {
     describeThreshold()
     const items = document.createElement('select')
     items.setAttribute('aria-label', need.itemLabel)
-    items.add(new Option('自动选择（优先使用背包）', ''))
+    items.add(new Option('自动选择', ''))
     for (const g of careGoods(need)) {
       const purchasable = canBuyCareGood(g)
       const status = g.num ? `背包 ${g.num} 份` : purchasable ? `${price(g)} 元宝/份` : '暂不可购买'
@@ -72,39 +69,24 @@ export function openCareSettings(): void {
     if (selected && !Array.from(items.options).some(o => o.value === selected))
       items.add(new Option('原选择已不可用，请重新选择', selected))
     items.value = selected
-    items.addEventListener('change', () => { draft[need.item] = items.value })
-    details.replaceChildren(
-      section(`自动${need.label}限额`, div('careHint', `${need.statLabel}值低于上限的以下比例时${need.label}。`), div('careRange', slider, threshold)),
-      section(need.itemLabel, items, div('careHint', '指定后仅使用所选用品；自动选择时优先使用背包。')),
-    )
+    const describeItem = (): void => { items.title = items.selectedOptions[0]?.textContent ?? '' }
+    describeItem()
+    items.addEventListener('change', () => { draft[need.item] = items.value; describeItem() })
+    const row = div('careGrid careRow', div('careCategory', need.label), div('careRange', slider, threshold), items)
+    row.dataset.type = need.type
+    care.append(row)
   }
-  for (const need of CARE_NEEDS) {
-    const tab = action(need.label, 'careTab', () => render(need))
-    tab.dataset.type = need.type
-    tab.setAttribute('role', 'tab')
-    tabs.append(tab)
-  }
-  const dailyTab = action('任务', 'careTab', () => {
-    selectTab('daily')
-    const daily = document.createElement('input')
-    daily.type = 'checkbox'
-    daily.checked = draft.careAutoDaily
-    daily.setAttribute('aria-label', '自动完成每日任务')
-    daily.dataset.setting = 'careAutoDaily'
-    daily.addEventListener('change', () => { draft.careAutoDaily = daily.checked })
-    const label = document.createElement('label')
-    label.className = 'careToggle'
-    label.append(daily, div('', '自动完成每日任务并领奖'))
-    details.replaceChildren(
-      section('今日任务', label, div('careHint', '空闲时按需喂食、清洁、玩耍，或自动逗乐、学习、打工、旅游；完成后领取今日任务奖励。')),
-      div('careHint careDailyHint', '喂养任务遵守对应限额、用品选择和补货设置，未到限额时等待。小游戏与升学考试仍需手动操作。'),
-      div('careHint careDailyHint', '已有活动或正在操作界面时不启动新任务。关闭后停止新增任务，已开始的活动正常结束。'),
-    )
-  })
-  dailyTab.dataset.type = 'daily'
-  dailyTab.setAttribute('role', 'tab')
-  tabs.append(dailyTab)
-  render(CARE_NEEDS[0])
+  care.append(div('careHint careSuppliesHint', '限额对应饥饿、清洁、心情；自动选择优先使用背包。'))
+
+  const daily = document.createElement('input')
+  daily.type = 'checkbox'
+  daily.checked = draft.careAutoDaily
+  daily.setAttribute('aria-label', '自动完成每日任务')
+  daily.dataset.setting = 'careAutoDaily'
+  daily.addEventListener('change', () => { draft.careAutoDaily = daily.checked })
+  const dailyLabel = document.createElement('label')
+  dailyLabel.className = 'careToggle careDailyToggle'
+  dailyLabel.append(daily, div('', '自动完成每日任务并领奖'))
 
   const autoBuy = document.createElement('input')
   autoBuy.type = 'checkbox'
@@ -114,17 +96,27 @@ export function openCareSettings(): void {
   autoBuy.addEventListener('change', () => { draft.careAutoBuy = autoBuy.checked })
   const toggle = document.createElement('label')
   toggle.className = 'careToggle'
-  toggle.append(autoBuy, div('', '自动购买托管用品'))
-  restocking.append(section('库存不足时', toggle, div('careHint', '适用于食物、清洁用品和玩具。开启后缺货按需买一份；自动选择时购买当前类别可买的最低单价用品。')))
+  toggle.append(autoBuy, div('', '缺货时自动购买用品'))
+  care.append(div('careRestocking', toggle, div('careHint', '每次补 1 份')))
+  const rules = document.createElement('details')
+  rules.className = 'careRules'
+  const summary = document.createElement('summary')
+  summary.textContent = '执行与购买规则'
+  rules.append(
+    summary,
+    div('careHint', '指定用品后仅使用该用品；自动选择优先使用背包。缺货且允许购买时，自动选择会购买当前类别可买的最低单价用品，遵循商城、等级、粉钻和余额限制。'),
+    div('careHint', '今日任务可自动喂食、清洁、玩耍、逗乐、学习、打工和旅游并领奖。照料未低于限额时等待，不消耗或购买用品。小游戏与升学考试仍需手动操作。'),
+    div('careHint', '已有活动或正在操作界面时不启动新任务；关闭自动任务后，已开始的活动正常结束。'),
+  )
   const error = div('careError')
   error.setAttribute('role', 'alert')
   const content = div(
     'sweetHeartCareSettings focusPress',
     div('careHeader', div('careTitle', '托管设置'), action('关闭', 'careClose', () => close())),
-    tabs,
-    details,
-    restocking,
-    div('careHint careNotice', '设置仅在贴心宝贝已开启且未到期时生效。'),
+    div('careHint careNotice', '贴心宝贝已开启且未到期时，以下设置生效。'),
+    care,
+    div('careDaily', dailyLabel, div('careHint', '空闲时执行，照料遵守上方限额；小游戏与考试需手动。')),
+    rules,
     error,
     div('careActions', action('取消', 'careCancel', () => close()), action('保存设置', 'careSave', () => {
       const previous = preferences()
@@ -139,7 +131,7 @@ export function openCareSettings(): void {
     })),
   )
   content.addEventListener('pointerdown', event => {
-    if ((event.target as Element).closest('input, select, button, label')) event.stopPropagation()
+    if ((event.target as Element).closest('input, select, button, label, summary')) event.stopPropagation()
   })
   const remove = openFrame(content)
   const escape = (event: KeyboardEvent): void => { if (event.key === 'Escape') { event.stopPropagation(); close() } }
