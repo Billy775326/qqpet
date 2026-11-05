@@ -9,47 +9,47 @@ package com.UIComponents.ScrollBar
    import flash.events.MouseEvent;
    import flash.geom.Rectangle;
    import flash.utils.getDefinitionByName;
-   
+
    [Embed(source="/_assets/assets.swf", symbol="symbol351")]
    public class SaltedFishScrollBar extends UIComponent
    {
-      
+
       private var startY:Number;
-      
+
       private var bg:MovieClip;
-      
+
       private var speed:Number = 10;
-      
+
       private var _thiswidth:Number;
-      
+
       private var container:Sprite;
-      
+
       private var up_btn:SimpleButton;
-      
+
       private var myMask:MovieClip;
-      
+
       private var _thisheight:Number;
-      
+
       private var down_btn:SimpleButton;
-      
+
       private var handler:MovieClip;
-      
+
       private var rectangle:Rectangle;
-      
+
       private var target:DisplayObject;
-      
+
       public function SaltedFishScrollBar()
       {
          super();
          _thiswidth = this.width;
          _thisheight = this.height;
       }
-      
+
       private function enterFrameHandler(param1:Event) : void
       {
          target.y = startY - (handler.y - up_btn.y - up_btn.height) / (bg.height - down_btn.height - up_btn.height - handler.height) * (target.height - myMask.height);
       }
-      
+
       public function set effectObject(param1:String) : void
       {
          target = this.parent.getChildByName(param1);
@@ -79,7 +79,7 @@ package com.UIComponents.ScrollBar
       {
          return target == null ? 0 : Math.max(0,startY - target.y);
       }
-      
+
       private function downClickHandler(param1:MouseEvent) : void
       {
          var _loc2_:Number = NaN;
@@ -99,7 +99,7 @@ package com.UIComponents.ScrollBar
             target.y -= target.height * (_loc2_ / (bg.height - down_btn.height - up_btn.height));
          }
       }
-      
+
       private function createClip(param1:String) : MovieClip
       {
          var clip:MovieClip = null;
@@ -116,7 +116,7 @@ package com.UIComponents.ScrollBar
          }
          return clip;
       }
-      
+
       private function mouseOutHandler(param1:MouseEvent) : void
       {
          handler.stopDrag();
@@ -124,7 +124,7 @@ package com.UIComponents.ScrollBar
          handler.removeEventListener(MouseEvent.MOUSE_OUT,mouseOutHandler);
          this.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);
       }
-      
+
       private function upClickHandler(param1:MouseEvent) : void
       {
          var _loc2_:Number = NaN;
@@ -144,7 +144,7 @@ package com.UIComponents.ScrollBar
             target.y += (target.height - myMask.height) * (_loc2_ / (bg.height - down_btn.height - up_btn.height - handler.height));
          }
       }
-      
+
       private function init() : void
       {
          if(container == null)
@@ -182,7 +182,7 @@ package com.UIComponents.ScrollBar
          addListen();
          adjustment();
       }
-      
+
       private function mouseUpHandler(param1:MouseEvent) : void
       {
          handler.stopDrag();
@@ -190,7 +190,7 @@ package com.UIComponents.ScrollBar
          handler.removeEventListener(MouseEvent.MOUSE_OUT,mouseOutHandler);
          this.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);
       }
-      
+
       private function handlerClickHandler(param1:MouseEvent) : void
       {
          handler.startDrag(false,new Rectangle(bg.x,up_btn.y + up_btn.height,0,bg.height - up_btn.height - down_btn.height - handler.height));
@@ -198,7 +198,7 @@ package com.UIComponents.ScrollBar
          stage.addEventListener(MouseEvent.MOUSE_UP,mouseUpHandler);
          this.addEventListener(Event.ENTER_FRAME,enterFrameHandler);
       }
-      
+
       private function createButton(param1:String) : SimpleButton
       {
          var clip:SimpleButton = null;
@@ -215,7 +215,7 @@ package com.UIComponents.ScrollBar
          }
          return clip;
       }
-      
+
       private function removeListen() : void
       {
          up_btn.removeEventListener(MouseEvent.CLICK,upClickHandler);
@@ -223,7 +223,7 @@ package com.UIComponents.ScrollBar
          bg.removeEventListener(MouseEvent.CLICK,bgClickHandler);
          handler.removeEventListener(MouseEvent.MOUSE_DOWN,handlerClickHandler);
       }
-      
+
       private function adjustment() : void
       {
          myMask.width = _thiswidth;
@@ -255,7 +255,7 @@ package com.UIComponents.ScrollBar
             handler.height = myMask.height / target.height * (_thisheight - up_btn.height - down_btn.height);
          }
       }
-      
+
       private function bgClickHandler(param1:MouseEvent) : void
       {
          if(this.mouseY - up_btn.y - up_btn.height < handler.height / 2)
@@ -272,7 +272,7 @@ package com.UIComponents.ScrollBar
          }
          target.y = -(handler.y - up_btn.y - up_btn.height) / (bg.height - down_btn.height - up_btn.height - handler.height) * (target.height - myMask.height);
       }
-      
+
       public function change() : void
       {
          trace(target.height);
@@ -289,7 +289,7 @@ package com.UIComponents.ScrollBar
             handler.height = myMask.height / target.height * (_thisheight - up_btn.height - down_btn.height);
          }
       }
-      
+
       private function addListen() : void
       {
          up_btn.addEventListener(MouseEvent.CLICK,upClickHandler);
@@ -299,4 +299,3 @@ package com.UIComponents.ScrollBar
       }
    }
 }
-
