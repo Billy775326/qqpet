@@ -137,11 +137,32 @@ test('stale generated daily tasks cannot be claimed and all milestone reward IDs
   const { api } = await taskModel(save)
   assert.equal(api.todayTasks().length, 0)
   assert.equal(api.claim('daily', 0), false)
-  for (const t of api.milestones()) for (const good of t.good) {
-    assert.ok(good.id, t.id)
-    assert.ok(good.name, t.id)
-    assert.ok(good.num > 0, t.id)
+  for (const t of api.milestones()) {
+    assert.ok(t.good.some((g: { type: string }) => g.type !== 'nums'), `${t.id} includes a themed item`)
+    for (const good of t.good) {
+      assert.ok(good.id, t.id)
+      assert.ok(good.name, t.id)
+      assert.ok(Number.isInteger(good.num) && good.num > 0, t.id)
+      assert.ok(!good.PD && good.type !== 'medicine', `${t.id} can be received without paid membership or treatment`)
+      if (good.type === 'nums') assert.equal(good.id, 'yb', 'currency is the only functional reward')
+    }
   }
+})
+
+test('reward rebalance preserves old claims while unclaimed goals grant the new themed bundle once', async () => {
+  const save = startSave(null)
+  save.havePet = true
+  save.saveJsonData.task = JSON.stringify({ milestones: { counters: { Work: 5 }, best: { primary: 1 }, claimed: ['first-diploma'] } })
+  const { api, state } = await taskModel(save)
+  assert.equal(api.claimMilestone('first-diploma'), false, 'an old currency-only reward is never granted again')
+  assert.equal(state.rewards.length, 0)
+  const goods = api.claimMilestone('shifts-5')
+  assert.deepEqual(Array.from(goods, (g: { id: string; num: number }) => [g.id, g.num]), [['100010037', 1], ['yb', 10]])
+  assert.equal(api.claimMilestone('shifts-5'), false)
+  assert.equal(state.rewards.length, 1)
+  const restored = await taskModel(validatedImport(JSON.parse(JSON.stringify(save))))
+  assert.equal(restored.api.claimMilestone('first-diploma'), false)
+  assert.equal(restored.api.claimMilestone('shifts-5'), false)
 })
 
 test('new goals recognize saved cumulative amusement, higher diplomas and longer growth history', () => {
