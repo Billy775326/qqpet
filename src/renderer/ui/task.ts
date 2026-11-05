@@ -4,6 +4,7 @@ import { openBox } from './box'
 import './css/task.css'
 import { button, div, img } from './dom'
 import { showResult } from './result'
+import { rewardIcon } from './reward-icon'
 
 type TaskTab = Tab | 'milestones'
 const TASK_TABS: Record<TaskTab, string> = { ...TABS, milestones: '成长历程' }
@@ -44,7 +45,7 @@ export function openTask(): void {
         div('to_left f1 fC w0', div('to_label', `${t.label}（${t.once ? Math.min(t.done, t.num) : t.done}/${t.num}） `), div('to_msg', t.msg)),
         div(
           'to_right fc',
-          ...t.good.map((g) => Object.assign(img('goodImg', g.url), { title: `${g.outOfPrint ? '绝版：' : ''}${g.name}*${g.num}` })),
+          ...t.good.map((g) => Object.assign(img('goodImg', rewardIcon(g.url)), { title: `${g.outOfPrint ? '绝版：' : ''}${g.name}*${g.num}` })),
           button(
             t.take ? 'but_small taskClaim disable' : 'but_small taskClaim',
             () => {

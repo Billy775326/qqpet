@@ -21,7 +21,7 @@ disk.saveJsonData.task = JSON.stringify({
   dailyDay: day.getTime() / 1000,
   doNums: { Amusing: 10, Study: 3, Work: 1, Eat: 1 },
   daily: [{ label: '喂我吃东西2次', msg: '吃饱饱才能长高高~', obj: 'Eat', num: 2 }],
-  taskList: { daily: [{ take: false, good: [{ id: 'yb', type: 'nums', name: '元宝', url: 'pet/img_res/muns/l1.gif', num: 20 }] }] },
+  taskList: { daily: [{ take: false, good: [{ id: 'yb', type: 'nums', name: '元宝', url: 'pet/img_res/muns/l1.gif', num: 20 }, { id: 't0002', type: 'toy', name: '棒球', url: 'pet/img_res/toy/t0002.png', num: 1 }] }] },
 })
 disk.gameSaveDatas.travel_china = Array.from({ length: 5 }, (_, i) => ({ name: String(i), value: 1 }))
 ipcMain.handle('fixture:load', () => structuredClone(disk))
@@ -57,6 +57,31 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('document.querySelectorAll(".taskOnce").length'), 1)
   assert.equal(await evaluate('document.querySelectorAll(".taskOnce[data-task-id=travel-2]").length'), 0)
   assert.equal(await evaluate('document.querySelectorAll(".taskFilters,.taskSummary,.taskBadge,.taskHint,.taskFootnote").length'), 0, 'the original layout has no extra header or filter rows')
+  const cutouts = await evaluate(`(async()=>{
+    const results=[];
+    for(const id of ['t0002','t0008','100010061']) for(const scale of [1,2]) {
+      const img=new Image();img.src='pet/img_res/rewards/'+id+(scale===2?'@2x':'')+'.png';await img.decode();
+      const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+      const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let transparent=0,white=0;for(let i=0;i<pixels.length;i+=4){if(pixels[i+3]===0)transparent++;if(pixels[i]>220&&pixels[i+1]>220&&pixels[i+2]>220&&pixels[i+3]>220)white++}
+      const corner=(x,y)=>pixels[(y*canvas.width+x)*4+3];
+      results.push({id,scale,width:canvas.width,height:canvas.height,transparent,white,corners:[corner(0,0),corner(canvas.width-1,0),corner(0,canvas.height-1),corner(canvas.width-1,canvas.height-1)]});
+    }return results;
+  })()`)
+  for (const icon of cutouts) {
+    assert.equal(icon.width, 50 * icon.scale)
+    assert.equal(icon.height, 50 * icon.scale)
+    assert.deepEqual(icon.corners, [0, 0, 0, 0], 'reward cutouts have genuinely transparent corners')
+    assert.ok(icon.transparent > icon.width * icon.height / 4, 'the opaque white matte is absent')
+    if (icon.id === 't0002') assert.ok(icon.white > 20, 'the baseball retains its white surface')
+  }
+  assert.match(await evaluate('document.querySelector("[data-task-id=daily-0] img[title^=棒球]").src'), /rewards\/t0002\.png$/)
+  assert.equal(JSON.parse(disk.saveJsonData.task).taskList.daily[0].good[1].url, 'pet/img_res/toy/t0002.png', 'display fixes do not rewrite saved reward data')
+  await evaluate('fixture.addCount("Eat");true')
+  await pause(1100)
+  await click('[data-task-id=daily-0] .taskClaim')
+  assert.match(await evaluate('document.querySelector(".getResult img[title^=棒球]").src'), /rewards\/t0002\.png$/, 'legacy reward confirmation uses the same transparent cutout')
+  await click('.getResult .but_small')
   await click('[data-tab=growth]')
   assert.equal(await evaluate('document.querySelectorAll(".taskOnce").length'), 16)
   await click('[data-task-id=growth-1] .taskClaim')
@@ -81,6 +106,11 @@ app.whenReady().then(async () => {
   await click('.getResult .but_small')
   await click('[data-tab=milestones]')
   assert.equal(await evaluate('document.querySelectorAll(".taskOnce").length'), 50)
+  for (const [task, id] of [['first-toy','t0002'],['toys-50','t0007'],['games-50','t0008'],['trips-30','100010061']]) {
+    const source = await evaluate('document.querySelector("[data-task-id='+task+'] .goodImg").src')
+    assert.ok(source.endsWith((id === 't0007' ? 'toy/' : 'rewards/') + id + '.png'), 'task rewards use the intended icon: ' + task)
+  }
+
   assert.equal(await evaluate('document.querySelector("[data-task-id=first-diploma] .to_label").textContent'), '第一张学历（1/1） ')
   const beforeMeal = Number(disk.selfGoodDatas.food.find(g => g.startsWith('_102010001*')).split('*')[1])
   await click('[data-task-id=first-meal] .taskClaim')
@@ -157,7 +187,7 @@ app.whenReady().then(async () => {
   assert.match(await evaluate('document.querySelector("[data-task-id=shifts-30] .taskClaim").textContent'), /已领取/)
   await evaluate('document.querySelector("[data-task-id=lessons-25]").scrollIntoView({block:"center"});true')
   writeFileSync('dist/tasks-study-work.png', (await win.webContents.capturePage()).toPNG())
-  writeFileSync('dist/tasks-results.json', JSON.stringify({ cases, permanentGoals: { ddw: 6, growth: 12, journey: 50 }, repeatedClaim: true, reload: true, timerCleanup: true }, null, 2))
+  writeFileSync('dist/tasks-results.json', JSON.stringify({ cases, permanentGoals: { ddw: 6, growth: 12, journey: 50 }, transparentRewardIcons: cutouts.length, legacyRewardIcons: true, repeatedClaim: true, reload: true, timerCleanup: true }, null, 2))
   console.log('Task UI verified: 20 viewport/tab combinations; original layout, legacy source indices, permanent claims, reload and timer cleanup')
   win.destroy()
   app.quit()

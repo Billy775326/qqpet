@@ -1,0 +1,37 @@
+{
+    "tool":  "image_gen (built-in)",
+    "operation":  "background-extraction",
+    "exports":  "50x50 RGBA PNG with 100x100 @2x sibling; original source assets retained",
+    "assets":  [
+                   {
+                       "id":  "t0002",
+                       "source":  "resources/pet/img_res/toy/t0002.png",
+                       "files":  [
+                                     "resources/pet/img_res/rewards/t0002.png",
+                                     "resources/pet/img_res/rewards/t0002@2x.png"
+                                 ],
+                       "prompt":  "Use case: background-extraction. Edit target: the supplied original QQPet inventory/reward icon, depicting a small illustrated white baseball with red stitching and blue shaded lower half. Remove ONLY the opaque white rectangular background and the white matte fringe outside the silhouette, replacing it with genuine transparent alpha. Preserve the original object\u0027s exact silhouette, angle, colors, internal white areas, pixel-art/cartoon shading, and size and position relative to the canvas; do not redraw, redesign, beautify, enlarge the object, add details, alter framing, or add text. Keep the complete object uncropped and preserve fine edges such as stitching, bat handle and prawn antenna/legs. A faint gray drop shadow may be retained with semitransparent alpha but no white halo. Output a transparent PNG icon on the same square canvas composition, ready for use at 50x50 pixels. No checkerboard pattern in the actual image, no background color, no extra objects.",
+                       "reference":  "resources/pet/img_res/toy/t0002.png"
+                   },
+                   {
+                       "id":  "t0008",
+                       "source":  "resources/pet/img_res/toy/t0008.png",
+                       "files":  [
+                                     "resources/pet/img_res/rewards/t0008.png",
+                                     "resources/pet/img_res/rewards/t0008@2x.png"
+                                 ],
+                       "prompt":  "Use case: background-extraction. Edit target: the supplied original QQPet inventory/reward icon, depicting a small golden wooden baseball bat diagonally from upper left to lower right. Remove ONLY the opaque white rectangular background and the white matte fringe outside the silhouette, replacing it with genuine transparent alpha. Preserve the original object\u0027s exact silhouette, angle, colors, internal white areas, pixel-art/cartoon shading, and size and position relative to the canvas; do not redraw, redesign, beautify, enlarge the object, add details, alter framing, or add text. Keep the complete object uncropped and preserve fine edges such as stitching, bat handle and prawn antenna/legs. A faint gray drop shadow may be retained with semitransparent alpha but no white halo. Output a transparent PNG icon on the same square canvas composition, ready for use at 50x50 pixels. No checkerboard pattern in the actual image, no background color, no extra objects.",
+                       "reference":  "resources/pet/img_res/toy/t0008.png"
+                   },
+                   {
+                       "id":  "100010061",
+                       "source":  "resources/pet/img_res/food/100010061.gif",
+                       "files":  [
+                                     "resources/pet/img_res/rewards/100010061.png",
+                                     "resources/pet/img_res/rewards/100010061@2x.png"
+                                 ],
+                       "prompt":  "Use case: background-extraction. Edit target: the supplied original QQPet inventory/reward icon, depicting a small orange-red illustrated cooked prawn facing left, long antenna pointing toward upper right. Remove ONLY the opaque white rectangular background and the white matte fringe outside the silhouette, replacing it with genuine transparent alpha. Preserve the original object\u0027s exact silhouette, angle, colors, internal white areas, pixel-art/cartoon shading, and size and position relative to the canvas; do not redraw, redesign, beautify, enlarge the object, add details, alter framing, or add text. Keep the complete object uncropped and preserve fine edges such as stitching, bat handle and prawn antenna/legs. A faint gray drop shadow may be retained with semitransparent alpha but no white halo. Output a transparent PNG icon on the same square canvas composition, ready for use at 50x50 pixels. No checkerboard pattern in the actual image, no background color, no extra objects.",
+                       "reference":  "resources/pet/img_res/food/100010061@2x.png"
+                   }
+               ]
+}
