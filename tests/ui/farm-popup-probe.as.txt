@@ -1,10 +1,32 @@
       // Test-only callback; this method is never added to the shipped farm movie.
+      private var farmProbeIds:Dictionary = new Dictionary(true);
+      private var farmProbeCreated:int = 0;
+
       public function farmProbe(action:String = "state", index:int = 0) : Object
       {
          if(face == null || face._shop == null) return {ready:false};
          if(action == "open") face._title.getChildByName("ButtonShop").dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         if(action == "closeShop") face._shop.close_btn.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         if(action == "tab") face._shop["tab" + index].dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         if(action == "budget") face._user.wealth = String(index);
+         if(action == "wheel") face._shop.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_WHEEL,true,false,0,0,null,false,false,false,false,index));
+         if(action == "warehouse") face._title.getChildByName("ButtonWarehouse").dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         if(action == "closeWarehouse") face._warehouse.close_btn.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
          var container:Sprite = face._shop.getChildByName("container") as Sprite;
          if(action == "item" && container != null) container.getChildAt(index).dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         if(action == "hover" && container != null) container.getChildAt(index).dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER,true));
+         var cards:Array = [];
+         var availableCards:int = 0;
+         if(container != null)
+         {
+            for(var cardIndex:int = 0;cardIndex < container.numChildren;cardIndex++)
+            {
+               var card:DisplayObject = container.getChildAt(cardIndex);
+               if(farmProbeIds[card] == undefined) farmProbeIds[card] = ++farmProbeCreated;
+               cards.push(farmProbeIds[card]);
+               if(card.hasOwnProperty("available") && Object(card).available) availableCards++;
+            }
+         }
          var popups:Array = [];
          var successTips:int = 0;
          for(var i:int = 0;i < stage.numChildren;i++)
@@ -19,8 +41,11 @@
             {
                if(action == "cancel") child.cancel.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
                if(action == "buy") child.define.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
-               popups.push({x:child.x,y:child.y,width:child.width,height:child.height,scaleX:child.scaleX,scaleY:child.scaleY,title:child.title_txt.text,cost:Number(child.price_txt.text.slice(0,child.price_txt.text.indexOf("元")))});
+               if(action == "quantity") { child.stepper.value = index; child.stepper.dispatchEvent(new Event(Event.CHANGE)); }
+               popups.push({x:child.x,y:child.y,width:child.width,height:child.height,scaleX:child.scaleX,scaleY:child.scaleY,title:child.title_txt.text,cost:Number(child.price_txt.text.slice(0,child.price_txt.text.indexOf("元"))),confirmEnabled:child.define.mouseEnabled,quantity:child.stepper.value});
             }
          }
-         return {ready:true,count:container == null ? 0 : container.numChildren,popups:popups,balance:Number(face._user.wealth),children:stage.numChildren,successTips:successTips};
+         var label:DisplayObject = face._shop.getChildByName("shopStatus");
+         var hover:Sprite = stage.getChildByName("shopHint") as Sprite;
+         return {ready:true,count:container == null ? 0 : container.numChildren,popups:popups,balance:Number(face._user.wealth),children:stage.numChildren,successTips:successTips,cards:cards,created:farmProbeCreated,scrollY:container == null ? 0 : container.y,shopScaleX:face._shop.scaleX,shopVisible:face._shop.visible,status:label == null ? "" : Object(label).text,hint:hover != null,hintText:hover == null ? "" : Object(hover.getChildAt(0)).text,available:availableCards,warehouseVisible:face._warehouse.visible};
       }

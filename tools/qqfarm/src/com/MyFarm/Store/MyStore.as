@@ -9,10 +9,13 @@ package com.MyFarm.Store
    import flash.display.Sprite;
    import flash.display.Stage;
    import flash.events.Event;
+   import flash.events.IOErrorEvent;
    import flash.events.MouseEvent;
    import flash.filters.ColorMatrixFilter;
    import flash.net.URLLoader;
    import flash.net.URLRequest;
+   import flash.text.TextField;
+   import flash.text.TextFormat;
    
    public class MyStore
    {
@@ -22,8 +25,6 @@ package com.MyFarm.Store
       private var margins:Number = 20;
       
       private var box:DisplayBox;
-      
-      private var interval:Number = 20;
       
       private var stage:Stage;
       
@@ -44,6 +45,34 @@ package com.MyFarm.Store
       private var xml_array:Array = new Array();
       
       private var myBox:MovieClip;
+
+      private var shopWidth:Number;
+
+      private var catalogues:Object = {};
+
+      private var cardsByTab:Object = {};
+
+      private var loading:URLLoader;
+
+      private var lastWealth:Number = -1;
+
+      private var lastRank:int = -1;
+
+      private var renderedTab:String = "";
+
+      private var renderedOrder:String = "";
+
+      private var status:TextField = new TextField();
+
+      private var hint:Sprite;
+
+      private var hintText:TextField;
+
+      private var gray:Array = [new ColorMatrixFilter([0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0,0,0,0.5,0])];
+
+      private const CARD_STEP_X:Number = 72;
+
+      private const CARD_STEP_Y:Number = 88;
       
       public function MyStore(param1:MovieClip, param2:Stage, param3:Array)
       {
@@ -51,6 +80,7 @@ package com.MyFarm.Store
          stage = param2;
          _showBoxArr = param3;
          myBox = param1;
+         shopWidth = myBox.width;
          xml_array["tab1"] = "com/MyFarm/data/xml/seed.xml";
          xml_array["tab2"] = "com/MyFarm/data/xml/props.xml";
          init();
@@ -72,29 +102,63 @@ package com.MyFarm.Store
          loaderXML(xml_array["tab1"]);
          container.name = "container";
          myBox.addChild(container);
+         container.addEventListener(MouseEvent.CLICK,clickHandler);
+         container.addEventListener(MouseEvent.MOUSE_OVER,showHint);
+         container.addEventListener(MouseEvent.MOUSE_MOVE,moveHint);
+         container.addEventListener(MouseEvent.MOUSE_OUT,hideHint);
+         status.name = "shopStatus";
+         status.defaultTextFormat = new TextFormat(null,11,9782304);
+         status.mouseEnabled = false;
+         status.x = myBox.tab2.x + myBox.tab2.width + 10;
+         status.y = myBox.tab1.y;
+         status.width = shopWidth - status.x - 18;
+         status.height = 20;
+         myBox.addChild(status);
          myBox.addEventListener(Event.ENTER_FRAME,refresh);
+         myBox.addEventListener(MouseEvent.MOUSE_WHEEL,wheelHandler);
       }
       
       private function refresh(param1:Event) : void
       {
-         if(myBox.visible == shown)
+         if(!myBox.visible)
          {
+            if(shown) hideHint();
+            shown = false;
             return;
          }
-         shown = myBox.visible;
+         var reopening:Boolean = !shown;
+         shown = true;
          rank = int(install._user.rank);
-         if(shown && currentXML != null)
+         if(reopening && currentXML == null && loading == null) loaderXML(xml_array[currentTab]);
+         if(currentXML != null && (lastRank != rank || lastWealth != Number(install._user.wealth)))
          {
-            clear();
             getXML(currentXML);
          }
       }
       
       private function loaderXML(param1:String) : void
       {
-         var _loc2_:URLLoader = null;
-         _loc2_ = new URLLoader(new URLRequest(param1));
-         _loc2_.addEventListener(Event.COMPLETE,loadXMLComplete);
+         stopLoading();
+         if(catalogues[currentTab] != null)
+         {
+            getXML(catalogues[currentTab]);
+            return;
+         }
+         status.text = "正在读取商品…";
+         loading = new URLLoader();
+         loading.addEventListener(Event.COMPLETE,loadXMLComplete);
+         loading.addEventListener(IOErrorEvent.IO_ERROR,loadXMLError);
+         loading.load(new URLRequest(param1));
+      }
+
+      private function stopLoading() : void
+      {
+         if(loading == null) return;
+         loading.removeEventListener(Event.COMPLETE,loadXMLComplete);
+         loading.removeEventListener(IOErrorEvent.IO_ERROR,loadXMLError);
+         try { loading.close(); }
+         catch(error:Error) { trace("Farm shop catalogue request already finished: " + error.message); }
+         loading = null;
       }
       
       private function buySomething(param1:uint, param2:Number) : void
@@ -106,6 +170,11 @@ package com.MyFarm.Store
          var item:XML = currentXML.item[param1];
          var obj:String = String(item.@object);
          _loc3_ = int(currentTab.slice(3,4)) - 1;
+         if(!canBuy(item))
+         {
+            _showBoxArr[_loc3_].info.text = "当前等级或元宝不足，无法购买";
+            return;
+         }
          if(param2 <= int(install._user.wealth))
          {
             _loc4_ = param2 / int(item.@price);
@@ -144,9 +213,8 @@ package com.MyFarm.Store
             showBox.close();
             install.so.data.user = install._user;
             install.so.flush();
-            clear();
             getXML(currentXML);
-            bought(String(item.@name) + " ×" + _loc4_,param2);
+            status.text = "购买成功：" + String(item.@name) + " ×" + _loc4_ + "，花费" + param2 + "元宝";
          }
          else
          {
@@ -168,18 +236,15 @@ package com.MyFarm.Store
       
       private function getXML(param1:XML) : void
       {
-         var _loc2_:Number = Number(NaN);
-         var _loc3_:uint = 0;
-         var _loc4_:uint = 0;
-         var _loc5_:uint = 0;
-         var _loc6_:MovieClip = null;
+         hideHint();
          currentXML = param1;
-         _loc2_ = myBox.tab1.y + myBox.tab1.height + margins;
-         myBox.scrollBar.y = _loc2_;
-         container.y = 0;
-         _loc3_ = uint(int((myBox.width - margins * 2) / (50 + interval)));
+         var top:Number = myBox.tab1.y + myBox.tab1.height + margins;
+         var columns:int = Math.max(1,int((shopWidth - margins * 2) / CARD_STEP_X));
+         var sameTab:Boolean = renderedTab == currentTab;
+         if(!sameTab) clear();
+         var cards:Array = cardsByTab[currentTab] as Array;
+         if(cards == null) { cards = []; cardsByTab[currentTab] = cards; }
          var order:Array = new Array();
-         var gray:Array = [new ColorMatrixFilter([0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0,0,0,0.5,0])];
          var k:uint = 0;
          while(k < param1.item.length())
          {
@@ -198,56 +263,102 @@ package com.MyFarm.Store
             }
             k++;
          }
-         while(_loc5_ < order.length)
+         var changedOrder:Boolean = !sameTab || renderedOrder != order.join(",");
+         for(var position:int = 0;position < order.length;position++)
          {
-            k = uint(order[_loc5_]);
-            if(param1.item[k].@url != undefined)
+            k = uint(order[position]);
+            box = cards[k] as DisplayBox;
+            if(box == null)
             {
-               box = new DisplayBox(param1.item[k].@url,stage,param1.item[k].@price,null,param1.item[k].@name,param1.item[k].@information);
+               if(param1.item[k].@url != undefined)
+                  box = new DisplayBox(param1.item[k].@url,stage,param1.item[k].@price,null,param1.item[k].@name,param1.item[k].@information);
+               else
+                  box = new DisplayBox("",stage,param1.item[k].@price,createClip(param1.item[k].@object),param1.item[k].@name,param1.item[k].@information);
+               box.name = k.toString();
+               cards[k] = box;
             }
-            else
+            var available:Boolean = canBuy(param1.item[k]);
+            if(box.available != available)
             {
-               _loc6_ = createClip(param1.item[k].@object);
-               box = new DisplayBox("",stage,param1.item[k].@price,_loc6_,param1.item[k].@name,param1.item[k].@information);
+               box.filters = available ? [] : gray;
+               box.available = available;
             }
-            box.name = k.toString();
-            if(!canBuy(param1.item[k]))
+            if(changedOrder)
             {
-               box.filters = gray;
+               box.x = margins + CARD_STEP_X * (position % columns);
+               box.y = top + CARD_STEP_Y * int(position / columns);
+               container.addChild(box);
             }
-            box.x = (box.width + interval) * _loc4_ + margins;
-            box.y = _loc2_;
-            _loc4_++;
-            if((_loc5_ + 1) % _loc3_ == 0)
-            {
-               _loc2_ += box.height + margins;
-               _loc4_ = 0;
-            }
-            container.addChild(box);
-            _loc5_++;
          }
-         container.addEventListener(MouseEvent.CLICK,clickHandler);
-         myBox.scrollBar.effectObject = "container";
+         // Rebinding the legacy scrollbar resets its origin. Same-category
+         // refreshes keep the existing mask/handler and the browsing position.
+         if(!sameTab)
+         {
+            container.y = 0;
+            myBox.scrollBar.y = top;
+            myBox.scrollBar.effectObject = "container";
+         }
+         renderedTab = currentTab;
+         renderedOrder = order.join(",");
+         lastRank = rank;
+         lastWealth = Number(install._user.wealth);
       }
       
-      private function bought(param1:String, param2:Number) : void
+      private function showHint(event:MouseEvent) : void
       {
-         var tip:MovieClip = createClip("Tips2");
-         tip.txt.text = "购买成功！" + param1 + "，花费" + param2 + "元宝";
-         tip.txt.mouseEnabled = false;
-         tip.cancel.visible = false;
-         tip.define.x = (tip.define.x + tip.cancel.x) / 2;
-         tip.define.addEventListener(MouseEvent.CLICK,closeTip);
-         tip.close_btn.addEventListener(MouseEvent.CLICK,closeTip);
-         stage.addChild(tip);
-         tip.x = myBox.x + (myBox.width - tip.width) / 2;
-         tip.y = myBox.y + (300 - tip.height) / 2;
+         var card:DisplayBox = event.target as DisplayBox;
+         if(card == null || currentXML == null || (showBox != null && showBox.isOpen)) return;
+         if(hint == null)
+         {
+            hint = new Sprite();
+            hint.name = "shopHint";
+            hint.mouseEnabled = false;
+            hint.mouseChildren = false;
+            hintText = new TextField();
+            hintText.defaultTextFormat = new TextFormat(null,12,0);
+            hintText.wordWrap = true;
+            hintText.width = 230;
+            hintText.autoSize = "left";
+            hintText.x = hintText.y = 6;
+            hint.addChild(hintText);
+         }
+         var item:XML = currentXML.item[int(card.name)];
+         var message:String = String(item.@name) + "\n购买价：" + item.@price + " 元宝";
+         if(currentTab == "tab1")
+         {
+            message += "\n解锁等级：" + item.@rank + " 级\n成熟时间：" + item.@maturation + " 小时\n作物出售单价：" + item.@prices + " 元宝";
+         }
+         if(!canBuy(item)) message += int(item.@rank) > rank ? "\n当前农场等级不足" : "\n当前元宝不足";
+         if(String(item.@information) != "") message += "\n" + item.@information;
+         hintText.text = message;
+         hint.graphics.clear();
+         hint.graphics.lineStyle(1,48343,0.8);
+         hint.graphics.beginFill(16777215,0.94);
+         hint.graphics.drawRect(0,0,242,hintText.height + 12);
+         hint.graphics.endFill();
+         stage.addChild(hint);
+         moveHint();
       }
-      
-      private function closeTip(param1:MouseEvent) : void
+
+      private function moveHint(event:MouseEvent = null) : void
       {
-         var tip:MovieClip = param1.currentTarget.parent as MovieClip;
-         tip.parent.removeChild(tip);
+         if(hint == null || hint.parent == null) return;
+         hint.x = Math.max(0,Math.min(stage.mouseX + 12,stage.stageWidth - hint.width));
+         hint.y = stage.mouseY + 18;
+         if(hint.y + hint.height > stage.stageHeight) hint.y = Math.max(0,stage.mouseY - hint.height - 10);
+      }
+
+      private function hideHint(event:MouseEvent = null) : void
+      {
+         if(hint != null && hint.parent != null) hint.parent.removeChild(hint);
+      }
+
+      private function wheelHandler(event:MouseEvent) : void
+      {
+         if(!myBox.visible || (showBox != null && showBox.isOpen)) return;
+         hideHint();
+         myBox.scrollBar.scrollBy(-event.delta * 18);
+         event.stopPropagation();
       }
       
       private function canBuy(param1:XML) : Boolean
@@ -268,7 +379,6 @@ package com.MyFarm.Store
             case "tab2":
             case "tab3":
                clear();
-               loaderXML(xml_array[param1.target.name]);
                _loc2_ = myBox.getChildByName(currentTab) as MovieClip;
                if(_loc2_ != null)
                {
@@ -276,11 +386,15 @@ package com.MyFarm.Store
                }
                currentTab = param1.target.name;
                param1.target.gotoAndStop(2);
+               currentXML = null;
+               status.text = "";
+               loaderXML(xml_array[currentTab]);
          }
       }
       
       private function clickHandler(param1:MouseEvent) : void
       {
+         hideHint();
          if(showBox != null && showBox.isOpen)
          {
             return;
@@ -314,6 +428,8 @@ package com.MyFarm.Store
          _loc4_.info = currentXML.item[_loc3_];
          _loc4_.id = _loc3_;
          _loc4_.revenue = Number(_loc4_.yield) * Number(_loc4_.prices);
+         _showBoxArr[_loc2_].define.mouseEnabled = true;
+         _showBoxArr[_loc2_].info.text = "";
          if(_loc2_ == 0)
          {
             if(int(_loc4_.rank) > rank)
@@ -334,6 +450,11 @@ package com.MyFarm.Store
             }
          }
          _showBoxArr[_loc2_].info.mouseEnabled = false;
+         if(Number(_loc4_.price) > Number(install._user.wealth))
+         {
+            _showBoxArr[_loc2_].define.mouseEnabled = false;
+            _showBoxArr[_loc2_].info.text = "元宝不足，需 " + _loc4_.price + " 元宝";
+         }
          if(currentXML.item[_loc3_].@url != undefined)
          {
             showBox = new ShowBox(_showBoxArr[_loc2_],currentTab,currentXML.item[_loc3_].@url,null,_loc4_,buySomething);
@@ -351,7 +472,35 @@ package com.MyFarm.Store
       
       private function loadXMLComplete(param1:Event) : void
       {
-         getXML(XML(param1.target.data));
+         if(param1.target != loading) return;
+         var data:String = String(loading.data);
+         loading.removeEventListener(Event.COMPLETE,loadXMLComplete);
+         loading.removeEventListener(IOErrorEvent.IO_ERROR,loadXMLError);
+         loading = null;
+         var catalogue:XML;
+         try
+         {
+            catalogue = new XML(data);
+         }
+         catch(error:Error)
+         {
+            status.text = "商品目录读取失败，请重开商店";
+            trace("Farm shop catalogue parse failed: " + error.message);
+            return;
+         }
+         catalogues[currentTab] = catalogue;
+         status.text = "";
+         getXML(catalogue);
+      }
+
+      private function loadXMLError(event:IOErrorEvent) : void
+      {
+         if(event.target != loading) return;
+         loading.removeEventListener(Event.COMPLETE,loadXMLComplete);
+         loading.removeEventListener(IOErrorEvent.IO_ERROR,loadXMLError);
+         loading = null;
+         status.text = "商品目录读取失败，请重开商店";
+         trace("Farm shop catalogue load failed: " + event.text);
       }
       
       public function clearMemory() : void
@@ -362,6 +511,15 @@ package com.MyFarm.Store
          myBox.tab2.removeEventListener(MouseEvent.CLICK,tabChange);
          myBox.tab3.removeEventListener(MouseEvent.CLICK,tabChange);
          myBox.removeEventListener(Event.ENTER_FRAME,refresh);
+         myBox.removeEventListener(MouseEvent.MOUSE_WHEEL,wheelHandler);
+         stopLoading();
+         hideHint();
+         container.removeEventListener(MouseEvent.CLICK,clickHandler);
+         container.removeEventListener(MouseEvent.MOUSE_OVER,showHint);
+         container.removeEventListener(MouseEvent.MOUSE_MOVE,moveHint);
+         container.removeEventListener(MouseEvent.MOUSE_OUT,hideHint);
+         catalogues = {};
+         cardsByTab = {};
          box = null;
          while(container.numChildren > 0)
          {
@@ -377,6 +535,9 @@ package com.MyFarm.Store
       
       private function clear() : void
       {
+         hideHint();
+         renderedTab = "";
+         renderedOrder = "";
          var _loc1_:uint = 0;
          _loc1_ = uint(container.numChildren);
          while(_loc1_ > 0)

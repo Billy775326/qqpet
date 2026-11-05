@@ -112,6 +112,10 @@ package com.MyFarm.control
       
       private function showShop() : void
       {
+         if(face._shop.visible)
+         {
+            return;
+         }
          var _loc1_:Number = Number(NaN);
          var _loc2_:Number = Number(NaN);
          var _loc3_:Number = Number(NaN);
@@ -136,7 +140,7 @@ package com.MyFarm.control
             "y":_loc2_,
             "scaleX":_loc3_,
             "scaleY":_loc4_,
-            "time":0.5,
+            "time":0.16,
             "onComplete":shoptweenComplete
          });
       }

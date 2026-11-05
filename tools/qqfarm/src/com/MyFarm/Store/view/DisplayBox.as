@@ -1,8 +1,9 @@
 package com.MyFarm.Store.view
 {
-   import com._public._displayObject.IntroductionText;
    import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
    import flash.display.Loader;
+   import flash.display.MovieClip;
    import flash.display.Sprite;
    import flash.display.Stage;
    import flash.events.Event;
@@ -28,24 +29,17 @@ package com.MyFarm.Store.view
       private var lineColor:uint = 52479;
       
       private var txtColor:uint = 13395456;
+
+      public var available:Boolean = true;
       
       public function DisplayBox(param1:String, param2:Stage, param3:String, param4:DisplayObject = null, param5:String = "", param6:String = "")
       {
-         var _loc7_:IntroductionText = null;
          var _loc8_:Loader = null;
          super();
          this.buttonMode = true;
-         _loc7_ = new IntroductionText(this,param2,{
-            "lineColor":16777215,
-            "lineAlpha":0.5,
-            "lineThickness":1,
-            "bgColor":16777215,
-            "bgAlpha":0.3,
-            "txtColor":0,
-            "contenttext":param6,
-            "titletext":param5
-         });
-         addChild(_loc7_);
+         // The card is one hit target; decorative vector children do not need
+         // their own hit tests or animation while browsing the catalogue.
+         this.mouseChildren = false;
          bg = createShape();
          addChild(bg);
          inittext(param3);
@@ -57,9 +51,20 @@ package com.MyFarm.Store.view
          }
          else if(param4 != null)
          {
+            freeze(param4);
             param4.x = 1 + (_width - param4.width) / 2;
             param4.y = 1 + (_height - param4.height) / 2;
             addChild(param4);
+         }
+      }
+
+      private function freeze(value:DisplayObject) : void
+      {
+         if(value is MovieClip) MovieClip(value).stop();
+         var parent:DisplayObjectContainer = value as DisplayObjectContainer;
+         if(parent != null)
+         {
+            for(var i:int = 0;i < parent.numChildren;i++) freeze(parent.getChildAt(i));
          }
       }
       
@@ -80,6 +85,7 @@ package com.MyFarm.Store.view
          param1.target.content.height = _height;
          param1.target.content.x = 1;
          param1.target.content.y = 1;
+         freeze(param1.target.content);
          addChild(param1.target.content);
       }
       
