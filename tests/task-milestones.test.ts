@@ -20,7 +20,7 @@ test('existing saves recognize real growth, lessons, exam diplomas, collections 
   assert.equal(p.best.primary, 0, 'finished lessons alone do not grant a diploma')
   assert.equal(p.best.Study, 9)
   assert.equal(p.best.collection, 2)
-  assert.equal(p.best.fish, 10, 'master achievement preserves the previous 1000 harvests')
+  assert.equal(p.best.fish, 100, 'master achievement preserves the previous 1000 harvests, capped at the highest goal')
   assert.equal(p.best.online, 65)
   assert.equal(p.counters.Work, 2)
   save.studyInfo.chinese = 10
@@ -142,4 +142,58 @@ test('stale generated daily tasks cannot be claimed and all milestone reward IDs
     assert.ok(good.name, t.id)
     assert.ok(good.num > 0, t.id)
   }
+})
+
+test('new goals recognize saved cumulative amusement, higher diplomas and longer growth history', () => {
+  const save = startSave(null)
+  const p = loadMilestones({ counters: { Work: 120, GameRound: 50 }, best: { level: 20, fish: 10 }, claimed: ['level-20', 'first-meal'] }, {})
+  save.gameSaveDatas.ddw = 1000
+  save.gameSaveDatas.fishing_harvestfish = 70
+  save.petComputedlInfo.level = 50
+  save.petInfo.onLineTime = 43200
+  save.studyInfo.chinese = 71
+  observeMilestones(p, save)
+  assert.equal(p.best.university, 0, 'the university exam must be passed')
+  save.studyInfo.chinese = 72
+  observeMilestones(p, save)
+  assert.equal(p.best.university, 1)
+  save.studyInfo.chinese = 167
+  observeMilestones(p, save)
+  assert.equal(p.best.postgraduate, 0)
+  save.studyInfo.chinese = 168
+  observeMilestones(p, save)
+  assert.equal(p.best.postgraduate, 1)
+  assert.equal(p.best.Amusing, 1000)
+  assert.equal(p.best.Work, 120)
+  assert.equal(p.best.fish, 70)
+  assert.equal(p.best.level, 50)
+  assert.equal(p.best.online, 43200)
+  assert.equal(p.best.GameRound, 50)
+  assert.deepEqual(p.claimed, ['level-20', 'first-meal'], 'catalogue expansion preserves existing claims')
+})
+
+test('permanent goals in daily tabs have stable identities and remain outside automatic dailies', async () => {
+  const seed = startSave(null)
+  seed.havePet = true
+  seed.saveJsonData.task = JSON.stringify({ dailyDay: 1000 })
+  const { api, save, state } = await taskModel(seed)
+  save.gameSaveDatas.ddw = 100
+  api.addCount('Work', 30)
+  assert.equal(api.milestones('ddw').length, 6)
+  assert.equal(api.milestones('growth').length, 12)
+  assert.equal(api.milestones('milestones').length, 50)
+  assert.equal(api.milestones().length, 68)
+  assert.ok(api.claimMilestone('amusing-100'))
+  assert.ok(api.claimMilestone('shifts-30'))
+  assert.equal(api.claimMilestone('amusing-100'), false)
+  api.resetTasks()
+  api.resetTour()
+  assert.equal(api.milestones('ddw').find((t: any) => t.id === 'amusing-100').take, true)
+  assert.equal(api.milestones('growth').find((t: any) => t.id === 'shifts-30').take, true)
+  assert.equal(state.rewards.length, 2)
+  const restored = await taskModel(validatedImport(JSON.parse(JSON.stringify(save))))
+  assert.equal(restored.api.claimMilestone('amusing-100'), false)
+  assert.equal(restored.api.claimMilestone('shifts-30'), false)
+  assert.equal(restored.api.dailyTasks().length, 11, 'daily automation retains only the original eleven fixed daily goals')
+  assert.equal(restored.api.dailyTasks().some((t: { id?: string }) => t.id === 'amusing-100' || t.id === 'shifts-30'), false)
 })

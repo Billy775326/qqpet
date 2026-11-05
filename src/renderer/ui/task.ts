@@ -9,8 +9,8 @@ type TaskTab = Tab | 'milestones'
 const TASK_TABS: Record<TaskTab, string> = { ...TABS, milestones: '成长历程' }
 const HELP: Record<TaskTab, string> = {
   daily: '每日 06:00 重置；托管可自动完成本页任务并领奖。',
-  ddw: '每日 06:00 重置；托管可自动逗乐并领奖。',
-  growth: '每日 06:00 重置；托管可自动学习、打工并领奖，升学考试需手动。',
+  ddw: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标仅可领取一次，需手动领奖。',
+  growth: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标仅可领取一次，需手动领奖，升学考试需手动。',
   travel: '每日旅游次数于 06:00 重置，托管可自动完成并领奖；地区挑战按轮次重置，需手动领奖。',
   milestones: '成长目标每项仅可领取一次，进度随存档永久保留。',
 }
@@ -27,17 +27,21 @@ export function openTask(): void {
   const render = (force = false): void => {
     if (!force && root.querySelector('.markFull')) return
     const source = tab
-    const goals = source === 'milestones' ? milestones() : []
-    const current = source === 'milestones' ? goals : source === 'daily' ? todayTasks() : tasks(source)
+    const goals = source === 'milestones' || source === 'ddw' || source === 'growth' ? milestones(source) : []
+    const repeating = source === 'milestones' ? [] : (source === 'daily' ? todayTasks() : tasks(source)).map((t, i) => ({
+      ...t, id: `${source}-${i}`, once: false, takeReward: () => claim(source, i),
+    }))
+    const current = [...repeating, ...goals.map(t => ({
+      ...t, msg: `${t.msg}（仅可领取一次）`, once: true, takeReward: () => claimMilestone(t.id),
+    }))]
     const signature = JSON.stringify({ tab, current })
     if (!force && signature === previous) return
     previous = signature
     const scrollTop = root.querySelector('.tasks')?.scrollTop ?? 0
-    const items = current.map((t, i) => {
-      const take = source === 'milestones' ? () => claimMilestone(goals[i].id) : () => claim(source, i)
+    const items = current.map((t) => {
       const row = div(
         'taskOnce fc',
-        div('to_left f1 fC w0', div('to_label', `${t.label}（${tab === 'milestones' ? Math.min(t.done, t.num) : t.done}/${t.num}） `), div('to_msg', t.msg)),
+        div('to_left f1 fC w0', div('to_label', `${t.label}（${t.once ? Math.min(t.done, t.num) : t.done}/${t.num}） `), div('to_msg', t.msg)),
         div(
           'to_right fc',
           ...t.good.map((g) => Object.assign(img('goodImg', g.url), { title: `${g.outOfPrint ? '绝版：' : ''}${g.name}*${g.num}` })),
@@ -45,7 +49,7 @@ export function openTask(): void {
             t.take ? 'but_small taskClaim disable' : 'but_small taskClaim',
             () => {
               if (t.take) return
-              const goods = take()
+              const goods = t.takeReward()
               render(true)
               showResult(root, goods || [], '还没完成任务哦！~~')
             },
@@ -53,7 +57,7 @@ export function openTask(): void {
           ),
         ),
       )
-      row.dataset.taskId = source === 'milestones' ? goals[i].id : `${source}-${i}`
+      row.dataset.taskId = t.id
       return row
     })
     const tabs = (Object.keys(TASK_TABS) as TaskTab[]).map((k) => {

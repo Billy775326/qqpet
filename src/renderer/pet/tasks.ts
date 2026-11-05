@@ -2,7 +2,7 @@ import type { CalendarDay } from '../../shared/ipc'
 import { parseGood, type Good } from './data/goods'
 import { give } from './items'
 import { loot } from './loot'
-import { loadMilestones, MILESTONES, observeMilestones, type MilestoneProgress } from './milestones'
+import { loadMilestones, MILESTONES, observeMilestones, type MilestoneProgress, type MilestoneTab } from './milestones'
 import { rand } from './rand'
 import { info, save, update } from './store'
 import { dayStart } from './vip'
@@ -142,9 +142,9 @@ export function refreshMilestones(): void {
   if (observeMilestones(progress.milestones, save)) store()
 }
 
-export function milestones() {
+export function milestones(tab?: MilestoneTab) {
   refreshMilestones()
-  return MILESTONES.map(t => ({
+  return MILESTONES.filter(t => !tab || (t.tab ?? 'milestones') === tab).map(t => ({
     ...t, good: t.good.map(parseGood), done: progress.milestones.best[t.metric] ?? 0,
     take: progress.milestones.claimed.includes(t.id),
   }))
