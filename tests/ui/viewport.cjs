@@ -13,7 +13,8 @@ async function resizeViewport(win, width, height, requestedScale) {
   })
   await new Promise(resolve => setTimeout(resolve, 80))
   const measured = await win.webContents.executeJavaScript('({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})')
-  if (measured.width !== width || measured.height !== height || measured.dpr !== deviceScaleFactor) {
+  // Native windows can report DPR 1 as 1.0000000149 after zoom emulation.
+  if (measured.width !== width || measured.height !== height || Math.abs(measured.dpr - deviceScaleFactor) > 1e-6) {
     throw Error('Unexpected UI test viewport: ' + JSON.stringify({ requested: { width, height, deviceScaleFactor }, measured }))
   }
 }
