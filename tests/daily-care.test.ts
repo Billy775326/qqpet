@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm'
 import { resolve } from 'node:path'
 import { startSave, applyPatch, validatedImport } from '../src/shared/save-logic.ts'
 
-async function dailyCare(kinds: string[]) {
+async function dailyCare(kinds: string[], allDaily = false) {
   const save = startSave(null)
   save.havePet = true
   Object.assign(save.petInfo, { sweetHeart: true, sweetHeartOverTime: Date.now() / 1000 + 3 * 86400, health: 5, hunger: 1000, clean: 1000, mood: 1000 })
@@ -18,7 +18,11 @@ async function dailyCare(kinds: string[]) {
     dailyDay: day.getTime() / 1000,
     daily: kinds.map(obj => ({ label: obj, msg: obj, obj, num: 1 })),
     doNums: {},
-    taskList: { daily: kinds.map(() => ({ take: false, good: [{ id: 'yb', name: '元宝', type: 'nums', num: 5, value: 1, url: '' }] })) },
+    taskList: {
+      daily: kinds.map(() => ({ take: false, good: [{ id: 'yb', name: '元宝', type: 'nums', num: 5, value: 1, url: '' }] })),
+      // Focused cases start with the other daily rewards already claimed; full-scope cases load real defaults.
+      ...(!allDaily ? Object.fromEntries([['ddw', 5], ['growth', 4], ['travel', 2]].map(([tab, n]) => [tab, Array.from({ length: n as number }, () => ({ take: true, good: [] }))])) : {}),
+    },
   })
   const state = { save, now: Date.now(), idle: true, hover: false, ui: false, amused: 0, exams: 0, alerts: 0, addCount: (_key: string) => {} }
   const stub = `
@@ -32,7 +36,7 @@ async function dailyCare(kinds: string[]) {
     export const windowView=()=>state.alerts++,openExam=()=>state.exams++,floatMood=()=>{},openEmail=()=>{},tripBack=()=>{},isBuddy=()=>false,takePhoto=()=>null,mailPhoto=()=>{},loot=()=>[],resetFish=()=>{},rand=(_min,max)=>max,luck=()=>0;
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
-  const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount} from './tasks';export {advanceTask} from './activity';export {resumeTask} from './jobs';export {goodOf} from './data/goods';`
+  const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount,dailyTasks,milestones,resetTasks} from './tasks';export {advanceTask} from './activity';export {resumeTask} from './jobs';export {goodOf} from './data/goods';`
   const allowed = ['./daily-care', './care', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
@@ -165,7 +169,7 @@ test('promotion exams and minigames remain manual without blocking other support
   run()
   assert.equal(api.tasks('daily')[2].take, true)
   assert.equal(api.tasks('daily')[0].take, false)
-  assert.equal(api.tasks('growth')[0].take, false, 'other task tabs are not automatically claimed')
+  assert.equal(api.tasks('growth')[0].take, true, 'previously claimed daily rewards remain claimed')
   api.addCount('GameRound')
   run()
   assert.equal(api.tasks('daily')[0].take, true, 'manually finished minigames can have their daily reward claimed')
@@ -199,4 +203,64 @@ test('disabled service, illness, pause and user interaction block unattended act
     assert.equal(run(), false, reason)
     assert.equal(api.tasks('daily')[0].take, false)
   }
+})
+
+test('all daily goals share real actions, receive their own rewards once, and stop when finished', async () => {
+  const { save, api, state, run } = await dailyCare(['Amusing', 'Study', 'Work', 'Travel1'], true)
+  save.gameSaveDatas.travel_china = Array.from({ length: 35 }, (_, i) => ({ name: `region-${i}`, value: 1 }))
+  for (let step = 0; step < 160; step++) {
+    if (!run()) break
+    if (save.activeOption.work || save.activeOption.study || save.activeOption.trip) {
+      assert.equal(run(), false, 'one running activity cannot be replaced by another daily goal')
+      api.advanceTask(10000)
+    }
+  }
+  assert.ok(api.dailyTasks().length > 11)
+  assert.equal(api.dailyTasks().every((t: { take: boolean }) => t.take), true)
+  assert.equal(api.count('Amusing'), 25)
+  assert.equal(api.count('Study'), 3, 'one lesson advances generated and static goals together')
+  assert.equal(api.count('Work'), 3)
+  assert.equal(api.count('Travel1'), 5)
+  assert.equal(state.amused, 25)
+  assert.ok(save.selfGoodDatas.nums.includes('_yb*70'), 'four generated rewards and the real 50-yuanbao work reward reach the inventory')
+  assert.equal(api.tasks('travel').slice(2).every((t: { take: boolean }) => !t.take), true, 'ready per-tour rewards stay manual')
+  assert.equal(api.milestones().every((t: { take: boolean }) => !t.take), true, 'permanent growth rewards stay manual')
+  const inventory = JSON.stringify(save.selfGoodDatas)
+  assert.equal(run(), false)
+  assert.equal(run(), false)
+  assert.equal(JSON.stringify(save.selfGoodDatas), inventory, 'finished dailies never grant again')
+  api.resetTasks()
+  assert.equal(api.count('Amusing'), 0)
+  assert.equal(api.tasks('ddw')[0].take, false)
+  assert.equal(run(), true, 'daily-reset goals become eligible again after reset')
+})
+
+test('unclaimed daily rewards are auto-claimed across tabs even without a matching generated goal', async () => {
+  const { save, api, state, run } = await dailyCare([], true)
+  api.addCount('Amusing', 25)
+  api.addCount('Study', 3)
+  api.addCount('Work', 3)
+  api.addCount('Travel1', 5)
+  save.gameSaveDatas.travel_china = Array.from({ length: 10 }, (_, i) => ({ name: String(i), value: 1 }))
+  const daily = api.dailyTasks()
+  assert.equal(daily.length, 11)
+  for (let i = 0; i < daily.length; i++) assert.equal(run(), true)
+  assert.equal(run(), false)
+  assert.equal(state.amused, 0, 'ready rewards require no extra actions')
+  assert.equal(api.tasks('travel')[0].take, true)
+  assert.equal(api.tasks('travel')[1].take, true)
+  assert.equal(api.tasks('travel')[2].take, false)
+  assert.equal(save.activeOption.work, null)
+  assert.equal(save.activeOption.study, null)
+  assert.equal(save.activeOption.trip, null)
+})
+
+test('day rollover blocks every daily source until the new day is initialized', async () => {
+  const { state, api, run } = await dailyCare([], true)
+  api.addCount('Amusing', 5)
+  state.now += 86400 * 1000
+  assert.equal(api.dailyTasks().length, 0)
+  assert.equal(run(), false)
+  assert.equal(api.tasks('ddw')[0].take, false)
+  assert.equal(state.amused, 0)
 })

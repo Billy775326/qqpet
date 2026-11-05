@@ -177,6 +177,12 @@ export const tasks = (tab: Tab) => defs(tab).map((t, i) => ({ ...t, ...progress.
 /** Stale tasks must not be performed or claimed before the new day's list arrives. */
 export const todayTasks = () => progress.dailyDay === dayStart() ? tasks('daily') : []
 
+/** All daily-reset goals, retaining their original claim destinations. Wait for day rollover to finish. */
+export function dailyTasks() {
+  if (progress.dailyDay !== dayStart()) return []
+  return (Object.keys(TABS) as Tab[]).flatMap(tab => tasks(tab).flatMap((t, index) => t.keep ? [] : [{ ...t, tab, index }]))
+}
+
 /** Hands out a finished task's goods; false when it is not finished yet. */
 export function claim(tab: Tab, i: number): Good[] | false {
   const t = defs(tab)[i]

@@ -3,15 +3,15 @@ import { CARE_NEEDS, performCare } from './care'
 import { canStudyCourse, study, studyGoods, travel, work, workBlocked, workGoods } from './jobs'
 import { machine } from './pet'
 import { busy, info, save } from './store'
-import { claim, todayTasks } from './tasks'
+import { claim, dailyTasks } from './tasks'
 
 /** Called by the existing growth tick: real actions retain their normal duration and effects. */
 export function runDailyCare(): boolean {
   if (!save.settings.careAutoDaily || !info.sweetHeart || info.sweetHeartOverTime <= Date.now() / 1000 || save.settings.paused || info.health !== 5) return false
   if (busy() || !machine.idle || document.documentElement.classList.contains('qqpet-cursor-hit') || document.querySelector('.box, .boxFrame, .modal')) return false
-  const daily = todayTasks()
-  const ready = daily.findIndex(t => !t.take && t.done >= t.num)
-  if (ready >= 0) return claim('daily', ready) !== false
+  const daily = dailyTasks()
+  const ready = daily.find(t => !t.take && t.done >= t.num)
+  if (ready) return claim(ready.tab, ready.index) !== false
   for (const task of daily) {
     if (task.take || task.done >= task.num) continue
     const need = CARE_NEEDS.find(n => ({ food: 'Eat', clean: 'Clean', toy: 'Toy' }[n.type]) === task.obj)

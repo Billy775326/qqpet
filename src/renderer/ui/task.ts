@@ -9,9 +9,9 @@ type TaskTab = Tab | 'milestones'
 const TASK_TABS: Record<TaskTab, string> = { ...TABS, milestones: '成长历程' }
 const HELP: Record<TaskTab, string> = {
   daily: '每日 06:00 重置；托管可自动完成本页任务并领奖。',
-  ddw: '每日 06:00 重置。',
-  growth: '每日 06:00 重置。',
-  travel: '每日旅游次数于 06:00 重置；地区挑战在完成一轮旅行后重置。',
+  ddw: '每日 06:00 重置；托管可自动逗乐并领奖。',
+  growth: '每日 06:00 重置；托管可自动学习、打工并领奖，升学考试需手动。',
+  travel: '每日旅游次数于 06:00 重置，托管可自动完成并领奖；地区挑战按轮次重置，需手动领奖。',
   milestones: '成长目标每项仅可领取一次，进度随存档永久保留。',
 }
 
