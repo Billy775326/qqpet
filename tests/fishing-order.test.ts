@@ -114,10 +114,10 @@ test('the pond movie groups eligible fish first and sorts every group by increas
   }
 })
 
-test('the actual Flash comparator orders equal-level fish by total harvest income', () => {
+test('the actual Flash comparator orders equal-level fish by sale unit price regardless of quantity', () => {
   const fish = (fryid: number, quantity: number, sell_price: number, canSelected = true): Fry => ({ fryid, level: 3, flag: 0, quantity, sell_price, canSelected })
-  assert.deepEqual(displayed([fish(100, 1, 100), fish(101, 10, 5), fish(102, 2, 5), fish(103, 1, 1, false)]), [102, 101, 100, 103])
-  assert.deepEqual(displayed([fish(100, 1, 100, false), fish(101, 10, 5, false), fish(102, 2, 5, false)]), [102, 101, 100])
+  assert.deepEqual(displayed([fish(100, 1, 100), fish(101, 10, 6), fish(102, 200, 5), fish(103, 1, 1, false)]), [102, 101, 100, 103])
+  assert.deepEqual(displayed([fish(100, 1, 100, false), fish(101, 10, 6, false), fish(102, 200, 5, false)]), [102, 101, 100])
 })
 
 test('pond ordering patch is repeatable and preserves unrelated movie content', () => {
@@ -127,6 +127,11 @@ test('pond ordering patch is repeatable and preserves unrelated movie content', 
   const run = (): void => { const r = spawnSync(process.execPath, ['tools/fix-fishing-order.mjs', file], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr) }
   run(); assert.deepEqual(readFileSync(file), resource)
   const patched = bodyOf(resource), legacy = Buffer.from(patched), at = methodAt(patched)
+  const gross = Buffer.from(patched), compareAt = gross.indexOf(Buffer.from('d030d266890773d166890773a1', 'hex'))
+  assert.ok(compareAt >= 0)
+  Buffer.from('d030d266890773d166890773a12a120100004829d1668107d2668107a12a120100004829d1668207d166e303a2d4d2668207d266e303a2d02ba1480202020202020202', 'hex').copy(gross, compareAt)
+  writeFileSync(file, Buffer.concat([resource.subarray(0, 8), deflateSync(gross)]))
+  run(); assert.deepEqual(bodyOf(readFileSync(file)), patched, 'Upgrade the previously shipped harvest-income comparator')
   Buffer.from('d266df032421ab2a1108000029d266df032422ab120a0000d3d24fcd0e0110090000', 'hex').copy(legacy, at + 132)
   Buffer.from('d066ba152c93072c8b072c8e072c8d0756046036669a1160366698116036669a116036669a1156044fbd1502', 'hex').copy(legacy, at + 186)
   Buffer.from('2400736306102c000009d066ba15620666bb156037878037d6d2668307240114100000d066ba15620624014fbe1502100f0000c2066206d066ba1566bf1515c7ffffd2120d0000d066ba15d24fc01501100a000060eb022cc9114fcc0801', 'hex').copy(legacy, at + 230)

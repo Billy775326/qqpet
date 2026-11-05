@@ -16,11 +16,11 @@ const entries = [...input.matchAll(item)].map(([xml]) => {
     assert.ok(Number.isFinite(n) && n >= 0, `Invalid seed ${key}`)
     return n
   }
-  return { xml, level: number('rank'), income: number('yield') * number('prices') }
+  return { xml, level: number('rank'), unitPrice: number('prices') }
 })
 assert.ok(entries.length > 0, 'No seed catalogue entries found')
-entries.sort((a, b) => a.level - b.level || a.income - b.income)
+entries.sort((a, b) => a.level - b.level || a.unitPrice - b.unitPrice)
 let index = 0
 const output = input.replace(item, () => entries[index++].xml)
 if (output !== input) writeFileSync(file, output)
-console.log('Farm seeds: increasing level, then increasing harvest income; existing availability grouping retained')
+console.log('Farm seeds: increasing level, then increasing crop sale unit price; existing availability grouping retained')

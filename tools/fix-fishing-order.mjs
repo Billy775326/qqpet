@@ -1,5 +1,5 @@
 // Usage: node tools/fix-fishing-order.mjs [path/to/main.swf]
-// Order the pond's real FryData objects by eligibility, level and harvest income.
+// Order the pond's real FryData objects by eligibility, level and sale unit price.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { inflateSync, deflateSync } from 'node:zlib'
 import { fileURLToPath } from 'node:url'
@@ -25,6 +25,7 @@ const updated = Buffer.from(previous)
 updated.fill(0x02, 186, 230)
 Buffer.from('d066ba15d0669c064faf1301', 'hex').copy(updated, 186)
 const oldCompare = Buffer.from('d030ef01ae140000ef01af140100d166880726ab2a1207000029d266880727ab1203000024ff48d166880727ab2a1207000029d266880726ab12030000240148240048', 'hex')
+const harvestCompare = Buffer.from('d030d266890773d166890773a12a120100004829d1668107d2668107a12a120100004829d1668207d166e303a2d4d2668207d266e303a2d02ba1480202020202020202', 'hex')
 const compare = []
 const labels = new Map(), branches = []
 const emit = (...bytes) => compare.push(...bytes)
@@ -33,12 +34,10 @@ const nextIfEqual = label => { emit(0x2a, 0x12); branches.push([compare.length, 
 emit(0xd0, 0x30)
 // b.canSelected - a.canSelected puts eligible items before locked items.
 property(0xd2, 905); emit(0x73); property(0xd1, 905); emit(0x73, 0xa1); nextIfEqual('level')
-property(0xd1, 897); property(0xd2, 897); emit(0xa1); nextIfEqual('income')
-// Gross income from one harvest, not purchase cost or hourly/net profit.
-// The old method declares a maximum stack depth of two and three locals.
-// Its receiver is already in scope; reuse local 0 for the first product.
-property(0xd1, 898); property(0xd1, 483); emit(0xa2, 0xd4)
-property(0xd2, 898); property(0xd2, 483); emit(0xa2, 0xd0, 0x2b, 0xa1, 0x48)
+property(0xd1, 897); property(0xd2, 897); emit(0xa1); nextIfEqual('unitPrice')
+// sell_price is the harvest sale price per fish; quantity does not affect order.
+// This also stays within the original method's maximum stack depth of two.
+property(0xd1, 898); property(0xd2, 898); emit(0xa1, 0x48)
 for (const [offset, label] of branches) {
   const delta = labels.get(label) - (offset + 3)
   compare.splice(offset, 3, delta & 255, (delta >> 8) & 255, (delta >> 16) & 255)
@@ -58,12 +57,12 @@ const recognized = (variants, label) => {
   return matches[0]
 }
 const main = recognized([original, previous, updated], 'shop method')
-const comparator = recognized([oldCompare, newCompare], 'comparator')
+const comparator = recognized([oldCompare, harvestCompare, newCompare], 'comparator')
 const output = Buffer.from(body)
 updated.copy(output, main.at)
 newCompare.copy(output, comparator.at)
 if (output.equals(body)) console.log('Pond shop ordering is already fixed')
 else {
   writeFileSync(file, Buffer.concat([input.subarray(0, 8), deflateSync(output)]))
-  console.log('Pond shop: eligible first, increasing level, then increasing harvest income')
+  console.log('Pond shop: eligible first, increasing level, then increasing sale unit price')
 }
