@@ -55,22 +55,37 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('select option[value="102010002"]').disabled`), true, 'locked food is not selectable')
   assert.equal(await evaluate(`document.querySelector('select option[value="10013006"]').disabled`), false, 'owned food remains usable even when not sold')
   await draft(75, '102010003', true)
+  await click('.careTab[data-type=clean]')
+  await draft(65, '102020003', true)
+  await click('.careTab[data-type=toy]')
+  await draft(70, 't0002', true)
   await click('.careCancel')
   assert.deepEqual(await state(), original)
   await click('.sweetHeartCareEntry')
   await draft(75, '102010003', true)
+  await click('.careTab[data-type=clean]')
+  await draft(65, '102020003', true)
+  await click('.careTab[data-type=toy]')
+  await draft(70, 't0002', true)
   await click('.careSave')
   assert.equal(disk.settings.careHungerPercent, 75)
   assert.equal(disk.settings.careFoodId, '102010003')
   assert.equal(disk.settings.careAutoBuy, true)
+  assert.equal(disk.settings.careCleanPercent, 65)
+  assert.equal(disk.settings.careCleanId, '102020003')
+  assert.equal(disk.settings.careMoodPercent, 70)
+  assert.equal(disk.settings.careToyId, 't0002')
+  const saved = await state()
   assert.equal(disk.petInfo.yb, balance, 'editing policy never buys items')
   await click('.sweetHeartCareEntry')
+  await draft(90, '', false)
+  await click('.careTab[data-type=clean]')
   await draft(90, '', false)
   failSave = true
   await click('.careSave')
   failSave = false
   assert.match(await evaluate('document.querySelector(".careError").textContent'), /保存失败/)
-  assert.equal((await state()).careHungerPercent, 75, 'failed save restores the active policy')
+  assert.deepEqual(await state(), saved, 'failed save restores every category of the active policy')
   await click('.careCancel')
   for (let i = 0; i < 3; i++) {
     await click('.sweetHeartCareEntry')
@@ -85,15 +100,24 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('document.querySelector("input[type=range]").value'), '75', 'reloading reads the saved threshold')
   assert.equal(await evaluate('document.querySelector("select").value'), '102010003')
   assert.equal(await evaluate('document.querySelector("input[type=checkbox]").checked'), true)
+  for (const [type, percent, item] of [['clean', '65', '102020003'], ['toy', '70', 't0002']]) {
+    await click('.careTab[data-type=' + type + ']')
+    assert.equal(await evaluate('document.querySelector("input[type=range]").value'), percent)
+    assert.equal(await evaluate('document.querySelector("select").value'), item)
+    writeFileSync('dist/care-' + type + '.png', (await win.webContents.capturePage()).toPNG())
+  }
   const layouts = []
   for (const [width, height, scale] of [[800,600,1],[320,480,1.25],[320,240,2]]) {
     await resizeViewport(win, width, height, scale)
-    const boxes = await evaluate('[".sweetHeartCareSettings",".careRange",".sweetHeartCareSettings select",".careToggle",".careActions"].map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
-    for (const b of boxes) {
-      assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
-      assert.equal(b.clipped, false)
+    for (const type of ['food', 'clean', 'toy']) {
+      await click('.careTab[data-type=' + type + ']')
+      const boxes = await evaluate('[".sweetHeartCareSettings",".careTabs",".careRange",".sweetHeartCareSettings select",".careToggle",".careActions"].map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
+      for (const b of boxes) {
+        assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
+        assert.equal(b.clipped, false)
+      }
+      layouts.push({ width, height, scale, type })
     }
-    layouts.push({ width, height, scale })
   }
   await resizeViewport(win, 800, 600)
   writeFileSync('dist/care-settings.png', (await win.webContents.capturePage()).toPNG())

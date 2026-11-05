@@ -38,16 +38,25 @@ test('old saves keep the existing feeding threshold and never enable automatic p
   delete raw.settings.careHungerPercent
   delete raw.settings.careFoodId
   delete raw.settings.careAutoBuy
+  for (const key of ['careCleanPercent', 'careCleanId', 'careMoodPercent', 'careToyId']) delete raw.settings[key]
   const restored = startSave(raw)
   assert.equal(restored.settings.careHungerPercent, 60)
   assert.equal(restored.settings.careFoodId, '')
   assert.equal(restored.settings.careAutoBuy, false)
+  assert.equal(restored.settings.careCleanPercent, 60)
+  assert.equal(restored.settings.careMoodPercent, 60)
+  assert.equal(restored.settings.careCleanId, '')
+  assert.equal(restored.settings.careToyId, '')
   assert.deepEqual(restored.selfGoodDatas, old.selfGoodDatas)
-  applyPatch(restored, { settings: { careHungerPercent: 75, careFoodId: '102010001', careAutoBuy: true } })
+  applyPatch(restored, { settings: { careHungerPercent: 75, careFoodId: '102010001', careAutoBuy: true, careCleanPercent: 65, careCleanId: '102020003', careMoodPercent: 70, careToyId: 't0002' } })
   const imported = validatedImport(JSON.parse(JSON.stringify(restored)))
   assert.equal(imported.settings.careHungerPercent, 75)
   assert.equal(imported.settings.careFoodId, '102010001')
   assert.equal(imported.settings.careAutoBuy, true)
+  assert.equal(imported.settings.careCleanPercent, 65)
+  assert.equal(imported.settings.careCleanId, '102020003')
+  assert.equal(imported.settings.careMoodPercent, 70)
+  assert.equal(imported.settings.careToyId, 't0002')
   applyPatch(imported, { settings: { careHungerPercent: -1, careFoodId: '../bad', careAutoBuy: 'yes' as unknown as boolean } })
   assert.equal(imported.settings.careHungerPercent, 60)
   assert.equal(imported.settings.careFoodId, '')
@@ -131,4 +140,53 @@ test('expired, disabled, dead and paused pets cannot spend or consume supplies',
     assert.equal(save.petInfo.yb, 100)
     assert.equal(state.uses, 0)
   }
+})
+
+test('cleaning and play have independent thresholds, item choices and the same purchase switch', async () => {
+  const cleaning = await caring()
+  Object.assign(cleaning.save.petInfo, { hunger: 1000, clean: 700 })
+  Object.assign(cleaning.save.settings, { careCleanPercent: 80, careCleanId: '102020003' })
+  cleaning.save.selfGoodDatas.clean = ['_10021008*2']
+  cleaning.run()
+  assert.equal(cleaning.save.petInfo.clean, 700, 'a missing selected cleaner does not consume another cleaner')
+  assert.equal(cleaning.save.petInfo.yb, 100, 'the shared purchase switch is off by default')
+  cleaning.save.settings.careAutoBuy = true
+  cleaning.run()
+  assert.equal(cleaning.save.petInfo.clean, 900)
+  assert.equal(cleaning.save.petInfo.yb, 95)
+  assert.deepEqual(Array.from(cleaning.save.selfGoodDatas.clean), ['_10021008*2'])
+
+  const play = await caring()
+  Object.assign(play.save.petInfo, { hunger: 1000, mood: 650 })
+  Object.assign(play.save.settings, { careMoodPercent: 70, careToyId: 't0002' })
+  play.save.selfGoodDatas.toy = ['_t0002*2']
+  play.run()
+  assert.equal(play.save.petInfo.mood, 700)
+  assert.deepEqual(Array.from(play.save.selfGoodDatas.toy), ['_t0002*1'])
+  assert.equal(play.save.petInfo.yb, 100)
+  play.run()
+  assert.equal(play.state.uses, 1, 'equality with the play threshold does not use another toy')
+})
+
+test('toy purchases enforce membership and level limits and only one need is handled per tick', async () => {
+  const { save, run, state } = await caring()
+  Object.assign(save.petInfo, { hunger: 1000, mood: 500, yb: 1000 })
+  Object.assign(save.settings, { careAutoBuy: true, careToyId: 't0005' })
+  save.selfGoodDatas.toy = []
+  run()
+  assert.equal(state.uses, 0, 'a pink diamond toy cannot be purchased without membership')
+  assert.equal(save.petInfo.yb, 1000)
+  save.settings.careToyId = 't0002'
+  run()
+  assert.equal(state.uses, 0, 'a locked toy cannot be purchased')
+  save.petComputedlInfo.level = 5
+  run()
+  assert.equal(save.petInfo.mood, 550)
+  assert.equal(save.petInfo.yb, 980)
+  Object.assign(save.petInfo, { hunger: 599, clean: 599, mood: 599 })
+  save.settings.careCleanId = '102020003'
+  run()
+  assert.equal(save.petInfo.hunger, 699)
+  assert.equal(save.petInfo.clean, 599, 'food and cleaner are not consumed in the same tick')
+  assert.equal(save.petInfo.yb, 975)
 })

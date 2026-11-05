@@ -97,6 +97,10 @@ const RULES: Record<string, Record<string, Rule>> = {
     weatherCity: str(''),
     careHungerPercent: (v) => isNum(v) && Number.isInteger(v) && v >= 1 && v <= 100 ? v : 60,
     careFoodId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
+    careCleanPercent: (v) => isNum(v) && Number.isInteger(v) && v >= 1 && v <= 100 ? v : 60,
+    careCleanId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
+    careMoodPercent: (v) => isNum(v) && Number.isInteger(v) && v >= 1 && v <= 100 ? v : 60,
+    careToyId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
     careAutoBuy: bool,
   },
 }
@@ -170,6 +174,10 @@ function fresh(): SaveData {
       weatherCity: '',
       careHungerPercent: 60,
       careFoodId: '',
+      careCleanPercent: 60,
+      careCleanId: '',
+      careMoodPercent: 60,
+      careToyId: '',
       careAutoBuy: false,
     },
   }

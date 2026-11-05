@@ -106,7 +106,11 @@ export interface Settings {
   careHungerPercent: number
   /** Empty chooses an owned food automatically; otherwise use only this food. */
   careFoodId: string
-  /** Buy one food when needed and none is owned. */
+  careCleanPercent: number
+  careCleanId: string
+  careMoodPercent: number
+  careToyId: string
+  /** Buy one matching care item when needed and none is owned. */
   careAutoBuy: boolean
 }
 

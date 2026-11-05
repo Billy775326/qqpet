@@ -1,4 +1,4 @@
-import { canBuyCareFood, careFoods } from '../pet/care'
+import { CARE_NEEDS, canBuyCareGood, careGoods, type CareNeed } from '../pet/care'
 import { price } from '../pet/items'
 import { save, update } from '../pet/store'
 import { openFrame } from './box'
@@ -10,11 +10,16 @@ let closeCurrent = (): void => {}
 /** Draft changes are saved together; closing/canceling leaves the current policy intact. */
 export function openCareSettings(): void {
   closeCurrent()
-  const draft = {
+  const preferences = () => ({
     careHungerPercent: save.settings.careHungerPercent ?? 60,
     careFoodId: save.settings.careFoodId ?? '',
+    careCleanPercent: save.settings.careCleanPercent ?? 60,
+    careCleanId: save.settings.careCleanId ?? '',
+    careMoodPercent: save.settings.careMoodPercent ?? 60,
+    careToyId: save.settings.careToyId ?? '',
     careAutoBuy: save.settings.careAutoBuy ?? false,
-  }
+  })
+  const draft = preferences()
   const action = (label: string, cls: string, run: () => void): HTMLButtonElement => {
     const b = document.createElement('button')
     b.type = 'button'
@@ -23,59 +28,78 @@ export function openCareSettings(): void {
     b.addEventListener('click', run)
     return b
   }
-  const slider = document.createElement('input')
-  slider.type = 'range'
-  slider.min = '1'
-  slider.max = '100'
-  slider.step = '1'
-  slider.value = String(draft.careHungerPercent)
-  slider.setAttribute('aria-label', '自动喂食饥饿值限额')
-  const threshold = div('careThreshold')
-  const describeThreshold = (): void => {
-    threshold.textContent = `${slider.value}%（当前约 ${Math.round(save.petComputedlInfo.hungerMax * Number(slider.value) / 100)}）`
-  }
-  slider.addEventListener('input', () => {
-    draft.careHungerPercent = Number(slider.value)
+  const section = (title: string, ...children: (Node | string)[]): HTMLElement => div('careSection', div('careLabel', title), ...children)
+  const details = div('careDetails')
+  const tabs = div('careTabs')
+  tabs.setAttribute('role', 'tablist')
+  tabs.setAttribute('aria-label', '托管类别')
+  const render = (need: CareNeed): void => {
+    details.dataset.type = need.type
+    for (const tab of tabs.children) tab.setAttribute('aria-selected', String((tab as HTMLElement).dataset.type === need.type))
+    const slider = document.createElement('input')
+    slider.type = 'range'
+    slider.min = '1'
+    slider.max = '100'
+    slider.step = '1'
+    slider.value = String(draft[need.percent])
+    slider.setAttribute('aria-label', `自动${need.label}限额`)
+    const threshold = div('careThreshold')
+    const describeThreshold = (): void => {
+      threshold.textContent = `${slider.value}%（当前约 ${Math.round(save.petComputedlInfo[`${need.stat}Max`] * Number(slider.value) / 100)}）`
+    }
+    slider.addEventListener('input', () => {
+      draft[need.percent] = Number(slider.value)
+      describeThreshold()
+    })
     describeThreshold()
-  })
-  describeThreshold()
-
-  const food = document.createElement('select')
-  food.setAttribute('aria-label', '自动投喂食物')
-  food.add(new Option('自动选择（优先使用背包）', ''))
-  for (const g of careFoods()) {
-    const purchasable = canBuyCareFood(g)
-    const status = g.num ? `背包 ${g.num} 份` : purchasable ? `${price(g)} 元宝/份` : '暂不可购买'
-    const option = new Option(`${g.name} · 饥饿 +${g.hunger} · ${status}`, g.id)
-    option.disabled = !g.num && !purchasable
-    food.add(option)
+    const items = document.createElement('select')
+    items.setAttribute('aria-label', need.itemLabel)
+    items.add(new Option('自动选择（优先使用背包）', ''))
+    for (const g of careGoods(need)) {
+      const purchasable = canBuyCareGood(g)
+      const status = g.num ? `背包 ${g.num} 份` : purchasable ? `${price(g)} 元宝/份` : '暂不可购买'
+      const option = new Option(`${g.name} · ${need.statLabel} +${g[need.stat]} · ${status}`, g.id)
+      option.disabled = !g.num && !purchasable
+      items.add(option)
+    }
+    const selected = draft[need.item]
+    if (selected && !Array.from(items.options).some(o => o.value === selected))
+      items.add(new Option('原选择已不可用，请重新选择', selected))
+    items.value = selected
+    items.addEventListener('change', () => { draft[need.item] = items.value })
+    details.replaceChildren(
+      section(`自动${need.label}限额`, div('careHint', `${need.statLabel}值低于上限的以下比例时${need.label}。`), div('careRange', slider, threshold)),
+      section(need.itemLabel, items, div('careHint', '指定后仅使用所选用品；自动选择时优先使用背包。')),
+    )
   }
-  if (draft.careFoodId && !Array.from(food.options).some(o => o.value === draft.careFoodId))
-    food.add(new Option('原选择已不可用，请重新选择', draft.careFoodId))
-  food.value = draft.careFoodId
-  food.addEventListener('change', () => { draft.careFoodId = food.value })
+  for (const need of CARE_NEEDS) {
+    const tab = action(need.label, 'careTab', () => render(need))
+    tab.dataset.type = need.type
+    tab.setAttribute('role', 'tab')
+    tabs.append(tab)
+  }
+  render(CARE_NEEDS[0])
 
   const autoBuy = document.createElement('input')
   autoBuy.type = 'checkbox'
   autoBuy.checked = draft.careAutoBuy
-  autoBuy.setAttribute('aria-label', '自动购买食物')
+  autoBuy.setAttribute('aria-label', '自动购买托管用品')
   autoBuy.addEventListener('change', () => { draft.careAutoBuy = autoBuy.checked })
   const toggle = document.createElement('label')
   toggle.className = 'careToggle'
-  toggle.append(autoBuy, div('', '自动购买食物'))
+  toggle.append(autoBuy, div('', '自动购买托管用品'))
   const error = div('careError')
   error.setAttribute('role', 'alert')
-  const section = (title: string, ...children: (Node | string)[]): HTMLElement => div('careSection', div('careLabel', title), ...children)
   const content = div(
     'sweetHeartCareSettings focusPress',
     div('careHeader', div('careTitle', '托管设置'), action('关闭', 'careClose', () => close())),
-    section('自动喂食限额', div('careHint', '饥饿值低于上限的以下比例时喂食。'), div('careRange', slider, threshold)),
-    section('自动投喂食物', food, div('careHint', '指定食物后仅使用该食物；自动选择时优先使用背包食物。')),
-    section('库存不足时', toggle, div('careHint', '开启后按需购买一份，消耗元宝；自动选择时购买当前可买的最低单价食物。')),
+    tabs,
+    details,
+    section('库存不足时', toggle, div('careHint', '适用于食物、清洁用品和玩具。开启后缺货按需买一份；自动选择时购买当前类别可买的最低单价用品。')),
     div('careHint careNotice', '设置仅在贴心宝贝已开启且未到期时生效。'),
     error,
     div('careActions', action('取消', 'careCancel', () => close()), action('保存设置', 'careSave', () => {
-      const previous = { careHungerPercent: save.settings.careHungerPercent, careFoodId: save.settings.careFoodId, careAutoBuy: save.settings.careAutoBuy }
+      const previous = preferences()
       try {
         update('settings', draft)
         close()
