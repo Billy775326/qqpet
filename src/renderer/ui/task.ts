@@ -9,10 +9,10 @@ type TaskTab = Tab | 'milestones'
 const TASK_TABS: Record<TaskTab, string> = { ...TABS, milestones: '成长历程' }
 const HELP: Record<TaskTab, string> = {
   daily: '每日 06:00 重置；托管可自动完成本页任务并领奖。',
-  ddw: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标仅可领取一次，需手动领奖。',
-  growth: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标仅可领取一次，需手动领奖，升学考试需手动。',
+  ddw: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标进度跨天保留，需手动领奖。',
+  growth: '日常于 06:00 重置，托管可自动完成并领奖；列表末尾的累计目标进度跨天保留，需手动领奖，升学考试需手动。',
   travel: '每日旅游次数于 06:00 重置，托管可自动完成并领奖；地区挑战按轮次重置，需手动领奖。',
-  milestones: '成长目标每项仅可领取一次，进度随存档永久保留。',
+  milestones: '成长目标进度和领奖记录随存档永久保留。',
 }
 
 let open = false
@@ -32,7 +32,7 @@ export function openTask(): void {
       ...t, id: `${source}-${i}`, once: false, takeReward: () => claim(source, i),
     }))
     const current = [...repeating, ...goals.map(t => ({
-      ...t, msg: `${t.msg}（仅可领取一次）`, once: true, takeReward: () => claimMilestone(t.id),
+      ...t, once: true, takeReward: () => claimMilestone(t.id),
     }))]
     const signature = JSON.stringify({ tab, current })
     if (!force && signature === previous) return
