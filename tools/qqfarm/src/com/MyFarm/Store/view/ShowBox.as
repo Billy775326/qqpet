@@ -36,11 +36,15 @@ package com.MyFarm.Store.view
       private var _x:Number;
       
       private var _y:Number;
+
+      private var closing:Boolean = false;
       
       public function ShowBox(param1:MovieClip, param2:String, param3:String, param4:DisplayObject, param5:Object, param6:Function)
       {
          super();
          mc = param1;
+         mc.scaleX = 1;
+         mc.scaleY = 1;
          _width = mc.width;
          _height = mc.height;
          str = param2;
@@ -75,6 +79,10 @@ package com.MyFarm.Store.view
       
       private function beginComplete() : void
       {
+         if(closing)
+         {
+            return;
+         }
          if(img != null)
          {
             img.x = 19;
@@ -91,8 +99,11 @@ package com.MyFarm.Store.view
             displayObject.y = 40 + (80 - displayObject.height) / 2;
             mc.addChild(displayObject);
          }
-         bg = createShape(2000,2000,0,0);
-         mc.parent.addChildAt(bg,mc.parent.numChildren - 1);
+      }
+
+      public function get isOpen() : Boolean
+      {
+         return mc != null;
       }
       
       public function release() : void
@@ -190,16 +201,16 @@ package com.MyFarm.Store.view
       
       private function endComplete() : void
       {
-         if(img != null)
+         if(img != null && img.parent == mc)
          {
             mc.removeChild(img);
          }
-         else if(displayObject != null)
+         else if(displayObject != null && displayObject.parent == mc)
          {
             mc.removeChild(displayObject);
          }
-         mc.height *= 10;
-         mc.width *= 10;
+         mc.scaleX = 1;
+         mc.scaleY = 1;
          mc.parent.removeChild(bg);
          mc.parent.removeChild(mc);
          release();
@@ -214,13 +225,18 @@ package com.MyFarm.Store.view
       
       private function closeClick(param1:MouseEvent = null) : void
       {
+         if(closing || mc == null)
+         {
+            return;
+         }
+         closing = true;
          Tweener.addTween(mc,{
-            "width":mc.width / 10,
-            "height":mc.height / 10,
+            "scaleX":0.1,
+            "scaleY":0.1,
             "alpha":0,
             "time":1,
-            "x":_x + (mc.width - mc.width / 10) / 2,
-            "y":_y + (mc.height - mc.height / 10) / 2,
+            "x":_x + _width * 0.9 / 2,
+            "y":_y + _height * 0.9 / 2,
             "onComplete":endComplete
          });
       }
@@ -234,14 +250,17 @@ package com.MyFarm.Store.view
       {
          _x = mc.x;
          _y = mc.y;
-         mc.width /= 10;
-         mc.height /= 10;
+         // Block the underlying shop throughout the opening animation.
+         bg = createShape(2000,2000,0,0);
+         mc.parent.addChildAt(bg,mc.parent.getChildIndex(mc));
+         mc.scaleX = 0.1;
+         mc.scaleY = 0.1;
          mc.x += (_width - mc.width) / 2;
          mc.y += (_height - mc.height) / 2;
          mc.alpha = 0;
          Tweener.addTween(mc,{
-            "width":_width,
-            "height":_height,
+            "scaleX":1,
+            "scaleY":1,
             "alpha":1,
             "time":1,
             "x":_x,
@@ -260,6 +279,10 @@ package com.MyFarm.Store.view
       
       private function defineClick(param1:MouseEvent) : void
       {
+         if(closing || mc == null)
+         {
+            return;
+         }
          var _loc2_:uint = 0;
          if(str != "tab3")
          {

@@ -281,6 +281,10 @@ package com.MyFarm.Store
       
       private function clickHandler(param1:MouseEvent) : void
       {
+         if(showBox != null && showBox.isOpen)
+         {
+            return;
+         }
          var _loc2_:uint = 0;
          var _loc3_:uint = 0;
          var _loc4_:Object = null;

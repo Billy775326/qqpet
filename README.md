@@ -113,6 +113,8 @@ npm run test:ui
 
 Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `npm run test:taskbar -- --allow-taskbar-changes`。脚本会短暂切换当前桌面的任务栏常显、自动隐藏与鼠标唤出，使用隔离透明窗口运行生产窗口逻辑，并在结束时恢复原自动隐藏状态与鼠标位置。报告为 `dist/desktop-workarea-results.json`；普通单元测试和界面测试不切换系统任务栏设置。此项只验证实际连接的主屏及当前系统缩放。
 
+农场购买弹窗可单独运行 `node scripts/test-farm-popup.mjs`。先将 `QQPET_TEST_JAVA`、`QQPET_FFDEC_JAR` 和 `QQPET_TEST_BROWSER` 分别设为 Java、JPEXS FFDec JAR 和 Chrome/Chromium 可执行文件路径。测试仅在 `dist/` 中生成带测试入口的 Flash 副本，使用独立浏览器存储验证连续点击种子、展开中取消、关闭后重开及重复确认；不会操作真实农场存档或物理鼠标。报告和截图保存在输出的 `dist/farm-popup-*` 目录。
+
 ## 构建
 
 ```bash
@@ -140,7 +142,7 @@ Android 版本地调试用 `npm run android`（debug 包，输出到 `android/ap
 |---|---|
 | `resources/pet/fishing/main.swf` | 调整鱼苗卡片角标字号并禁止换行，避免双位数等级被截断；可用 `node tools/fix-fishing-level.mjs` 重复应用补丁 |
 | `resources/pet/mstx/qq_mstx.swf` | 隐藏需要联网的「兑换礼包」「魔法爱情石」按钮 |
-| `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店可买的种子排前、其余置灰，购买后弹出提示；商店、仓库的弹出动画改为缩放比例，不再被异步加载的图片压窄 |
+| `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店可买的种子排前、其余置灰，购买后弹出提示；商店、仓库和购买弹窗按缩放比例播放动画，购买弹窗展开及关闭时阻止重复打开，取消后清理遮罩 |
 | `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」 |
 | `resources/pet/smallGame/{100ceng,ball,paopao2}/` 下读屏幕尺寸的 26 个 SWF | `Capabilities.screenResolutionX/Y` 改为 `ExternalInterface.call("API.GetScreenWidth/Height")`（Ruffle 返回的是播放器自身尺寸） |
 

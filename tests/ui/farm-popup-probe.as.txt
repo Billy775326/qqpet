@@ -1,0 +1,26 @@
+      // Test-only callback; this method is never added to the shipped farm movie.
+      public function farmProbe(action:String = "state", index:int = 0) : Object
+      {
+         if(face == null || face._shop == null) return {ready:false};
+         if(action == "open") face._title.getChildByName("ButtonShop").dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         var container:Sprite = face._shop.getChildByName("container") as Sprite;
+         if(action == "item" && container != null) container.getChildAt(index).dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+         var popups:Array = [];
+         var successTips:int = 0;
+         for(var i:int = 0;i < stage.numChildren;i++)
+         {
+            var child:MovieClip = stage.getChildAt(i) as MovieClip;
+            if(child != null && child.hasOwnProperty("txt") && child.hasOwnProperty("define") && child.txt.text.indexOf("购买成功") == 0)
+            {
+               successTips++;
+               if(action == "ack") child.define.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+            }
+            if(child != null && child.hasOwnProperty("stepper") && child.hasOwnProperty("title_txt"))
+            {
+               if(action == "cancel") child.cancel.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+               if(action == "buy") child.define.dispatchEvent(new MouseEvent(MouseEvent.CLICK,true));
+               popups.push({x:child.x,y:child.y,width:child.width,height:child.height,scaleX:child.scaleX,scaleY:child.scaleY,title:child.title_txt.text,cost:Number(child.price_txt.text.slice(0,child.price_txt.text.indexOf("元")))});
+            }
+         }
+         return {ready:true,count:container == null ? 0 : container.numChildren,popups:popups,balance:Number(face._user.wealth),children:stage.numChildren,successTips:successTips};
+      }
