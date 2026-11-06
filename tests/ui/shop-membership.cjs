@@ -31,15 +31,38 @@ app.whenReady().then(async () => {
   await resizeViewport(win, 1000, 720, 1)
   await evaluate('(async()=>{' + prepared.code + ';fixture.clock(' + now + ');fixture.openShop();return true})()')
   const values = () => evaluate('[...document.querySelectorAll(".membershipTime")].map(e=>e.textContent)')
+  const move = async (x, y) => { await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y }); await pause(40) }
+  const hover = async selector => {
+    const p = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`)
+    await move(p.x, p.y)
+  }
+  const shown = () => evaluate('[...document.querySelectorAll(".membershipHint")].filter(e=>getComputedStyle(e).display!=="none").length')
   assert.deepEqual(await values(), ['未开通', '未开通'])
   const expiry = now / 1000 + 2 * 86400 + 3 * 3600 + 4 * 60 + 5
   await evaluate(`fixture.setMembership({PDiamondExpirationDate:${expiry},sweetHeartOverTime:${expiry},sweetHeart:false});true`)
   assert.deepEqual(await values(), ['2天 03小时04分05秒', '2天 03小时04分05秒'])
-  assert.match(await evaluate('document.querySelectorAll(".membershipRow")[1].title'), /托管已关闭/)
-  assert.match(await evaluate('document.querySelectorAll(".membershipRow")[0].title'), /到期：\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+  assert.match(await evaluate('document.querySelectorAll(".membershipHint")[1].textContent'), /托管已关闭/)
+  assert.match(await evaluate('document.querySelector(".membershipExpiry").textContent'), /到期时间：\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+  assert.equal(await evaluate('document.querySelectorAll(".shopMembership [title]").length'), 0, 'native tooltips are removed')
+  assert.equal(await shown(), 0)
+  for (const part of ['.membershipIcon', '.membershipLabel', '.membershipDays', '.membershipClock']) {
+    await hover('.membershipRow:first-child ' + part)
+    assert.equal(await shown(), 1, 'actual service content triggers the themed hint')
+  }
   await evaluate('fixture.advance(1);true')
   await pause(1100)
   assert.deepEqual(await values(), ['2天 03小时04分04秒', '2天 03小时04分04秒'])
+  assert.equal(await shown(), 1, 'a stationary hover survives countdown updates')
+  await hover('.membershipRow:nth-child(2) .membershipLabel')
+  assert.equal(await shown(), 1, 'moving between services does not leave the first tooltip open')
+  for (const region of ['row-end', 'label-gap', 'separator', 'pet']) {
+    const p = await evaluate(`(()=>{
+      const row=document.querySelector('.membershipRow'),r=row.getBoundingClientRect(),label=row.querySelector('.membershipLabel').getBoundingClientRect(),time=row.querySelector('.membershipTime').getBoundingClientRect(),group=document.querySelector('.shopMembership').getBoundingClientRect(),pet=document.querySelector('.petImgBox').getBoundingClientRect();
+      return ${JSON.stringify(region)}==='row-end'?{x:r.right-2,y:r.y+r.height/2}:${JSON.stringify(region)}==='label-gap'?{x:(label.right+time.left)/2,y:r.y+r.height/2}:${JSON.stringify(region)}==='separator'?{x:group.x+group.width/2,y:group.top+2}:{x:pet.x+pet.width/2,y:pet.y+pet.height/2};
+    })()`)
+    await move(p.x, p.y)
+    assert.equal(await shown(), 0, region + ' is outside the tooltip hit region')
+  }
   await evaluate('fixture.setBalance(5010);true')
   assert.equal(await evaluate('document.querySelectorAll(".shopMembership").length'), 1, 'inventory redraw moves the existing countdown without duplication')
   assert.equal(await evaluate('fixture.timerCount()'), 1)
@@ -58,13 +81,22 @@ app.whenReady().then(async () => {
       assert.equal(r.overflow, false)
     }
     assert.equal(geometry.images, true)
+    await hover('.membershipRow:first-child .membershipLabel')
+    const hint = await evaluate(`(()=>{const e=document.querySelector('.membershipHint'),r=e.getBoundingClientRect(),s=getComputedStyle(e);return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,color:s.backgroundColor,pointer:s.pointerEvents}})()`)
+    assert.ok(hint.left >= 0 && hint.right <= width && hint.top >= 0 && hint.bottom <= height, 'the hint stays visible at each tested scale')
+    assert.equal(hint.pointer, 'none', 'the hint cannot intercept other shop controls')
+    assert.equal(hint.color, await evaluate('getComputedStyle(document.querySelector(".selfGoodImgBox .goodFloatMsg")).backgroundColor'), 'reuse the original shop item tooltip skin')
+    await move(0, 0)
     cases++
   }
   await resizeViewport(win, 1000, 720, 1)
   await evaluate('fixture.setBackground(null);fixture.closeShop();fixture.openShop();true')
   writeFileSync('dist/shop-membership.png', (await win.webContents.capturePage()).toPNG())
+  await hover('.membershipRow:nth-child(2) .membershipLabel')
+  writeFileSync('dist/shop-membership-tooltip.png', (await win.webContents.capturePage()).toPNG())
   await evaluate('fixture.closeShop();true')
   assert.equal(await evaluate('fixture.timerCount()'), 0)
+  assert.equal(await evaluate('document.querySelectorAll(".membershipHint").length'), 0)
   for (let i = 0; i < 3; i++) {
     await evaluate('fixture.openShop();fixture.openShop();true')
     assert.equal(await evaluate('fixture.timerCount()'), 1)

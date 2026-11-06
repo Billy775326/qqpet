@@ -134,23 +134,43 @@ export function openShop(): void {
   const fly = div('markFullNone')
   cartMark.style.display = busyMark.style.display = 'none'
 
-  const diamondTime = div('membershipTime')
-  const sweetheartTime = div('membershipTime')
-  const diamond = div('membershipRow', img('membershipIcon', 'pet/shppingMall/bk/133.svg'), div('membershipLabel', '粉钻'), diamondTime)
-  const sweetheart = div('membershipRow', img('membershipIcon', 'pet/stateInfo/h_up.png'), div('membershipLabel', '贴心宝贝'), sweetheartTime)
-  const membership = div('shopMembership', diamond, sweetheart)
+  const member = (name: string, icon: string) => {
+    const days = div('membershipDays')
+    const clock = div('membershipClock')
+    const separator = document.createTextNode('')
+    const detail = div('goodDatas membershipExpiry')
+    const state = div('goodDatas membershipCareState')
+    const hint = div('goodFloatMsg membershipHint', div('goodName', name), detail, state)
+    hint.setAttribute('role', 'tooltip')
+    const row = div('membershipRow', img('membershipIcon', icon), div('membershipLabel', name), div('membershipTime', days, separator, clock), hint)
+    const track = (event: PointerEvent): void => {
+      const target = event.target instanceof Element ? event.target.closest('.membershipIcon, .membershipLabel, .membershipTime') : null
+      row.classList.toggle('membershipHintOpen', Boolean(target && row.contains(target)))
+    }
+    row.addEventListener('pointerover', track)
+    row.addEventListener('pointermove', track)
+    row.addEventListener('pointerleave', () => row.classList.remove('membershipHintOpen'))
+    row.addEventListener('pointercancel', () => row.classList.remove('membershipHintOpen'))
+    return { row, days, clock, separator, detail, state }
+  }
+  const diamond = member('粉钻', 'pet/shppingMall/bk/133.svg')
+  const sweetheart = member('贴心宝贝', 'pet/stateInfo/h_up.png')
+  const membership = div('shopMembership', diamond.row, sweetheart.row)
   const refreshMembership = (): void => {
     const now = Date.now() / 1000
-    for (const [row, text, expires, name] of [
-      [diamond, diamondTime, info.PDiamondExpirationDate, '粉钻'],
-      [sweetheart, sweetheartTime, info.sweetHeartOverTime, '贴心宝贝'],
+    for (const [view, expires] of [
+      [diamond, info.PDiamondExpirationDate],
+      [sweetheart, info.sweetHeartOverTime],
     ] as const) {
       const [days, clock] = remainingTime(expires, now).split(' ')
-      text.replaceChildren(div('membershipDays', days), ...(clock ? [' ', div('membershipClock', clock)] : []))
-      row.classList.toggle('inactive', !(expires > now))
-      row.title = expires > 0 && Number.isFinite(expires) ? `${name}到期：${formatDate(expires)}` : `${name}未开通`
+      view.days.textContent = days
+      view.clock.textContent = clock ?? ''
+      view.separator.data = clock ? ' ' : ''
+      view.clock.hidden = !clock
+      view.row.classList.toggle('inactive', !(expires > now))
+      view.detail.textContent = expires > 0 && Number.isFinite(expires) ? `到期时间：${formatDate(expires)}` : '尚未开通'
     }
-    if (info.sweetHeartOverTime > now) sweetheart.title += `\n托管${info.sweetHeart ? '已开启' : '已关闭'}，剩余时长继续计时`
+    sweetheart.state.textContent = info.sweetHeartOverTime > now ? `托管${info.sweetHeart ? '已开启' : '已关闭'}，剩余时长继续计时` : ''
   }
 
   let mine = { tab: 0, sub: 0, page: 1 }
