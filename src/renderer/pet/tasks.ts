@@ -2,6 +2,7 @@ import type { CalendarDay } from '../../shared/ipc'
 import { parseGood, type Good } from './data/goods'
 import { give } from './items'
 import { loot } from './loot'
+import { loadMilestones, MILESTONES, observeMilestones, type MilestoneProgress, type MilestoneTab } from './milestones'
 import { rand } from './rand'
 import { info, save, update } from './store'
 import { dayStart } from './vip'
@@ -113,6 +114,7 @@ interface Progress {
   taskList: Record<Tab, { take: boolean; good: Good[] }[]>
   daily: Task[]
   dailyDay: number
+  milestones: MilestoneProgress
 }
 
 const rewards = (t: Task): Good[] => [...(t.reroll ? loot(t.reroll) : []), ...(t.good ?? []).map(parseGood)]
@@ -127,6 +129,7 @@ function load(): Progress {
     taskList: { daily: p.taskList?.daily ?? [], ddw: list('ddw'), growth: list('growth'), travel: list('travel') },
     daily: p.daily ?? [],
     dailyDay: p.dailyDay ?? 0,
+    milestones: loadMilestones(p.milestones, p.doNums ?? {}),
   }
 }
 
@@ -134,22 +137,57 @@ const progress = load()
 const store = (): void => update('saveJsonData', { task: JSON.stringify(progress) })
 const defs = (tab: Tab): Task[] => (tab === 'daily' ? progress.daily : TASKS[tab])
 
+/** Snapshot permanent goals before a reset or a farm sale can remove the evidence. */
+export function refreshMilestones(): void {
+  if (observeMilestones(progress.milestones, save)) store()
+}
+
+export function milestones(tab?: MilestoneTab) {
+  refreshMilestones()
+  return MILESTONES.filter(t => !tab || (t.tab ?? 'milestones') === tab).map(t => ({
+    ...t, good: t.good.map(parseGood), done: progress.milestones.best[t.metric] ?? 0,
+    take: progress.milestones.claimed.includes(t.id),
+  }))
+}
+
+export function claimMilestone(id: string): Good[] | false {
+  const t = milestones().find(t => t.id === id)
+  if (!t || t.take || t.done < t.num) return false
+  // Acknowledge the claim before granting items; a repeated click cannot grant twice.
+  progress.milestones.claimed.push(id)
+  store()
+  give(t.good, `[host],我们完成${t.label}任务啦！~~`)
+  return t.good
+}
+
 export function count(obj: Counter): number {
   return obj === 'Travel2' ? save.gameSaveDatas.travel_china.length : (progress.doNums[obj] ?? 0)
 }
 
 export function addCount(obj: Exclude<Counter, 'Travel2'>, n = 1): void {
+  if (!Number.isFinite(n) || n <= 0) return
   progress.doNums[obj] = count(obj) + n
+  progress.milestones.counters[obj] = (progress.milestones.counters[obj] ?? 0) + n
+  observeMilestones(progress.milestones, save)
   store()
 }
 
 export const tasks = (tab: Tab) => defs(tab).map((t, i) => ({ ...t, ...progress.taskList[tab][i], done: count(t.obj) }))
 
+/** Stale tasks must not be performed or claimed before the new day's list arrives. */
+export const todayTasks = () => progress.dailyDay === dayStart() ? tasks('daily') : []
+
+/** All daily-reset goals, retaining their original claim destinations. Wait for day rollover to finish. */
+export function dailyTasks() {
+  if (progress.dailyDay !== dayStart()) return []
+  return (Object.keys(TABS) as Tab[]).flatMap(tab => tasks(tab).flatMap((t, index) => t.keep ? [] : [{ ...t, tab, index }]))
+}
+
 /** Hands out a finished task's goods; false when it is not finished yet. */
 export function claim(tab: Tab, i: number): Good[] | false {
   const t = defs(tab)[i]
   const p = progress.taskList[tab][i]
-  if (p.take || count(t.obj) < t.num) return false
+  if (!t || !p || p.take || count(t.obj) < t.num || tab === 'daily' && progress.dailyDay !== dayStart()) return false
   p.take = true
   store()
   give(p.good, `[host],我们完成${t.label}任务啦！~~`)
@@ -158,6 +196,7 @@ export function claim(tab: Tab, i: number): Good[] | false {
 
 /** 06:00: daily tasks open again, with fresh random rewards, and the day's counters restart. */
 export function resetTasks(): void {
+  observeMilestones(progress.milestones, save)
   for (const tab of Object.keys(TASKS) as (keyof typeof TASKS)[])
     TASKS[tab].forEach((t, i) => {
       const p = progress.taskList[tab][i]
@@ -242,6 +281,7 @@ export function rollDaily(today?: CalendarDay): void {
 
 /** Finishing the tour clears the visited provinces, so the city tasks can be done again. */
 export function resetTour(): void {
+  observeMilestones(progress.milestones, save)
   for (const p of progress.taskList.travel.slice(2)) p.take = false
   store()
 }

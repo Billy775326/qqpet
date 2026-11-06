@@ -40,6 +40,22 @@ const DAILY: Record<TimedType, { c: string; action: string; extra: number; pause
   background: { c: 'pay', action: 'speak', extra: 0 },
 }
 
+/** Apply inventory-backed effects without coupling game state to animation frames. */
+function applyDaily(g: Good, d: (typeof DAILY)[TimedType]): void {
+  if (g.useTimeing) startTimed(g as Good & { type: TimedType })
+  apply(g, d.extra)
+  if (d.task) addCount(d.task)
+}
+
+/** Automatic supplies must work even while the display stops painting. */
+export function useCareItem(g: Good, text: string): boolean {
+  const d = DAILY[g.type as TimedType]
+  if (!d?.task || info.health <= 0 || save.settings.paused || !takeGood(g)) return false
+  applyDaily(g, d)
+  speak({ s: text, now: true }, d.action)
+  return true
+}
+
 /**
  * Uses one of a good. `free` skips the inventory (the doctor already charged
  * for it). The good is taken when its animation starts, so a use that is
@@ -70,9 +86,7 @@ export function useItem(g: Good, free = false, text?: string): void {
   speak(text ? { s: text, now: true } : { c: d.c, s: g.type, now: true }, d.action, {
     start: () => {
       if (!take()) return
-      if (g.useTimeing) startTimed(g as Good & { type: TimedType })
-      apply(g, d.extra)
-      if (d.task) addCount(d.task)
+      applyDaily(g, d)
     },
   })
 }

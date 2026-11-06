@@ -102,6 +102,18 @@ export interface Settings {
   aiModel: string
   /** City for weather news; empty locates by IP. */
   weatherCity: string
+  /** Feed below this percentage of hungerMax, 1..100. */
+  careHungerPercent: number
+  /** Empty chooses an owned food automatically; otherwise use only this food. */
+  careFoodId: string
+  careCleanPercent: number
+  careCleanId: string
+  careMoodPercent: number
+  careToyId: string
+  /** Buy one matching care item when needed and none is owned. */
+  careAutoBuy: boolean
+  /** Perform supported daily tasks and claim their rewards while sweetheart is active. */
+  careAutoDaily: boolean
 }
 
 export interface SaveData {

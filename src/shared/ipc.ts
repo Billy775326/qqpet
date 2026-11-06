@@ -26,6 +26,7 @@ export const IPC = {
   trayClick: 'tray:click',
   showTrayMenu: 'tray:menu',
   setMenuOpen: 'win:set-menu-open',
+  setStatusOpen: 'win:set-status-open',
 } as const
 
 export interface Point {
@@ -130,6 +131,7 @@ export interface QQPetApi {
   /** Optional on Android, where the notification opens the HTML menu. */
   showTrayMenu?(enabled: boolean): void
   setMenuOpen?(enabled: boolean): void
+  setStatusOpen?(enabled: boolean): void
   setClickThrough(enabled: boolean): void
   setAlwaysOnTop(enabled: boolean): void
   setFocusable(enabled: boolean): void

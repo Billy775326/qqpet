@@ -1,4 +1,5 @@
 import { avatar, info, save, setInfo, update } from '../pet/store'
+import { refreshMilestones } from '../pet/tasks'
 import { SwfPlayer } from '../swf/player'
 import { readSol, writeSol, type Sol } from '../swf/sol'
 import { openBox } from './box'
@@ -71,6 +72,7 @@ export function openFarm(): void {
     setInfo('yb', Math.max(0, info.yb + w - last))
     last = w
     update('saveJsonData', { farm: JSON.stringify(user) })
+    refreshMilestones()
   }
   const timer = setInterval(settle, 500)
 

@@ -26,6 +26,17 @@ function poke(key: string, s = 1, e = s): void {
   machine.play({ a: 'faceActive', opt: { url: `pet/Action/${info.sex}/${dir}/interact/${key}${rand(s, e)}.swf`, opt: {} } })
 }
 
+/** Reuses a real face interaction for an unattended daily amusement task. */
+export function amusePet(): boolean {
+  if (!machine.automationReady) return false
+  const st = stage()
+  const points = st === 'Adult' ? FACE[info.sex].Adult[mood()] : FACE[info.sex][st]
+  const [key, point] = Object.entries(points)[0] ?? []
+  if (!point) return false
+  poke(key, point.s, point.e ?? point.s)
+  return true
+}
+
 /** 0 off, 1 invisible spots, 2 marked spots. */
 export function setFaceClick(v: 0 | 1 | 2): void {
   update('settings', { faceClick: v })

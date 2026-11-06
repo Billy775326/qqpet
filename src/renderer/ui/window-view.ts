@@ -5,7 +5,7 @@ import { button, div, img } from './dom'
 
 interface Dialog {
   title?: string
-  msg: string | (() => string)
+  msg: string | (() => string | HTMLElement)
   goods?: Pick<Good, 'url' | 'name'>[]
   /** Quantity range 1..max (initially max); a live limit of 0 disables purchasing. */
   max?: number | (() => number)
@@ -13,6 +13,8 @@ interface Dialog {
   ok?: (close: () => void, num: number) => void
   /** The sweetheart skin. */
   sweet?: boolean
+  /** Settings hotspot in the sweetheart skin's baked-in text. */
+  sweetSettings?: () => void
 }
 
 let closeCurrent = (): void => {}
@@ -99,6 +101,17 @@ export function windowView(d: Dialog): void {
   }
 
   const view = div(d.sweet ? 'windowView sweetHeart' : 'windowView', ...(d.title ? [div('title', d.title)] : []), main)
+  if (d.sweet && d.sweetSettings) {
+    const entry = document.createElement('button')
+    entry.type = 'button'
+    entry.className = 'sweetHeartCareEntry'
+    entry.textContent = '托管'
+    entry.title = '托管设置'
+    entry.setAttribute('aria-label', '托管设置')
+    entry.addEventListener('pointerdown', event => event.stopPropagation())
+    entry.addEventListener('click', d.sweetSettings)
+    view.append(entry)
+  }
   const closeFrame = openFrame(div('ui-window', view), d.sweet ? 'pet/windowTip/sweetHeart/sweetHeart.png' : 'pet/windowTip/alert/bg.png')
   let refresher: ReturnType<typeof setInterval> | undefined
   const close = (): void => {
@@ -108,7 +121,7 @@ export function windowView(d: Dialog): void {
   closeCurrent = close
   const refresh = (): void => {
     refreshQuantity()
-    if (typeof d.msg === 'function') message.textContent = d.msg()
+    if (typeof d.msg === 'function') message.replaceChildren(d.msg())
   }
   submit = button('windowViewButSubmit', () => {
     const selected = num

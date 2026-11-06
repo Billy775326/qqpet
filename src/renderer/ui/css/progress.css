@@ -3,6 +3,21 @@
   border-radius: 60px;
   overflow: hidden;
 }
+/* Keep caps at native width and overlap their joins: transparent windows can
+ * rasterize adjacent fractional edges separately, exposing the dark track. */
+.ui-progress .background_line {
+  overflow: hidden;
+}
+.ui-progress .b_left,
+.ui-progress .b_right {
+  flex-shrink: 0;
+}
+.ui-progress .b_center {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin: 0 -1px;
+}
 .ui-progress .progress .hoverNum {
   opacity: 0;
 }

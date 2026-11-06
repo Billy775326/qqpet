@@ -7,8 +7,9 @@ import { TALK, type Line } from './data/talk'
 import { advanceTask, stopTask } from './activity'
 import { IDLE, rephrase } from './ai'
 import { dateTalk, festival, greeting, loadCalendar } from './calendar'
-import { listGoods, tickTimed } from './goods'
-import { useItem } from './items'
+import { tickTimed } from './goods'
+import { selfCare } from './care'
+import { runDailyCare } from './daily-care'
 import { deliverMails } from './mail'
 import { Machine, type Pose } from './machine'
 import { rand } from './rand'
@@ -184,7 +185,8 @@ function tick(): void {
     addInfo('onLineTime', minutes)
     tickGift(minutes)
     // Work, study and travel wear the pet out faster.
-    const extra = busy() ? 1 : 0
+    const wasBusy = busy()
+    const extra = wasBusy ? 1 : 0
     const moodRate = rand(1, 2) + extra
     // Growth only counts the minutes the mood lasted; an activity stops when it runs out.
     const grown = Math.min(minutes, info.mood / moodRate)
@@ -196,27 +198,14 @@ function tick(): void {
     setInfo('hunger', Math.max(info.hunger - (rand(2, 3) + extra) * minutes, 0))
     setInfo('clean', Math.max(info.clean - (rand(2, 3) + extra) * minutes, 0))
     addInfo('growth', +(growthPerMinute() * grown).toFixed(8))
-    if (info.sweetHeart) selfCare()
+    const cared = info.sweetHeart && selfCare()
     for (const type of tickTimed(grown)) speak({ c: 'state', s: `${type}Over`, now: true }, 'speak')
     advanceTask(grown)
+    // Start after accounting for elapsed time, so a new activity gets no retroactive minutes.
+    if (info.sweetHeart && !cared && !wasBusy) runDailyCare()
   }
   lastTick = now
   update('nowTimeLine', now)
-}
-
-/** The first need under 60% (food before cleaning before play), with the words the pet says. */
-const NEEDS = [
-  { stat: 'hunger', type: 'food', act: '吃东西' },
-  { stat: 'clean', type: 'clean', act: '洗白白' },
-  { stat: 'mood', type: 'toy', act: '玩玩具' },
-] as const
-
-/** Sweetheart: the pet tends its most urgent need with the first matching good it owns. */
-function selfCare(): void {
-  const need = NEEDS.find((n) => info[n.stat] / save.petComputedlInfo[`${n.stat}Max`] < 0.6)
-  if (!need) return
-  const g = listGoods(need.type, 1, 1).list[0]
-  if (g) useItem(g, false, `[host]，我可以自己${need.act}哦！~~使用了：${g.name}`)
 }
 
 /** Random illness for a tired pet, and further health loss once ill. */

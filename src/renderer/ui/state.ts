@@ -4,6 +4,7 @@ import { durationText, goodOf, type TimedType } from '../pet/data/goods'
 import { speak } from '../pet/pet'
 import { activity, growthPerMinute, info, onInfoChange, save, setInfo } from '../pet/store'
 import { openSweetHeartPurchase } from './sweetheart'
+import { openCareSettings } from './care-settings'
 import { openGoods } from './control'
 import './css/state.css'
 import { button, div, img } from './dom'
@@ -63,6 +64,7 @@ function sweetHeart(): void {
     title: '贴心宝贝',
     msg: on ? '当前贴心宝贝已开启，开启自动喂食以及贴心宝贝效果，是否继续？~~' : '关闭后只是关闭自动喂养功能，是否继续？~~',
     sweet: true,
+    sweetSettings: openCareSettings,
     ok: (close) => {
       speak({ s: on ? '[host],开启了贴心宝贝，我真是太爱你了！~' : '[host],我依然还是爱你的，天地可鉴！~', now: true }, 'speak')
       setInfo('sweetHeart', on)
@@ -129,8 +131,20 @@ function render(): void {
 }
 
 export function closeState(): void {
+  if (panel) window.qqpet.setStatusOpen?.(false)
+  document.removeEventListener('pointerdown', dismissState)
+  document.removeEventListener('keydown', stateKey)
+  window.removeEventListener('blur', closeState)
   panel?.parentElement!.remove()
   panel = null
+}
+
+function dismissState(event: PointerEvent): void {
+  if (panel && event.target instanceof Node && !panel.contains(event.target)) closeState()
+}
+
+function stateKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') closeState()
 }
 
 /** Opens the status panel from tray point (x, y), toward the screen's middle. */
@@ -144,6 +158,10 @@ export function openState(x: number, y: number): void {
   else panel.style.bottom = `${Math.max(innerHeight - y, 0)}px`
   document.body.appendChild(div('ui-state', panel))
   render()
+  window.qqpet.setStatusOpen?.(true)
+  document.addEventListener('pointerdown', dismissState)
+  document.addEventListener('keydown', stateKey)
+  window.addEventListener('blur', closeState)
 }
 
 let queued = 0

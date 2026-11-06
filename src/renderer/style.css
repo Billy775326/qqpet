@@ -107,7 +107,7 @@ body {
   position: fixed;
   width: 261px;
   height: 183px;
-  z-index: 600;
+  z-index: 650;
 }
 /* Ruffle's :host has all:initial, which would keep the player visible inside a hidden #talk. */
 #talk > ruffle-player {
