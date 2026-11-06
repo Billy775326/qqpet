@@ -2,6 +2,7 @@ import { speak } from '../pet/pet'
 import { addInfo, busy, info, refreshTray, save, setInfo, setTray, stage } from '../pet/store'
 import { addCount } from '../pet/tasks'
 import { SwfPlayer } from '../swf/player'
+import { loadGame } from '../swf/game-player'
 import './css/smallgame.css'
 import { button, div } from './dom'
 
@@ -202,7 +203,7 @@ function open(name: string, parent: Win | null, swf: string, x: number, y: numbe
       win.player.el.ruffle().addFSCommandHandler((cmd) => {
         if (cmd === 'quit' && root) destroy(root)
       })
-      void win.player.load(`pet/smallGame/${dir}/${swf}`, `pet/smallGame/${dir}/`)
+      void loadGame(win.player, `pet/smallGame/${dir}/${swf}`, `pet/smallGame/${dir}/`)
     },
     { once: true },
   )

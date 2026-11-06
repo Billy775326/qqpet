@@ -1,6 +1,24 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { build } from 'esbuild'
+import { loadGame } from '../src/renderer/swf/game-player.ts'
+
+test('desktop game submovies retain their resource base and start at the same volume', async () => {
+  const actions: unknown[][] = []
+  let volume = 1
+  const player = {
+    load: async (...args: unknown[]) => { actions.push(['load', ...args]) },
+    el: { ruffle: () => ({
+      set volume(value: number) { volume = value; actions.push(['volume', value]) },
+      resume() { assert.equal(volume, 0.3); actions.push(['resume']) },
+    }) },
+  } as unknown as Parameters<typeof loadGame>[0]
+  await loadGame(player, 'pet/smallGame/rope/prompt_money_102.swf', 'pet/smallGame/rope/')
+  assert.deepEqual(actions, [
+    ['load', 'pet/smallGame/rope/prompt_money_102.swf', 'pet/smallGame/rope/', { autoplay: 'off' }],
+    ['volume', 0.3], ['resume'],
+  ])
+})
 
 test('games load paused, apply thirty-percent volume before playback, and retain input focus', async () => {
   for (const touch of [false, true]) {
