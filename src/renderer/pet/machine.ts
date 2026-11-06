@@ -13,6 +13,7 @@ export interface Pose {
   e?: () => void
 }
 
+const PRESENTATION_GRACE_MS = 10_000
 /** At health 1 everything except these turns into the dying animation. */
 const DYING_ALLOWED = ['cure', 'die', 'revival', 'hide', 'appear', 'enter']
 
@@ -27,10 +28,16 @@ export class Machine {
   private queue: Pose[] = []
   private next: Pose | null = null
   private changing = false
+  private changeStartedAt = 0
 
   /** No current action, pending transition or queued user animation. */
   get idle(): boolean {
     return this.pose.a === 'normal' && !this.next && !this.changing && this.queue.length === 0
+  }
+
+  /** A stalled visual transition must not stop unattended game-state changes. */
+  get automationReady(): boolean {
+    return this.idle || (this.changing && performance.now() - this.changeStartedAt >= PRESENTATION_GRACE_MS)
   }
 
   constructor(
@@ -65,6 +72,7 @@ export class Machine {
     if (this.next) this.queue = []
     this.next = null
     this.changing = true
+    this.changeStartedAt = performance.now()
 
     const target = p.opt ?? route(info.sex, stage(), p.a, mood())
     this.poseOpt = target.opt.opt

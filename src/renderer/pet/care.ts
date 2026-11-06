@@ -1,7 +1,7 @@
 import { allGoods, type Good } from './data/goods'
 import SHOP from './data/shop.json'
 import { listGoods } from './goods'
-import { buy, price, useItem } from './items'
+import { buy, price, useCareItem } from './items'
 import { info, save } from './store'
 
 export const CARE_NEEDS = [
@@ -45,8 +45,7 @@ export function performCare(need: CareNeed): boolean {
   if (info[need.stat] / save.petComputedlInfo[`${need.stat}Max`] >= (save.settings[need.percent] ?? 60) / 100) return false
   const g = careItem(need)
   if (!g) return false
-  useItem(g, false, `[host]，我可以自己${need.act}哦！~~使用了：${g.name}`)
-  return true
+  return useCareItem(g, `[host]，我可以自己${need.act}哦！~~使用了：${g.name}`)
 }
 
 /** At most one item per growth tick; each need has its own threshold and item preference. */

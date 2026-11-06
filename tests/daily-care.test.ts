@@ -24,19 +24,19 @@ async function dailyCare(kinds: string[], allDaily = false) {
       ...(!allDaily ? Object.fromEntries([['ddw', 5], ['growth', 4], ['travel', 2]].map(([tab, n]) => [tab, Array.from({ length: n as number }, () => ({ take: true, good: [] }))])) : {}),
     },
   })
-  const state = { save, now: Date.now(), idle: true, hover: false, ui: false, amused: 0, exams: 0, alerts: 0, addCount: (_key: string) => {} }
+  const state = { save, now: Date.now(), idle: true, visualBlocked: false, defer: false, pending: [] as (() => void)[], hover: false, ui: false, amused: 0, exams: 0, alerts: 0, addCount: (_key: string) => {} }
   const stub = `
     const state=globalThis.state;
     export const save=state.save,info=save.petInfo,activity=key=>save.activeOption[key];
     export const busy=()=>Boolean(activity('work')||activity('study')||activity('trip'));
     export const update=(group,patch)=>{if(Array.isArray(patch))save[group]=patch;else Object.assign(save[group],patch)},setInfo=(key,value)=>info[key]=value,addInfo=(key,n)=>info[key]+=n,setActivity=(key,value)=>save.activeOption[key]=value,refreshTray=()=>{};
-    export const machine={get idle(){return state.idle}};
-    export const speak=(_line,_action,hooks={})=>hooks.start?.();
+    export const machine={get idle(){return state.idle},get automationReady(){return state.idle||state.visualBlocked}};
+    export const speak=(_line,_action,hooks={})=>{if(hooks.start){if(state.defer)state.pending.push(hooks.start);else hooks.start()}};
     export const amusePet=()=>{state.amused++;state.addCount('Amusing');return true};
     export const windowView=()=>state.alerts++,openExam=()=>state.exams++,floatMood=()=>{},openEmail=()=>{},tripBack=()=>{},isBuddy=()=>false,takePhoto=()=>null,mailPhoto=()=>{},loot=()=>[],resetFish=()=>{},rand=(_min,max)=>max,luck=()=>0;
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
-  const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount,dailyTasks,milestones,resetTasks} from './tasks';export {advanceTask} from './activity';export {resumeTask} from './jobs';export {goodOf} from './data/goods';`
+  const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount,dailyTasks,milestones,resetTasks} from './tasks';export {advanceTask} from './activity';export {resumeTask,study,studyGoods} from './jobs';export {elapsed} from './activity';export {goodOf} from './data/goods';`
   const allowed = ['./daily-care', './care', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
@@ -263,4 +263,54 @@ test('day rollover blocks every daily source until the new day is initialized', 
   assert.equal(run(), false)
   assert.equal(api.tasks('ddw')[0].take, false)
   assert.equal(state.amused, 0)
+})
+
+test('automatic activities keep their real timers while animation callbacks are paused', async () => {
+  for (const [counter, key, type] of [['Study', 'study', 'study'], ['Work', 'work', 'work'], ['Travel1', 'trip', null]] as const) {
+    const { save, state, api, run } = await dailyCare([counter])
+    Object.assign(state, { idle: false, visualBlocked: true, defer: true })
+    assert.equal(run(), true)
+    const id = save.activeOption[key]
+    assert.ok(id, 'an automatic activity starts before any visual callback')
+    const duration = type ? api.goodOf(type, id).useTime : 60
+    assert.equal(api.count(counter), 0)
+    assert.equal(run(), false, 'the running activity cannot be replaced')
+    api.advanceTask(duration - 1)
+    assert.equal(api.count(counter), 0, 'background operation preserves normal duration')
+    api.advanceTask(1)
+    assert.equal(api.count(counter), 1)
+    assert.equal(save.activeOption[key], null)
+    assert.equal(run(), true, 'the completed daily reward is claimable while drawing is stalled')
+    for (const callback of state.pending) callback()
+    assert.equal(api.count(counter), 1)
+    assert.equal(save.activeOption[key], null, 'resuming drawing cannot restart a completed activity')
+  }
+})
+
+test('a delayed manual lesson cannot replace an automatic activity that has already begun', async () => {
+  const { save, state, api, run } = await dailyCare(['Study'])
+  state.defer = true
+  const course = api.studyGoods()[0]
+  assert.equal(api.study(course), true)
+  assert.equal(save.activeOption.study, null, 'manual lessons still wait for their animation')
+  assert.equal(state.pending.length, 1)
+  assert.equal(run(), true)
+  const id = save.activeOption.study
+  api.advanceTask(5)
+  for (const callback of state.pending) callback()
+  assert.equal(save.activeOption.study, id)
+  assert.equal(api.elapsed(), 5, 'a stale visual callback must not reset the running timer')
+})
+
+test('stalled drawing never bypasses pause, illness or active user interaction', async () => {
+  for (const reason of ['paused', 'ill', 'hover', 'window']) {
+    const { save, state, run } = await dailyCare(['Study'])
+    Object.assign(state, { idle: false, visualBlocked: true, defer: true })
+    if (reason === 'paused') save.settings.paused = true
+    if (reason === 'ill') save.petInfo.health = 4
+    if (reason === 'hover') state.hover = true
+    if (reason === 'window') state.ui = true
+    assert.equal(run(), false, reason)
+    assert.equal(save.activeOption.study, null)
+  }
 })

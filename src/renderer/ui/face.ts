@@ -28,7 +28,7 @@ function poke(key: string, s = 1, e = s): void {
 
 /** Reuses a real face interaction for an unattended daily amusement task. */
 export function amusePet(): boolean {
-  if (machine.pose.a !== 'normal') return false
+  if (!machine.automationReady) return false
   const st = stage()
   const points = st === 'Adult' ? FACE[info.sex].Adult[mood()] : FACE[info.sex][st]
   const [key, point] = Object.entries(points)[0] ?? []

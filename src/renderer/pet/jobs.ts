@@ -19,6 +19,8 @@ import { addCount } from './tasks'
 
 export { PROVINCES }
 
+interface StartOptions { automatic?: boolean }
+
 type Subject = keyof StudyInfo
 const SUBJECTS: Subject[] = ['chinese', 'mathematics', 'politics', 'music', 'art', 'manner', 'pe', 'labouring', 'wushu']
 
@@ -92,14 +94,16 @@ export function workBlocked(g: Good): string {
 }
 
 /** Returns whether the pet went to work. */
-export function work(g: Good): boolean {
+export function work(g: Good, { automatic = false }: StartOptions = {}): boolean {
   if (cannot('工作')) return false
   const no = workBlocked(g)
   if (no) {
     speak({ s: no, now: true }, 'speak')
     return false
   }
-  speak({ s: '[host]，我开始工作了哦~', now: true }, 'speak', { start: () => startTask(workTask(g), g.id) })
+  const start = (): void => { if (!cannot('工作')) startTask(workTask(g), g.id) }
+  if (automatic) start()
+  speak({ s: '[host]，我开始工作了哦~', now: true }, 'speak', { start: automatic ? undefined : start })
   return true
 }
 
@@ -144,7 +148,7 @@ function examPrompt(g: Good): void {
 }
 
 /** Returns whether the pet went to class. */
-export function study(g: Good): boolean {
+export function study(g: Good, { automatic = false }: StartOptions = {}): boolean {
   if (cannot('学习')) return false
   if (lessons(g) === g.classNum) {
     examPrompt(g)
@@ -157,8 +161,10 @@ export function study(g: Good): boolean {
       ? '[host]，研究生已经是我这科的最高学历啦~'
       : `[host]，这阶段的${g.object}要学满${g.classNum}课，我会努力的~`,
   ]
+  const start = (): void => { if (!cannot('学习')) startTask(studyTask(g), g.id) }
+  if (automatic) start()
   speak({ s: lines[rand(0, lines.length - 1)], now: true }, 'speak', {
-    start: () => startTask(studyTask(g), g.id),
+    start: automatic ? undefined : start,
   })
   return true
 }
@@ -212,10 +218,12 @@ function back(p: Province, early: boolean): void {
 }
 
 /** An hour in a random province; a lucky pet comes back early from an encounter. */
-export function travel(): void {
+export function travel({ automatic = false }: StartOptions = {}): void {
   if (cannot('旅行了', '去旅游哦')) return
   const p = PROVINCES[rand(0, PROVINCES.length - 1)]
-  speak({ s: `[host]，我开始去${p.name}了哦~`, now: true }, 'speak', { start: () => startTask(tripTask(p), p.name) })
+  const start = (): void => { if (!cannot('旅行了', '去旅游哦')) startTask(tripTask(p), p.name) }
+  if (automatic) start()
+  speak({ s: `[host]，我开始去${p.name}了哦~`, now: true }, 'speak', { start: automatic ? undefined : start })
 }
 
 const tripTask = (p: Province): Task => ({
