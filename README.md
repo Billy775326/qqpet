@@ -70,6 +70,8 @@ Windows ZIP 便携版直接解压运行，应用自身数据存放在 `QQPet.exe
 
 ## 下载安装
 
+当前版本为 **v0.2.0**，主要变化见[更新日志](CHANGELOG.md)，升级前请阅读[兼容说明与已知限制](docs/releases/v0.2.0.zh-CN.md)。本项目处于 0.x 开发阶段；每次发布单独说明兼容范围，不能仅凭主版本号为 0 判断存档或行为是否兼容。
+
 从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的安装包：
 
 | 平台 | 文件 |
@@ -133,7 +135,7 @@ Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `
 npm run dist   # 类型检查 + 构建 + 打包当前平台安装包到 dist/
 ```
 
-推送 `v*` 标签时由 GitHub Actions 打出三平台安装包和 Android APK 并发布 Release，其他推送不触发构建。
+推送 `v*` 标签时由 GitHub Actions 构建 Windows ZIP 便携版、macOS DMG 和 Linux AppImage／deb，再发布 Release 与 `SHA256SUMS.txt`；只有配置完整 Android 发布签名时才额外提供 APK。其他推送不触发发布构建，也可在 Actions 中手动指定已有发布标签重试构建。版本来自 `package.json`，Android 自动读取同一版本；发布说明从 CHANGELOG 中提取相应版本段落，缺少段落或标签版本不一致时停止发布。
 
 Android 版本地调试用 `npm run android`（debug 包，输出到 `android/app/build/outputs/apk/debug/`），需要 Android SDK 和 JDK 17（Gradle 8 不支持更新的 JDK，可用 `JAVA_HOME` 指定）。CI 打的 release 包需要在仓库 Secrets 中配置签名密钥：
 
