@@ -92,8 +92,11 @@ export function openGameWindow(swf: string): BrowserWindow {
     useContentSize: true,
     backgroundColor: '#000',
     autoHideMenuBar: true,
+    skipTaskbar: false,
     webPreferences: { sandbox: true },
   })
+  // A hidden Windows launcher can suppress the constructor's initial show.
+  win.once('ready-to-show', () => win.show())
   win.webContents.on('will-navigate', (e) => e.preventDefault())
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   void win.loadURL(`${PAGES}/game.html?swf=${encodeURIComponent(swf)}`)
