@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 整理 README 的下载入口、功能概览和升级提示，将详细操作与开发说明分别归入[使用指南](docs/user-guide.zh-CN.md)和[开发指南](docs/development.zh-CN.md)，保留原有章节锚点；明确 Windows 便携版的自启限制及 v0.2.0 未提供 Android APK。
+
 ## [0.2.0] - 2026-11-06
 
 本版本基于 v0.1.4，新增成长任务、托管设置及商城功能，并修复农场购买弹窗、进度条接缝和托盘交互。升级请先退出程序并备份整个便携目录，保留 `data/` 后替换程序文件；已有存档及领奖记录保留，未领取的成长奖励采用新方案。详细兼容说明与已知限制见[升级说明](https://github.com/Billy775326/qqpet/blob/v0.2.0/docs/releases/v0.2.0.zh-CN.md)。

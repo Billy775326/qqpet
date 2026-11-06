@@ -1,8 +1,76 @@
 # QQPet
 
-QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic Penguin T800 逆向重建。Flash 内容由 [Ruffle](https://ruffle.rs) 播放。
+QQPet 是基于 Arctic Penguin T800 逆向重建的 QQ 宠物复刻项目，提供 Windows、macOS 和 Linux 桌面版，并包含 Android 悬浮窗工程。Flash 内容由 [Ruffle](https://ruffle.rs) 播放。
 
-> **版权声明**：QQ 宠物的美术资源与 SWF 版权归腾讯所有；旅行照片素材版权归《旅行青蛙·中国之旅》所有。本项目仅供学习交流，请勿用于商业用途。
+[下载安装](#下载安装) · [使用指南](docs/user-guide.zh-CN.md) · [更新日志](CHANGELOG.md) · [开发指南](docs/development.zh-CN.md)
+
+> **版权声明**：QQ 宠物的美术资源与 SWF 版权归腾讯所有；旅行照片素材版权归《旅行青蛙·中国之旅》所有。本项目仅供学习交流，请勿用于商业用途。代码许可证不覆盖这些资源。
+
+## 下载安装
+
+当前正式版为 **[v0.2.0](https://github.com/Billy775326/qqpet/releases/tag/v0.2.0)**。从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的文件；同页提供 `SHA256SUMS.txt`，可用于核对下载文件的 SHA-256。
+
+| 平台 | 下载文件 | 运行方式 |
+| --- | --- | --- |
+| Windows x64 | `QQPet-<版本>-win-x64-portable.zip` | 解压到可写目录，运行 `QQPet.exe`，无需安装 |
+| macOS Apple 芯片 | `QQPet-<版本>-arm64.dmg` | 将 QQPet 拖入“应用程序” |
+| macOS Intel | `QQPet-<版本>.dmg` | 将 QQPet 拖入“应用程序” |
+| Linux x64 | `QQPet-<版本>.AppImage` 或 `qqpet_<版本>_amd64.deb` | AppImage 添加执行权限后运行，或安装 deb |
+
+### Android
+
+Android 工程要求 Android 11 及以上。**v0.2.0 没有 Android APK**，自行构建与签名见[开发指南](docs/development.zh-CN.md#android-构建与签名)。
+
+### Windows 首次使用与升级
+
+1. 将 ZIP 完整解压到有写入权限的目录，运行 `QQPet.exe`。
+2. 在选蛋页领养宠物，也可导入已有存档；宠物和托盘图标提供日常操作入口。
+3. 升级时先退出 QQPet，备份整个旧目录，再把旧目录的整个 `data/` 复制到新版本目录，之后启动新版本。不要在运行中覆盖程序。
+
+`data/` 保存宠物存档、浏览器存储、加密凭据等应用数据。单独导出宠物 JSON 不能代替整个目录的备份。Windows 便携版不启用开机自启；数据与 API Key 的迁移规则见[使用指南](docs/user-guide.zh-CN.md#数据备份与-api-key)，本次兼容变化见 [v0.2.0 升级说明](docs/releases/v0.2.0.zh-CN.md)。
+
+<details>
+<summary>首次运行的系统提示与 Linux 安装命令</summary>
+
+桌面产物没有代码签名，首次运行可能被系统拦截。
+
+- **Windows**：SmartScreen 提示“Windows 已保护你的电脑”时，可点“更多信息”查看“仍要运行”。
+- **macOS**：可先尝试打开，再到“系统设置 → 隐私与安全性”中选择“仍要打开”。若提示“已损坏”或无法验证开发者，可在终端执行一次：
+
+  ```bash
+  xattr -cr /Applications/QQPet.app
+  ```
+
+- **Linux AppImage**：
+
+  ```bash
+  chmod +x QQPet-*.AppImage
+  ./QQPet-*.AppImage
+  ```
+
+  若提示缺少 FUSE，Ubuntu 22.04 可安装 `libfuse2`，24.04 可安装 `libfuse2t64`。
+- **Linux deb**：
+
+  ```bash
+  sudo apt install ./qqpet_*_amd64.deb
+  ```
+
+</details>
+
+## 功能
+
+| 玩法 | 内容 |
+| --- | --- |
+| 宠物养成 | 选蛋领养、成长升级、饥饿／清洁／心情／健康、生病就医、死亡复活和重生 |
+| 学习与日常 | 课程、升学考试、打工、全国旅游、奇遇、纪念品和旅行相簿；活动进度在关闭应用期间继续计时 |
+| 商城与会员 | 购物车、背包、食品／清洁用品／药品／玩具／装扮，粉钻、贴心宝贝及会员倒计时；元宝充值为本地模拟，不涉及真实付款 |
+| 任务与收藏 | 每日任务、地区旅游挑战、68 项永久成长目标、签到、图鉴，以及节日／生日／旅行邮件 |
+| 托管照料 | 配置喂食、清洁和玩耍用品与触发比例；可选自动补购、自动完成可托管的每日任务并领奖，这两项默认关闭 |
+| 活动与游戏 | 池塘养鱼、QQ 农场、密室探险、桌面互动小游戏及独立窗口小游戏 |
+| 桌面交互 | 左右贴边 mini、移入探头、点击展开、托盘菜单、天气播报、节日问候、透明度、免打扰、全屏应用前台自动隐藏和高清素材 |
+| 可选 AI | 连接 OpenAI 兼容接口，进行聊天、台词改写、剪贴板文字点评或翻译；无需配置 AI 即可使用养成功能 |
+
+具体操作、续费规则和托管边界见[使用指南](docs/user-guide.zh-CN.md)；永久目标的物品与元宝奖励见[成长任务奖励明细](docs/task-rewards.zh-CN.md)。
 
 ## 截图
 
@@ -11,9 +79,15 @@ QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic 
     <td width="50%"><img src="docs/screenshots/pet.png" alt="桌面宠物与右键菜单"><br>桌面宠物与右键菜单</td>
     <td width="50%"><img src="docs/screenshots/shop.png" alt="商城与背包"><br>商城与背包</td>
   </tr>
+</table>
+
+<details>
+<summary>更多界面截图</summary>
+
+<table>
   <tr>
-    <td><img src="docs/screenshots/petinfo.png" alt="宠物资料"><br>宠物资料</td>
-    <td><img src="docs/screenshots/signin.png" alt="图鉴与签到"><br>图鉴与签到</td>
+    <td width="50%"><img src="docs/screenshots/petinfo.png" alt="宠物资料"><br>宠物资料</td>
+    <td width="50%"><img src="docs/screenshots/signin.png" alt="图鉴与签到"><br>图鉴与签到</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/task.png" alt="今日任务"><br>今日任务</td>
@@ -25,158 +99,61 @@ QQ 宠物跨平台复刻（Windows / macOS / Linux / Android），基于 Arctic 
   </tr>
 </table>
 
-## 功能
+</details>
 
-- **养成**：选蛋领养、成长与升级、饥饿/清洁/心情/健康、生病就医、死亡与复活、重生（可换性别）。
-- **日常**：打工、上学（含升学考试）、全国旅游（奇遇、纪念品、旅行相簿明信片），关闭应用期间的进度照常计时。
-- **物品**：商城与购物车、背包、食物/清洁/药品/玩具、限时物品、粉钻与甜蜜情侣。
-- **任务与邮件**：今日任务（按需求和节假日生成）、逗逗我、学习打工、旅游任务和成长历程；签到与图鉴；节日、生日、旅行明信片邮件。
-- **活动**：池塘（养鱼）、农场（QQFarm，金币即元宝）、密室探险、6 类 98 个小游戏（独立窗口，按游戏时长奖励）。
-- **AI（可选）**：接入任意 OpenAI 兼容接口，宠物闲聊、改写台词、点评或翻译剪贴板文字。
-- **其他**：天气播报、节日问候、免打扰、透明度、开机自启、全屏应用（看视频、玩游戏）在前台时自动隐藏宠物、高清画质（重绘的 @2x 素材，适配高分屏，重启后生效）、存档导入导出（兼容原版 `config.json`，首次启动的选蛋页也可直接导入）。
+## 已知限制
 
-当前开发分支支持左右缘 mini：将宠物拖到屏幕左缘或右缘松手后收起，鼠标移入时探头，点击或拖离边缘后在对应一侧展开；左侧形象镜像显示，重启后保留收起位置。空闲 3 分钟显示小憩效果，养成与任务照常运行。托盘喂养和设置中的召回也会恢复完整宠物。
-
-当前开发分支可点击商城底部“元宝”两字打开充值弹窗：可选 6、30、98、198、328、648 六档，默认按 1:10 增加元宝；同一次充值弹窗内累计点击 648 档位 10 次后，本次弹窗的所有档位改为 1:100，关闭后恢复 1:10 并清零点击计数。选择档位不增加元宝，仍须确认。这是本地模拟充值，不涉及实际扣款；原设置中的作弊页已移除。
-
-装扮背景的基础有效期按天计算，例如原 60 分钟现在实际使用 60 天；“无背景”不显示时间。已经启用的背景保留原剩余时间，重新使用后采用新时长。倒计时存档仍以分钟保存，其他限时物品的时长不变。
-
-控制条“粉钻”提供“粉钻”“贴心宝贝”和“商城”三个二级入口，贴心宝贝使用档案中的爱心图标；档案中的粉钻和贴心宝贝图标也可直接操作。粉钻沿用 5 天套餐：符合原有首次优惠条件时 666 元宝，其他开通或续费按当前粉钻等级 × 888 元宝计费；未到期续费从原到期时间追加，取消或余额不足不扣费。
-
-商城左上宠物预览区底部显示粉钻和贴心宝贝的剩余天、小时、分、秒，每秒刷新；悬停图标、名称或倒计时，可通过商城原有风格的说明框查看准确到期时间，贴心宝贝还会说明托管开关状态，行内空白处不会触发提示。续费即时更新，未开通及已到期分别提示；关闭托管不会停止有效期倒计时，关闭商城后停止界面刷新。会员计费、存档及原有商城布局不变。
-
-贴心宝贝按充值后的实际剩余时长最多 30 天计算，可提前续费：点击状态栏的贴心宝贝图标，查看剩余及本次可充值天数；例如剩余 10 天时最多再充 20 天，费用仍为 300 元宝/天。不满一天的剩余时间按占用一天的额度计算；已有超过 30 天的存档保留原到期时间。开启/关闭按钮仅切换自动照料。
-
-点击贴心宝贝说明中“可以送给克鲁尼托管”的“托管”，可打开托管设置。单页紧凑展示喂食、清洁、玩耍三行，分别设置饥饿、清洁、心情的触发比例（默认均为 60%）及食物、清洁用品、玩具；滑条上可用鼠标滚轮或方向键逐 1% 微调；可指定用品或自动选择背包用品，悬停比例可查看当前对应数值。自动购买默认关闭，开启后同时适用于这三类托管用品，仅在缺货时按需购买一份；自动选择模式购买当前类别可买的最低单价用品，仍遵循等级、粉钻、商城在售及元宝余额限制。详细规则可展开查看，点击“保存设置”后统一生效，取消不保存。
-
-任务表沿用原有“今日任务、逗逗我、学习打工、旅游任务”四个页签、列表、奖励图标和领取按钮，在同一行增加“成长历程”页签。原有日常于每天 06:00 重置，地区旅游挑战跨天保留、完成一轮旅行后重置；悬停页签可查看规则。“逗逗我”列表末尾新增 6 项累计逗乐目标（1／25／100／300／1000／3000 次），“学习打工”末尾新增 12 项课时、打工次数和升学学历目标。“成长历程”扩充到 50 项，涵盖照料、等级、累计在线陪伴、学习学历、打工、旅行、图鉴、小游戏及池塘／农场收获。三页共 68 项永久目标，每项奖励只领一次，随存档导入导出并跨日、跨轮保留。旧存档已有的等级、课时、考试学历、图鉴与可确认的收获会计入；已有累计逗乐记录也会计入；历史喂养、打工等没有总计记录的操作，仅从已有任务计数开始累计，不推算过去次数。每项目标均提供实际物品，按主题分配食品、清洁用品、玩具和少量背景，元宝作为补充。全部永久目标合计 2300 元宝、35 种物品，具体见[成长任务奖励明细](docs/task-rewards.zh-CN.md)。背景领取后进入背包，不会自动替换当前装扮。已领取目标保持原状态，不回收或补发，未领取目标采用新奖励；元宝仍作为可使用的元宝物品放入背包。
-
-托管设置下方可开启“自动完成每日任务并领奖”，默认关闭。范围包括“今日任务、逗逗我、学习打工”以及“旅游任务”中每天重置的目标。空闲时按正常流程喂食、清洁、玩耍、逗乐、学习、打工和旅游；喂养任务遵守上方各类别的触发比例与用品选择，数值未低于限额时等待自然消耗，缺货补购沿用照料区的自动购买设置。学习、打工和旅游仍需正常耗时，升学考试和小游戏需手动操作。已有活动或正在操作界面时不启动新任务；正常播放的动画结束后继续，动画切换长时间停绘不会阻塞托管，每轮成长检查最多进行一次操作；完成后自动领取各页的每日任务奖励；同一操作会同时推进对应目标，达到当天要求后停止，不重复完成已达标的次数。各页一次性目标和地区旅游挑战仍手动领奖。关闭后不再启动新任务，已开始的活动正常结束。自动照料的数值补充与自动活动计时独立于动画回调，关屏时仍按托管规则执行；宠物生病时暂停自动每日，需要先看病恢复健康。
-
-Windows ZIP 便携版直接解压运行，应用自身数据存放在 `QQPet.exe` 同目录的 `data/`：存档 `save.json`、浏览器存储与缓存 `browser/`、临时文件 `temp/`、日志 `logs/` 和崩溃目录 `crashes/`。目录不可写时会明确报错，不回退到系统用户目录。移动或备份时请复制整个解压目录；升级时保留 `data/`，不要在运行中覆盖程序。
-
-便携版不设置开机自启，也不自动读取旧安装版的用户目录。旧宠物请在旧版导出后手动导入；导入前会验证存档并备份为 `save.json.bak`。小游戏本地存储与按键设置包含在 `data/browser/` 中，单独导出宠物 JSON 不包含这些浏览器设置。
-
-桌面版 API Key 单独使用系统安全存储加密，Windows 便携版密文位于 `data/credentials.bin`；同一台电脑、同一系统用户重启无需重新输入，换电脑或系统用户无法解密时会提示重填，不影响宠物存档。系统安全存储不可用时仅本次运行有效，绝不回退到明文。普通存档、备份和导出文件不包含密钥；清空 API Key 会删除本地密文，更换接口地址会清除密钥以避免误发。Android 暂维持密钥仅本次运行有效。旧版已存在的外部存档或备份不会被自动删除或清理。便携模式只约束应用自身数据，不保证 Windows、驱动或安全软件不留下系统运行记录。其他平台仍使用其系统应用数据目录。
-
-### Android
-
-宠物以悬浮窗形式显示在桌面和其他应用上方，功能与桌面版一致，另有以下适配：
-
-- 首次打开需允许「显示在其他应用的上层」和通知权限；通知栏常驻的通知代替桌面版的托盘图标。
-- 宽面板在竖屏手机上自动旋转并铺满屏幕；横竖屏切换后宠物保持在屏幕内。
-- 小游戏和密室探险全屏横屏运行，并显示可改键的虚拟手柄。
-- 系统不允许后台读取剪贴板：在其他应用里选中文字后，从选择菜单或分享面板选「QQ宠物」，交给宠物点评或翻译。
-
-## 下载安装
-
-当前版本为 **v0.2.0**，主要变化见[更新日志](CHANGELOG.md)，升级前请阅读[兼容说明与已知限制](docs/releases/v0.2.0.zh-CN.md)。本项目处于 0.x 开发阶段；每次发布单独说明兼容范围，不能仅凭主版本号为 0 判断存档或行为是否兼容。
-
-从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的安装包：
-
-| 平台 | 文件 |
-|---|---|
-| Windows | `QQPet-<版本>-win-x64-portable.zip`（解压运行 `QQPet.exe`） |
-| macOS（Apple 芯片） | `QQPet-<版本>-arm64.dmg` |
-| macOS（Intel） | `QQPet-<版本>.dmg` |
-| Linux | `QQPet-<版本>.AppImage` 或 `qqpet_<版本>_amd64.deb` |
-| Android（11 及以上） | `QQPet-<版本>.apk` |
-
-安装包**没有代码签名**，系统会拦截首次运行：
-
-- **Windows**：SmartScreen 提示「Windows 已保护你的电脑」时，点「更多信息」→「仍要运行」。
-- **macOS**：把 QQPet 拖进「应用程序」后，若提示「已损坏，无法打开」或「无法验证开发者」，在终端执行一次：
-
-  ```bash
-  xattr -cr /Applications/QQPet.app
-  ```
-
-  也可以先打开一次，再到「系统设置 → 隐私与安全性」底部点「仍要打开」。
-- **Linux**：AppImage 需要可执行权限，`chmod +x QQPet-*.AppImage` 后运行；Ubuntu 22.04 起若报缺少 FUSE，安装 `libfuse2`（24.04 为 `libfuse2t64`）。deb 包用 `sudo apt install ./qqpet_*_amd64.deb` 安装。
-- **Android**：在浏览器或文件管理器中打开 APK，按提示允许「安装未知应用」。
+- 池塘与农场仍使用原 Flash 图形指针，分别受原始 24 FPS、20 FPS 限制，可能有跟手不顺的感觉；独立高刷新指针尚未实现。
+- 分辨率、DPI 与任务栏工作区经过模拟组合测试，不能保证所有真实显示器、混合 DPI 多屏和窗口管理器的表现完全一致。
+- Windows 便携模式约束应用自身的数据位置，不保证操作系统、驱动或安全软件不留下运行记录。
 
 ## 开发
 
+使用 Node.js 22（与 CI 保持一致）和 Git LFS，在仓库根目录执行：
+
 ```bash
-git lfs install && git lfs pull   # resources/pet 由 Git LFS 管理
+git lfs install
+git lfs pull
 npm ci
 npm run dev
 ```
 
+完整克隆步骤、环境准备和隔离测试方法见[开发指南](docs/development.zh-CN.md)。
+
 ### 检查与测试
 
-在仓库根目录运行 `npm run typecheck`、`npm test` 和 `npm run test:ui`。UI 测试使用隔离的 Electron 配置与模拟数据，检查屏幕边缘布局、悬停和面板切换，不操作正在运行的宠物。
-
-可运行 `npm run test:ui -- popups` 检查气泡原有定位、菜单展开时的位置稳定性、气泡按钮命中和状态弹窗的关闭清理；Windows 下还会使用独立测试窗口检查弹窗相对任务栏和模拟托盘折叠区的原生层级，不移动实际鼠标。
-
-可运行 `npm run test:ui -- tasks` 使用隔离存档检查原有页签与布局、领奖对应、成长历程奖励防重、重载后已领取状态、面板刷新及关闭清理，并检查四种视口与缩放组合下的布局和实际奖励图标。
-
-若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
-
-在仓库根目录运行开发检查：
-
-```bash
-npm test
-npm run typecheck
-npm run test:ui
-```
-
-界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口与设备缩放，并校验实际渲染尺寸。`display-matrix` 覆盖 1280×720、1366×768、1920×1080、2560×1440、3840×2160、3440×1440、2560×1080、1080×1920 八种物理尺寸，100%、125%、150%、175%、200%、250%、300% 七档缩放，以及任务栏隐藏和四边保留 48 DIP 的工作区；覆盖层另外保留 3 DIP 边带。五类界面共 1,400 组组合，报告保存在 `dist/display-matrix-results.json`。这是渲染器与工作区模拟验证，不能代替所有真实显示器与混合 DPI 多屏实测。
-
-可单独运行显示矩阵：`npm run test:ui -- display-matrix`。设置 `QQPET_DISPLAY_VIEWS` 为逗号分隔的 `menu,setup,shop,controls,mini` 子集，可缩小诊断范围。
-
-Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `npm run test:taskbar -- --allow-taskbar-changes`。脚本会短暂切换当前桌面的任务栏常显、自动隐藏与鼠标唤出，使用隔离透明窗口运行生产窗口逻辑，并在结束时恢复原自动隐藏状态与鼠标位置。报告为 `dist/desktop-workarea-results.json`；普通单元测试和界面测试不切换系统任务栏设置。此项只验证实际连接的主屏及当前系统缩放。
-
-农场商店和购买弹窗可单独运行 `node scripts/test-farm-popup.mjs`。先将 `QQPET_TEST_JAVA`、`QQPET_FFDEC_JAR` 和 `QQPET_TEST_BROWSER` 分别设为 Java、JPEXS FFDec JAR 和 Chrome/Chromium 可执行文件路径。测试仅在 `dist/` 中生成带测试入口的 Flash 副本，使用独立浏览器存储验证默认排序、余额变化时的位置稳定、目录及卡片复用、快速切换、滚轮边界、滚动位置、数量范围、连续点击及重复确认；不会操作真实农场存档或物理鼠标。报告和截图保存在输出的 `dist/farm-popup-*` 目录。优化前后测量与默认排序见[农场商店说明](docs/farm-shop-performance.md)。
+在仓库根目录运行 `npm test`、`npm run typecheck` 和 `npm run test:ui`。测试范围、单独运行方法及真实任务栏测试的影响见[检查与测试](docs/development.zh-CN.md#检查与测试)。
 
 ## 构建
 
 ```bash
-npm run dist   # 类型检查 + 构建 + 打包当前平台安装包到 dist/
+npm run dist
 ```
 
-推送 `v*` 标签时由 GitHub Actions 构建 Windows ZIP 便携版、macOS DMG 和 Linux AppImage／deb，再发布 Release 与 `SHA256SUMS.txt`；只有配置完整 Android 发布签名时才额外提供 APK。其他推送不触发发布构建，也可在 Actions 中手动指定已有发布标签重试构建。版本来自 `package.json`，Android 自动读取同一版本；发布说明从 CHANGELOG 中提取相应版本段落，缺少段落或标签版本不一致时停止发布。
-
-Android 版本地调试用 `npm run android`（debug 包，输出到 `android/app/build/outputs/apk/debug/`），需要 Android SDK 和 JDK 17（Gradle 8 不支持更新的 JDK，可用 `JAVA_HOME` 指定）。CI 打的 release 包需要在仓库 Secrets 中配置签名密钥：
-
-| Secret | 内容 |
-|---|---|
-| `ANDROID_KEYSTORE_BASE64` | keystore 文件的 base64（`base64 -i release.jks`） |
-| `ANDROID_KEYSTORE_PASSWORD` | keystore 密码 |
-| `ANDROID_KEY_ALIAS` | 密钥别名 |
-| `ANDROID_KEY_PASSWORD` | 密钥密码 |
-
-每次发布都必须用同一个 keystore，否则已安装的用户无法覆盖升级。
+此命令检查类型、构建并打包当前平台的产物到 `dist/`。三平台发布工作流、Android 签名及检查命令见[构建说明](docs/development.zh-CN.md#构建)。普通分支推送不会触发正式发布。
 
 ## 改过的 SWF
 
-以下文件用 [JPEXS FFDec](https://github.com/jindrapetrik/jpexs-decompiler) 打过补丁，重新导入资源时不要覆盖：
-
-| 文件 | 改动 |
-|---|---|
-| `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序、同等级鱼的出售单价升序排列，不计产量，移除特殊鱼置顶；可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁，角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用 |
-| `resources/pet/mstx/qq_mstx.swf` | 隐藏需要联网的「兑换礼包」「魔法爱情石」按钮 |
-| `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店按解锁状态、等级、出售单价和购买价稳定排序，余额只更新灰显及购买提示；复用目录、卡片和提示层，支持滚轮并保留购买前的滚动位置；商店、仓库和购买弹窗按缩放比例播放动画，购买弹窗防止重复打开和重复确认 |
-| `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」；原滚动条增加内容与滑块同步滚动接口 |
-| `resources/pet/qqfarm/com/MyFarm/data/xml/seed.xml` | 种子目录按等级及作物出售单价升序排列，可用 `node tools/sort-farm-seeds.mjs` 重新整理，不修改物品属性；实际商店另按解锁状态、等级、出售单价及购买价稳定排序，余额不参与位置排序 |
-| `resources/pet/smallGame/{100ceng,ball,paopao2}/` 下读屏幕尺寸的 26 个 SWF | `Capabilities.screenResolutionX/Y` 改为 `ExternalInterface.call("API.GetScreenWidth/Height")`（Ruffle 返回的是播放器自身尺寸） |
+重新导入资源前，请查看[SWF 补丁清单](docs/development.zh-CN.md#改过的-swf)，避免覆盖已修复的资源。农场商店的默认排序与性能测量见[农场商店说明](docs/farm-shop-performance.md)。
 
 ## 目录
 
-| 路径 | 说明 |
-|---|---|
-| `src/main` | 主进程：窗口、托盘、`app://` 协议、存档、AI 与天气请求 |
-| `src/preload` | `window.qqpet` 接口 |
-| `src/renderer` | 界面（原生 TypeScript），`pet/` 为养成逻辑，`ui/` 为各窗口，`swf/` 为 Ruffle 封装 |
-| `src/shared` | 主进程与渲染层共享的 IPC 与存档类型 |
-| `src/android` | Android 版的 `window.qqpet` 实现，经 WebView 接口调用原生层 |
-| `android/` | Android 原生工程：悬浮窗服务、游戏页、文件选择、文字分享入口、开机自启 |
-| `resources/pet` | 原版资源，`npm run import-assets -- <app.asar>` 可重新导入 |
-| `tools/` | 反混淆脚本、原版 CSS 移植脚本、CDP 调试脚本 |
+主进程位于 `src/main/`，界面与养成逻辑位于 `src/renderer/`，原版资源位于 `resources/pet/`；完整模块说明见[目录说明](docs/development.zh-CN.md#目录)。
+
+## 文档导航
+
+| 文档 | 用途 |
+| --- | --- |
+| [使用指南](docs/user-guide.zh-CN.md) | 商城、粉钻与贴心宝贝、托管、任务和数据备份 |
+| [v0.2.0 升级说明](docs/releases/v0.2.0.zh-CN.md) | 本次版本变化、兼容范围与升级步骤 |
+| [更新日志](CHANGELOG.md) | 按版本维护的用户可见变化 |
+| [成长任务奖励](docs/task-rewards.zh-CN.md) | 68 项永久目标的奖励明细 |
+| [农场商店说明](docs/farm-shop-performance.md) | 排序规则、性能改动与测量边界 |
+| [开发指南](docs/development.zh-CN.md) | 环境、测试、构建、SWF 补丁与目录结构 |
 
 ## 许可证
 
-本项目代码以 [GPL-3.0](LICENSE) 发布。该许可证不覆盖 `resources/pet` 下的原版美术资源、SWF 与旅行照片，它们的版权归各自所有者，见文首版权声明。
+本项目代码以 [GPL-3.0](LICENSE) 发布。该许可证不覆盖 `resources/pet/` 下的原版美术资源、SWF 与旅行照片，其版权归各自所有者，见文首版权声明。
 
 ## 友情链接
 
