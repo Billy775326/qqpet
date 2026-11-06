@@ -29,6 +29,8 @@ declare global {
   /** Subset of Ruffle's PlayerV1 API (ruffle.js 0.6) that we rely on. */
   interface RuffleApi {
     load(options: Record<string, unknown>): Promise<void>
+    /** Player output volume, 0..1. */
+    volume: number
     resume(): void
     suspend(): void
     addFSCommandHandler(handler: (command: string, args: string) => void): void

@@ -4,6 +4,8 @@
 
 ### Changed
 
+- QQ 飞车等独立小游戏的默认音量调整为 30%，在播放前生效；不改变宠物、池塘、农场及密室的播放器默认音量。
+
 - 整理 README 的下载入口、功能概览和升级提示，将详细操作与开发说明分别归入[使用指南](docs/user-guide.zh-CN.md)和[开发指南](docs/development.zh-CN.md)，保留原有章节锚点；明确 Windows 便携版的自启限制及 v0.2.0 未提供 Android APK。
 
 ### Fixed
