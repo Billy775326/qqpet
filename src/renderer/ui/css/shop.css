@@ -10,25 +10,33 @@
 }
 .ui-shop .shopMembership {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 13px;
+  left: 50%;
+  bottom: 12px;
+  width: 264px;
+  transform: translateX(-50%);
+  padding-top: 6px;
+  border-top: 1px solid #b98b5733;
   color: #80552e;
-  font-size: 11px;
-  line-height: 18px;
+  font-size: 12px;
+  line-height: 20px;
   font-variant-numeric: tabular-nums;
 }
 .ui-shop .membershipRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px 54px minmax(0, 1fr);
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   white-space: nowrap;
 }
 .ui-shop .membershipIcon {width:16px;height:16px;object-fit:contain;flex-shrink:0}
 .ui-shop .membershipIcon[src$="/stateInfo/h_up.png"] {object-fit:cover;object-position:left center}
-.ui-shop .membershipLabel {width:48px;flex-shrink:0}
-.ui-shop .membershipTime {flex:1;text-align:right;min-width:0}
+.ui-shop .membershipLabel {color:#795438}
+.ui-shop .membershipTime {display:flex;align-items:baseline;gap:6px;min-width:0}
+.ui-shop .membershipDays {min-width:26px;color:#a15c36;font-weight:600}
+.ui-shop .membershipClock {color:#856746}
 .ui-shop .membershipRow.inactive {color:#9b8975}
+.ui-shop .membershipRow.inactive .membershipLabel,
+.ui-shop .membershipRow.inactive .membershipDays {color:inherit;font-weight:400}
 .ui-shop .leftSelfCenterBk {
   width: 345px;
   height: 51px;

@@ -145,7 +145,8 @@ export function openShop(): void {
       [diamond, diamondTime, info.PDiamondExpirationDate, '粉钻'],
       [sweetheart, sweetheartTime, info.sweetHeartOverTime, '贴心宝贝'],
     ] as const) {
-      text.textContent = remainingTime(expires, now)
+      const [days, clock] = remainingTime(expires, now).split(' ')
+      text.replaceChildren(div('membershipDays', days), ...(clock ? [' ', div('membershipClock', clock)] : []))
       row.classList.toggle('inactive', !(expires > now))
       row.title = expires > 0 && Number.isFinite(expires) ? `${name}到期：${formatDate(expires)}` : `${name}未开通`
     }
