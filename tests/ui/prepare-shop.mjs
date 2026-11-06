@@ -8,7 +8,13 @@ export async function prepareShop() {
     import {windowView} from './window-view';
     import {openSetup} from './setup';
     import {info,setInfo,save} from '../pet/store';
+    const timers=new Set(),nativeSetInterval=window.setInterval.bind(window),nativeClearInterval=window.clearInterval.bind(window),nativeNow=Date.now.bind(Date);
+    window.setInterval=(fn,...args)=>{const id=nativeSetInterval(fn,...args);timers.add(id);return id};
+    window.clearInterval=id=>{timers.delete(id);nativeClearInterval(id)};
+    Date.now=()=>window.fixtureNow??nativeNow();
     window.fixture={openShop,openSetup,
+      timerCount:()=>timers.size,clock:ms=>{window.fixtureNow=ms},advance:seconds=>{window.fixtureNow+=seconds*1000},
+      setMembership:patch=>Object.entries(patch).forEach(([key,value])=>setInfo(key,value)),
       openQuantity:(max,sweet)=>windowView({max,sweet,msg:'托管费用：300元宝/一天',ok:(close,num)=>{window.quantitySubmitted=num;close()}}),
       closeShop:()=>document.querySelector('.ui-shop .close')?.click(),
       closeSetup:()=>document.querySelector('.ui-setup .close')?.click(),
@@ -32,7 +38,7 @@ export async function prepareShop() {
     bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'isolated-shop-source', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (['./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../pet/data/goods.ts', './goods.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
+        if (['./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './date', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../pet/data/goods.ts', './goods.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub, resolveDir: resolve('src/renderer/ui') }))

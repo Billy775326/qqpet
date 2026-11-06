@@ -7,6 +7,7 @@ import { avatar, info, onInfoChange, save } from '../pet/store'
 import { openFrame } from './box'
 import './css/shop.css'
 import { button, div, img } from './dom'
+import { formatDate, remainingTime } from './date'
 import { windowView } from './window-view'
 import { closeRecharge, rechargeEntry, refreshRecharge } from './recharge'
 
@@ -133,6 +134,24 @@ export function openShop(): void {
   const fly = div('markFullNone')
   cartMark.style.display = busyMark.style.display = 'none'
 
+  const diamondTime = div('membershipTime')
+  const sweetheartTime = div('membershipTime')
+  const diamond = div('membershipRow', img('membershipIcon', 'pet/shppingMall/bk/133.svg'), div('membershipLabel', '粉钻'), diamondTime)
+  const sweetheart = div('membershipRow', img('membershipIcon', 'pet/stateInfo/h_up.png'), div('membershipLabel', '贴心宝贝'), sweetheartTime)
+  const membership = div('shopMembership', diamond, sweetheart)
+  const refreshMembership = (): void => {
+    const now = Date.now() / 1000
+    for (const [row, text, expires, name] of [
+      [diamond, diamondTime, info.PDiamondExpirationDate, '粉钻'],
+      [sweetheart, sweetheartTime, info.sweetHeartOverTime, '贴心宝贝'],
+    ] as const) {
+      text.textContent = remainingTime(expires, now)
+      row.classList.toggle('inactive', !(expires > now))
+      row.title = expires > 0 && Number.isFinite(expires) ? `${name}到期：${formatDate(expires)}` : `${name}未开通`
+    }
+    if (info.sweetHeartOverTime > now) sweetheart.title += `\n托管${info.sweetHeart ? '已开启' : '已关闭'}，剩余时长继续计时`
+  }
+
   let mine = { tab: 0, sub: 0, page: 1 }
   let mall = { tab: 0, sub: 0, page: 1 }
   const cart = new Map<string, Good & { cartNum: number }>()
@@ -155,6 +174,7 @@ export function openShop(): void {
             img('backgroundImg', goodOf('background', bg.id).url),
           ] : []),
           div('petImgBox fcc', img('petImg penguin_breathe', avatar())),
+          membership,
         ),
       ),
       div('leftSelfCenter', div('leftSelfCenterBk', ...tabs('lscb', MINE, mine.tab, mine.sub, (tab, sub) => drawLeft({ tab, sub, page: 1 })))),
@@ -357,9 +377,12 @@ export function openShop(): void {
 
   drawLeft()
   drawRight()
-  redraw = { left: drawLeft, right: drawRight }
+  refreshMembership()
+  redraw = { left: drawLeft, right: drawRight, membership: refreshMembership }
+  const membershipTimer = window.setInterval(refreshMembership, 1000)
   const remove = openFrame(shop)
   close = () => {
+    clearInterval(membershipTimer)
     closeRecharge()
     remove()
     close = redraw = null
@@ -367,10 +390,11 @@ export function openShop(): void {
 }
 
 /** Redraw hooks are installed once; they act only while the shop is open. */
-let redraw: { left: () => void; right: () => void } | null = null
+let redraw: { left: () => void; right: () => void; membership: () => void } | null = null
 onGoodsChange(() => redraw?.left())
 onInfoChange((key) => {
   if (key === 'yb') refreshRecharge()
   if (key === 'yb' || key === 'sex') redraw?.left()
   if (key === 'growth' || key === 'pinkDiamond') redraw?.right()
+  if (key === 'PDiamondExpirationDate' || key === 'sweetHeartOverTime' || key === 'sweetHeart') redraw?.membership()
 })

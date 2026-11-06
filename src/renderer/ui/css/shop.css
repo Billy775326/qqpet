@@ -8,6 +8,27 @@
   background-image: url(/pet/shppingMall/bk/mall_03.gif);
   background-size: 100% 100%;
 }
+.ui-shop .shopMembership {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 13px;
+  color: #80552e;
+  font-size: 11px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-shop .membershipRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.ui-shop .membershipIcon {width:16px;height:16px;object-fit:contain;flex-shrink:0}
+.ui-shop .membershipIcon[src$="/stateInfo/h_up.png"] {object-fit:cover;object-position:left center}
+.ui-shop .membershipLabel {width:48px;flex-shrink:0}
+.ui-shop .membershipTime {flex:1;text-align:right;min-width:0}
+.ui-shop .membershipRow.inactive {color:#9b8975}
 .ui-shop .leftSelfCenterBk {
   width: 345px;
   height: 51px;
