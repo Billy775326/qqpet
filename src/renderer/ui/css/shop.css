@@ -43,8 +43,10 @@
   top: auto;
   bottom: calc(100% + 6px);
   transform: none;
-  width: 248px;
+  width: max-content;
+  max-width: 248px;
   min-width: 0;
+  line-height: normal;
 }
 .ui-shop .membershipHint .goodDatas {white-space:normal;overflow-wrap:anywhere}
 .ui-shop .membershipHintOpen .membershipHint {display:block}
