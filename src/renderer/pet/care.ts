@@ -1,7 +1,7 @@
 import { allGoods, type Good } from './data/goods'
-import { needsUseConfirmation } from './acquisition'
+import { isProtectedItem, needsUseConfirmation } from './acquisition'
 import SHOP from './data/shop.json'
-import { listGoods } from './goods'
+import { listGoods, quantityOf } from './goods'
 import { buy, price, useCareItem } from './items'
 import { info, save } from './store'
 
@@ -32,10 +32,10 @@ export function careGoods(need: CareNeed): Good[] {
 
 function careItem(need: CareNeed): Good | undefined {
   const selected = save.settings[need.item] ?? ''
-  const owned = ownedGoods(need).find(g => !needsUseConfirmation(g) && (!selected || g.id === selected))
+  const owned = ownedGoods(need).find(g => !needsUseConfirmation(g, quantityOf(g.type, g.id)) && (!selected || g.id === selected))
   if (owned || !save.settings.careAutoBuy) return owned
   const candidate = careGoods(need)
-    .filter(g => !needsUseConfirmation(g) && (!selected || g.id === selected) && canBuyCareGood(g) && price(g) <= info.yb)
+    .filter(g => !isProtectedItem(g) && (!selected || g.id === selected) && canBuyCareGood(g) && price(g) <= info.yb)
     .sort((a, b) => price(a) - price(b))[0]
   // Precheck funds so an unattended pet does not repeatedly open shortage alerts.
   return candidate && buy(candidate, 1, true) ? { ...candidate, num: 1 } : undefined

@@ -1,5 +1,5 @@
 import { allGoods, describe, type GoodType } from '../pet/data/goods'
-import POOLS from '../pet/data/pool.json'
+import { RARITIES, RARITY_GROUPS, rarityOf } from '../pet/data/rarity'
 import { pay } from '../pet/items'
 import { birthdayGift, canDrawGrowth, drawGrowth, giftCost, monthSigns, signedToday, signin, signToday, takeOnlineGift } from '../pet/signin'
 import { info, save } from '../pet/store'
@@ -18,17 +18,16 @@ const TYPES: { label: string; type: GoodType }[] = [
   { label: '背景', type: 'background' },
   { label: '属性', type: 'nums' },
 ]
-const TIERS = ['史诗', '传承', '稀有']
 const WEEK = ['一', '二', '三', '四', '五', '六', '日']
 const DIGIT_H = 50
 
 let open = false
 
-/** Collected goods of `type`, per loot pool: the ones seen first. */
+/** Collection groups are independent of loot pools; every item appears once. */
 function illustrated(type: GoodType, shown: boolean[], redraw: () => void): HTMLElement[] {
-  const byId = new Map(allGoods(type).map((g) => [g.id, g]))
-  return POOLS.map((pool, i) => {
-    const goods = pool.flatMap((code) => byId.get(code.slice(1)) ?? [])
+  const all = allGoods(type).filter(g => g.id !== 'b0000000')
+  return RARITIES.map((kind, i) => {
+    const goods = all.filter(g => rarityOf(g) === kind)
     const seen = goods.filter((g) => save.illustrated.includes(g.id))
     const unseen = goods.filter((g) => !save.illustrated.includes(g.id))
     const card = (cls: string, title: string, url: string) => Object.assign(div(cls, img('', url)), { title })
@@ -36,7 +35,7 @@ function illustrated(type: GoodType, shown: boolean[], redraw: () => void): HTML
       'il_g_types',
       div(
         'tl_g_ctitle yqd fc',
-        `${TIERS[i]}: (${seen.length} / ${goods.length}) `,
+        `${RARITY_GROUPS[kind]}: (${seen.length} / ${goods.length}) `,
         button(
           'open ml16',
           () => {
@@ -49,7 +48,7 @@ function illustrated(type: GoodType, shown: boolean[], redraw: () => void): HTML
       div(
         shown[i] ? 'il_g_c_good w100 fcw' : 'il_g_c_good w100 fcw closeOpen',
         ...seen.map((g) => card('p4 il_g_card', `${g.name}：${describe(g).join('；') || '暂无介绍'}`, g.url)),
-        ...unseen.map((g) => card('p4 il_g_cardnot', `${g.name}：${g.desc || '暂无介绍'}`, g.url)),
+        ...unseen.map((g) => card('p4 il_g_cardnot', `${g.name}：${RARITY_GROUPS[kind]}；${g.desc || '暂无介绍'}`, g.url)),
       ),
     )
   })
@@ -86,7 +85,7 @@ export function openSignIn(): void {
   const root = div('ui-signin')
 
   let type: GoodType = 'food'
-  const shown = [true, true, true]
+  const shown = [true, true, true, false]
   const tiers = div('il_g_content w100')
   const tabbar = div('il_tabbar fc mt8')
   const drawLeft = (): void => {

@@ -29,7 +29,7 @@ async function model(seed = startSave(null)) {
     stdin: { contents: "export * from './mail';export * from './goods';export * from './items';export {save,info} from './store';export * from './data/goods'", loader: 'ts', resolveDir: resolve('src/renderer/pet') },
     bundle: true, write: false, format: 'esm', plugins: [{ name: 'mail-model', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (!args.importer || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || ['./mail','./goods','./items','./store','./inventory','./data/goods','./level'].includes(args.path) || args.path.endsWith('.json')) return
+        if (!args.importer || ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || ['./mail','./goods','./items','./store','./inventory','./data/goods','./level'].includes(args.path) || args.path.endsWith('.json')) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub }))

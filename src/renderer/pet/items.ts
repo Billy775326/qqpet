@@ -1,6 +1,6 @@
 import { floatMood } from '../ui/float'
 import { windowView } from '../ui/window-view'
-import { needsUseConfirmation, useWarning } from './acquisition'
+import { isProtectedItem, needsUseConfirmation, useWarning } from './acquisition'
 import { goodOf, type Good, type TimedType } from './data/goods'
 import { DEAD, illOf } from './data/ills'
 import { addGood, hasGood, quantityOf, startTimed, takeGood } from './goods'
@@ -51,7 +51,7 @@ function applyDaily(g: Good, d: (typeof DAILY)[TimedType]): void {
 /** Automatic supplies must work even while the display stops painting. */
 export function useCareItem(g: Good, text: string): boolean {
   const d = DAILY[g.type as TimedType]
-  if (!d?.task || needsUseConfirmation(g) || info.health <= 0 || save.settings.paused || !takeGood(g)) return false
+  if (!d?.task || needsUseConfirmation(g, quantityOf(g.type, g.id)) || info.health <= 0 || save.settings.paused || !takeGood(g)) return false
   applyDaily(g, d)
   speak({ s: text, now: true }, d.action)
   return true
@@ -65,46 +65,66 @@ export function useCareItem(g: Good, text: string): boolean {
 export function useItem(g: Good, free = false, text?: string): void {
   if (g.type !== 'medicine' && info.health === 0) return speak({ c: 'state', s: 'die' })
   if (!free && !hasGood(g.type, g.id)) return
-  // Each accepted use owns a single consumption, even if an animation hook repeats.
   let used = false
-  const take = (): boolean => {
-    if (used || !(free || takeGood(g))) return false
-    used = true
-    return true
+  let awaiting = false
+  let lastApproved = false
+  const lastUse = (n = 1): boolean => !free && needsUseConfirmation(g, quantityOf(g.type, g.id), n)
+  const livingRevival = (): boolean => g.type === 'medicine' && g.id === DEAD.cure.id && info.health > 0
+  const valid = (): boolean => {
+    if (g.type === 'medicine') return g.id === DEAD.cure.id || info.health > 0 && info.health < 5
+    const d = DAILY[g.type as TimedType]
+    return info.health > 0 && !(d?.paused && save.settings.paused)
   }
-  const protectedItem = !free && needsUseConfirmation(g)
-  const confirm = (run: () => void): void => {
-    if (!protectedItem) return run()
+  const confirm = (run: () => void, force = false): void => {
+    if (used || awaiting) return
+    if ((!lastUse() && !force) || lastApproved) return run()
+    awaiting = true
+    let settled = false
     let accepted = false
     windowView({
-      title: '物品使用确认',
+      title: lastUse() ? '物品使用确认' : '使用还魂丹？',
       className: 'itemUseConfirmation',
+      cancel: true,
+      reviewKey: () => `${lastUse()}:${livingRevival()}`,
       msg: () => {
         const owned = quantityOf(g.type, g.id)
-        if (!owned) return `${g.name}\n背包中已没有该物品，请重新选择。`
-        return useWarning(g, 1, owned) + (g.id === DEAD.cure.id && info.health > 0 ? '\n宠物尚未死亡，仍要使用还魂丹？' : '')
+        if (!free && !owned) return `${g.name}\n背包中已没有该物品，请重新选择。`
+        const warning = lastUse() ? useWarning(g, 1, owned) : '您的宠物未死亡，确定使用还魂丹治疗？'
+        return warning + (lastUse() && livingRevival() ? '\n宠物尚未死亡，仍要使用还魂丹？' : '')
       },
-      onClose: () => { accepted = true },
+      onClose: () => { settled = true; awaiting = false; if (!accepted) used = true },
       ok: close => {
-        if (accepted) return
-        if (!hasGood(g.type, g.id)) return close()
+        if (settled) return
+        if (!free && !hasGood(g.type, g.id)) return close()
+        lastApproved = lastUse()
         accepted = true
         close()
-        // Re-enter the normal flow to recheck health, pause and current illness.
-        run()
+        if (valid()) run()
+        else used = true
       },
     })
   }
-
+  // Recheck at the actual animation boundary: another action may have used a copy.
+  const consume = (effect: () => void): void => {
+    if (used || !valid()) return
+    confirm(() => {
+      if (used || !valid() || !free && !takeGood(g)) return
+      used = true
+      effect()
+    })
+  }
+  const protectedItem = !free && isProtectedItem(g)
   if (g.type === 'nums') {
     const key = (g.useId ?? g.id) as 'yb' | 'growth' | 'health'
     return void windowView({
       title: `使用-${g.name}`,
       className: protectedItem ? 'itemUseConfirmation' : undefined,
-      msg: protectedItem ? n => useWarning(g, n, quantityOf(g.type, g.id)) : '选择使用数量',
+      cancel: protectedItem,
+      msg: protectedItem ? n => lastUse(n) ? useWarning(g, n, quantityOf(g.type, g.id)) : `选择使用数量，当前背包 ${quantityOf(g.type, g.id)} 份。\n将保留至少一份用于收藏。` : '选择使用数量',
       goods: protectedItem ? undefined : [g],
       max: () => quantityOf(g.type, g.id),
       initial: protectedItem ? 1 : undefined,
+      reviewKey: protectedItem ? n => lastUse(n) : undefined,
       onClose: () => { used = true },
       ok: (close, n) => {
         if (used) return
@@ -118,55 +138,29 @@ export function useItem(g: Good, free = false, text?: string): void {
     })
   }
   if (g.type === 'medicine') {
-    // Keep refusal messages ahead of confirmation; no stock is consumed here.
-    if (g.id !== DEAD.cure.id && (info.health === 0 || info.health === 5)) return medicine(g, take)
-    const treat = (): void => medicine(g, take, protectedItem)
-    return confirm(treat)
+    if (g.id !== DEAD.cure.id && (info.health === 0 || info.health === 5)) return medicine(g, consume)
+    return confirm(() => medicine(g, consume), livingRevival())
   }
-
   const d = DAILY[g.type as TimedType]
   if (save.settings.paused && d.paused) return speak({ s: `[host],我暂停成长拉！无法${d.paused}~~`, now: true }, 'speak')
   confirm(() => {
-    if (info.health === 0) return speak({ c: 'state', s: 'die' })
-    if (save.settings.paused && d.paused) return
+    if (!valid()) return
     speak(text ? { s: text, now: true } : { c: d.c, s: g.type, now: true }, d.action, {
-      start: () => {
-        if (!take()) return
-        applyDaily(g, d)
-      },
+      start: () => consume(() => applyDaily(g, d)),
     })
   })
 }
 
-function medicine(g: Good, take: () => boolean, confirmed = false): void {
-  if (g.id === DEAD.cure.id) {
-    const revive = (): void => {
-      if (!take()) return
-      apply(g)
-      setInfo('health', 5)
-    }
-    if (info.health === 0 || confirmed) return revive()
-    return void windowView({
-      title: '使用还魂丹？',
-      msg: '您的宠物未死亡，确定需要使用还魂丹进行治疗?',
-      goods: [g],
-      ok: (close) => {
-        speak({ s: '[host],向天再借100年！~', now: true }, 'cure')
-        revive()
-        close()
-      },
-    })
-  }
+function medicine(g: Good, consume: (effect: () => void) => void): void {
+  if (g.id === DEAD.cure.id) return consume(() => { apply(g); setInfo('health', 5) })
   if (info.health === 5) return speak({ s: '[host],我不需要吃药哦~', now: true }, 'speak')
   if (info.health === 0) return speak({ s: '[host]，这个不能让我复活哦~' })
-
   const ill = illOf(activity('ill')! + info.health)
   const right = g.id === ill.cure.id
-  const effect = (): void => {
-    if (!take()) return
+  const effect = (): void => consume(() => {
     setInfo('health', right ? 5 : info.health - 1)
     apply(g)
-  }
+  })
   // The right cure heals as the animation starts; a wrong one hurts when it ends.
   speak({ s: right ? ill.successTolk : ill.errTolk, now: true }, 'cure', right ? { start: effect } : { end: effect })
 }

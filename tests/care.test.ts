@@ -23,7 +23,7 @@ async function caring() {
   `
   const built = await build({ stdin: { contents: "export {selfCare} from './care';export {useItem} from './items';export {goodOf} from './data/goods';", resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
-      if (!args.importer || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || ['./care', './data/goods', './goods', './inventory', './items'].includes(args.path) || args.path.endsWith('.json')) return
+      if (!args.importer || ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || ['./care', './data/goods', './goods', './inventory', './items'].includes(args.path) || args.path.endsWith('.json')) return
       return { path: args.path, namespace: 'stub' }
     })
     b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: stub }))

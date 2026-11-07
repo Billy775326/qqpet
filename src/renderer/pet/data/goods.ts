@@ -1,5 +1,6 @@
 import type { SelfGoodDatas, SelfGoodUseOption, StudyInfo } from '../../../shared/save'
 import GOODS from './goods.json'
+import { rarityOf, RARITY_NAMES } from './rarity'
 
 export type GoodType = keyof SelfGoodDatas
 /** Goods that stay in effect for a while (`useTimeing` minutes). */
@@ -99,10 +100,12 @@ export function durationText(g: Good, minutes = g.useTimeing): string {
 
 /** Tooltip lines of a good, as in the original's item panels. */
 export function describe(g: Good): string[] {
-  if (g.type === 'nums') return [`获得${g.name}*${g.value}`, g.desc ?? '']
+  const classification = ['food', 'clean', 'medicine', 'toy', 'background', 'nums'].includes(g.type) && g.id !== 'b0000000' ? `分类：${RARITY_NAMES[rarityOf(g)]}` : ''
+  if (g.type === 'nums') return [`获得${g.name}*${g.value}`, g.desc ?? '', classification].filter(Boolean)
   const a = attrs(g)
   const duration = durationText(g)
   const lines = [
+    classification,
     g.desc,
     g.hunger && `饥饿：${g.hunger}`,
     g.clean && `清洁：${g.clean}`,

@@ -13,7 +13,7 @@ async function model(seed=startSave(null)) {
     save:(patch:any)=>{if(state.fail)throw Error('Simulated disk failure');const next=structuredClone(state.disk);applyPatch(next,patch);state.disk=next;state.writes++;state.patches.push(Object.keys(patch))},
   }}
   const built=await build({stdin:{contents:"export * from './fishing';export {save,info,setInfo,onInfoChange} from './store';",resolveDir:resolve('src/renderer/pet'),loader:'ts'},bundle:true,write:false,format:'esm',plugins:[{name:'isolated-pond',setup(b){
-    b.onResolve({filter:/.*/},args=>{if(!args.importer||['./fishing','./store','./level','./data/goods'].includes(args.path)||args.path.endsWith('.json'))return;return{path:args.path,namespace:'mock'}})
+    b.onResolve({filter:/.*/},args=>{if(!args.importer|| ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) ||['./fishing','./store','./level','./data/goods'].includes(args.path)||args.path.endsWith('.json'))return;return{path:args.path,namespace:'mock'}})
     b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:'export const windowView=()=>{},touch=false;'}))
   }}]})
   ;(globalThis as any).__pondFixture=fixture

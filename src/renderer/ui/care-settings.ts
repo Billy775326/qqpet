@@ -1,4 +1,4 @@
-import { needsUseConfirmation } from '../pet/acquisition'
+import { isProtectedItem, needsUseConfirmation } from '../pet/acquisition'
 import { CARE_NEEDS, canBuyCareGood, careGoods } from '../pet/care'
 import { price } from '../pet/items'
 import { allGoods } from '../pet/data/goods'
@@ -74,10 +74,11 @@ export function openCareSettings(): void {
     items.add(new Option('自动选择', ''))
     for (const g of careGoods(need)) {
       const purchasable = canBuyCareGood(g)
-      const protectedItem = needsUseConfirmation(g)
-      const status = protectedItem ? '需手动使用' : g.num ? `背包 ${g.num} 份` : purchasable ? `${price(g)} 元宝/份` : '暂不可购买'
+      const protectedItem = isProtectedItem(g)
+      const reserved = needsUseConfirmation(g, g.num)
+      const status = protectedItem && g.num ? `背包 ${g.num} 份，保留最后 1 份` : g.num ? `背包 ${g.num} 份` : purchasable ? `${price(g)} 元宝/份` : '暂不可购买'
       const option = new Option(`${g.name} · ${need.statLabel} +${g[need.stat]} · ${status}`, g.id)
-      option.disabled = protectedItem || !g.num && !purchasable
+      option.disabled = reserved || !g.num && !purchasable
       items.add(option)
     }
     const selected = draft[need.item]
@@ -91,7 +92,7 @@ export function openCareSettings(): void {
     row.dataset.type = need.type
     care.append(row)
   }
-  care.append(div('careHint careSuppliesHint', '自动选择优先使用背包；稀有、绝版物品需手动使用。'))
+  care.append(div('careHint careSuppliesHint', '自动选择优先使用背包；稀有、绝版物品保留最后一份。'))
 
   const daily = document.createElement('input')
   daily.type = 'checkbox'

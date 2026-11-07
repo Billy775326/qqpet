@@ -11,7 +11,7 @@ export async function prepareInventory() {
       window.fixture={openSetup,openEmail,openInventoryGrant,save,readMails,mailInventoryGrant,mailPhoto,quantityOf};`,resolveDir:resolve('src/renderer/ui'),loader:'ts'},
     bundle:true,write:false,format:'esm',plugins:[{name:'isolated-inventory-ui',setup(b){
       b.onResolve({filter:/.*/},args=>{
-        if(!args.importer||allowed.includes(args.path)||args.path.endsWith('.json'))return
+        if(!args.importer|| ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) ||allowed.includes(args.path)||args.path.endsWith('.json'))return
         return {path:args.path,namespace:'mock'}
       })
       b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:`export const speak=()=>{},weatherNow=async()=>'',readopt=()=>{},setHidden=()=>{},setFaceClick=()=>{},expandEdgeMini=()=>false;

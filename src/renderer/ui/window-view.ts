@@ -13,6 +13,8 @@ interface Dialog {
   max?: number | (() => number)
   /** Defaults to the maximum for existing callers. */
   initial?: number
+  /** Require review when live risk changes since the last rendered message. */
+  reviewKey?: (num: number) => string | boolean
   /** Runs once for cancel, replacement or programmatic close. */
   onClose?: () => void
   /** OK button; without it OK just closes. `num` is the picked quantity. */
@@ -34,6 +36,7 @@ export function windowView(d: Dialog): () => void {
   let num = Math.min(d.initial ?? limit(), limit())
   const count = div('content', String(num))
   const message = div('msg', typeof d.msg === 'function' ? d.msg(num) : d.msg)
+  let renderedReview = d.reviewKey?.(num)
   const main = div('main', message)
   let submit: HTMLDivElement | HTMLButtonElement
   let refreshQuantity = (): void => {}
@@ -55,6 +58,7 @@ export function windowView(d: Dialog): () => void {
       num = max > 0 ? Math.min(Math.max(num + delta, 1), max) : 0
       count.textContent = String(num)
       if (typeof d.msg === 'function') message.replaceChildren(d.msg(num))
+      renderedReview = d.reviewKey?.(num)
       for (const { element, delta } of controls) element.disabled = delta < 0 ? num <= 1 : num >= max
       submit?.setAttribute('aria-disabled', String(max <= 0))
     }
@@ -136,13 +140,16 @@ export function windowView(d: Dialog): () => void {
   const refresh = (): void => {
     refreshQuantity()
     if (typeof d.msg === 'function') message.replaceChildren(d.msg(num))
+    renderedReview = d.reviewKey?.(num)
   }
   const accept = (): void => {
     if (closed) return
     const selected = num
+    const previousReview = renderedReview
     refresh()
     // A changed live limit requires reviewing the new quantity before confirming.
     if (d.max !== undefined && (num < 1 || num !== selected)) return
+    if (renderedReview !== previousReview) return
     if (d.ok) d.ok(close, num)
     else close()
   }

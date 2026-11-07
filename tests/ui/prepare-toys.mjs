@@ -14,7 +14,7 @@ export async function prepareToys() {
     stdin: { contents: entry, resolveDir: resolve('src/renderer/ui'), loader: 'ts' }, bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'isolated-toy-shop', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (!args.importer || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || allowed.includes(args.path) || args.path.endsWith('.json')) return
+        if (!args.importer || ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || allowed.includes(args.path) || args.path.endsWith('.json')) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `

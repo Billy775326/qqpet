@@ -24,7 +24,7 @@ async function learning(progress = 0, lineIndex = 0) {
   `
   const result = await build({ entryPoints: ['src/renderer/pet/jobs.ts'], bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-study', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
-      if (!args.importer || args.path === './data/goods' || args.path.endsWith('.json')) return
+      if (!args.importer || ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) || args.path === './data/goods' || args.path.endsWith('.json')) return
       return { path: args.path, namespace: 'stub' }
     })
     b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: stub }))

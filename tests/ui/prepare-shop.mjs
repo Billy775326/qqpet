@@ -39,7 +39,7 @@ export async function prepareShop() {
     bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'isolated-shop-source', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (['./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './date', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../pet/data/goods.ts', './goods.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
+        if (['./rarity','./rarity.json','./shop', './setup', '../pet/store', './box', './dom', '../ui/dom', './date', './recharge', '../../shared/recharge', '../pet/data/shop.json', '../pet/data/goods.ts', './goods.json', '../../../package.json', './level', './window-view'].includes(args.path)) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub, resolveDir: resolve('src/renderer/ui') }))

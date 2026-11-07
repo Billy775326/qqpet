@@ -72,9 +72,9 @@ debug 包输出到 `android/app/build/outputs/apk/debug/`。CI 的 release 包�
 
 ## 物品获取与使用确认
 
-物品获取分类在 `src/renderer/pet/acquisition.ts`：汇总商城、随机奖励池、正常节日／生日邮件、每日任务、成长目标和新存档用品。`data/task-definitions.ts` 与任务执行共享同一套固定奖励定义；`save-logic.ts` 导出的新存档用品也由初始化直接复用。新增来源时同步维护这个索引，不导入有运行副作用的任务模块。辅助全物品邮件和导入不计入来源。`keep` 旅游任务完成一轮后可重置，并非整个存档只领一次。
+物品分类在 `src/renderer/pet/data/rarity.json` 显式登记，`rarity.ts` 提供四类名称与查询，`acquisition.ts` 提供最后一份的风险判定。每个已注册库存 ID 恰好归入一类，新增物品须同步审核登记；原名称和描述不参与运行时关键字推断。`reviews` 记录有歧义条目和较易获得条目的人工处理依据，完整规则见[物品分类说明](item-rarity.zh-CN.md)。分类与实际发放途径分离，本轮保留既有商城、奖池、邮件、任务与辅助领取，不修改存档结构。
 
-`node --experimental-strip-types --test tests/item-use.test.ts` 验证来源分类、手动使用、数量、库存变化、药品、取消、重复操作和托管；`node scripts/test-ui.mjs item-use inventory care quantity toys tasks` 检查原提示皮肤及相关界面。真实目录当前没有受保护条目，测试仅在构建隔离夹具时替换来源机会，生产目录和用户存档均不注入样例；界面用例使用隔离存档、静音窗口及 4 组尺寸／缩放组合。正式发布仍需执行项目发布回归。
+`node --experimental-strip-types --test tests/item-use.test.ts tests/rarity-catalog.test.ts` 验证分类覆盖、真实物品的最后一份保护、取消、库存竞争、药品、批量数量与托管保留。`node scripts/test-ui.mjs item-use inventory care quantity toys tasks shop` 检查原提示皮肤、四类图鉴及相关界面。物品使用和图鉴用例使用真实分类；仅药品／数值道具的通用边界使用测试构建中的分类替换，不写入生产目录或用户存档。测试使用隔离存档、静音 Electron 窗口及 4 组尺寸／缩放。正式发布仍需执行项目发布回归。
 
 ## 改过的 SWF
 
