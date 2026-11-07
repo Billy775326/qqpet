@@ -68,7 +68,7 @@ export function useItem(g: Good, free = false, text?: string): void {
 
   if (g.type === 'nums') {
     const key = (g.useId ?? g.id) as 'yb' | 'growth' | 'health'
-    return windowView({
+    return void windowView({
       title: `使用-${g.name}`,
       msg: '选择使用数量',
       goods: [g],
@@ -99,7 +99,7 @@ function medicine(g: Good, take: () => boolean): void {
       setInfo('health', 5)
     }
     if (info.health === 0) return revive()
-    return windowView({
+    return void windowView({
       title: '使用还魂丹？',
       msg: '您的宠物未死亡，确定需要使用还魂丹进行治疗?',
       goods: [g],

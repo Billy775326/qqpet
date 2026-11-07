@@ -5,10 +5,14 @@ import { button, div, img } from './dom'
 
 interface Dialog {
   title?: string
-  msg: string | (() => string | HTMLElement)
+  msg: string | ((num: number) => string | HTMLElement)
   goods?: Pick<Good, 'url' | 'name'>[]
   /** Quantity range 1..max (initially max); a live limit of 0 disables purchasing. */
   max?: number | (() => number)
+  /** Defaults to the maximum for existing callers. */
+  initial?: number
+  /** Runs once for cancel, replacement or programmatic close. */
+  onClose?: () => void
   /** OK button; without it OK just closes. `num` is the picked quantity. */
   ok?: (close: () => void, num: number) => void
   /** The sweetheart skin. */
@@ -20,12 +24,12 @@ interface Dialog {
 let closeCurrent = (): void => {}
 
 /** The original's single "WindowView" alert: opening one replaces the previous. */
-export function windowView(d: Dialog): void {
+export function windowView(d: Dialog): () => void {
   closeCurrent()
   const limit = (): number => typeof d.max === 'function' ? d.max() : d.max ?? 1
-  let num = limit()
+  let num = Math.min(d.initial ?? limit(), limit())
   const count = div('content', String(num))
-  const message = div('msg', typeof d.msg === 'function' ? d.msg() : d.msg)
+  const message = div('msg', typeof d.msg === 'function' ? d.msg(num) : d.msg)
   const main = div('main', message)
   let submit: HTMLDivElement
   let refreshQuantity = (): void => {}
@@ -46,6 +50,7 @@ export function windowView(d: Dialog): void {
       const max = limit()
       num = max > 0 ? Math.min(Math.max(num + delta, 1), max) : 0
       count.textContent = String(num)
+      if (typeof d.msg === 'function') message.replaceChildren(d.msg(num))
       for (const { element, delta } of controls) element.disabled = delta < 0 ? num <= 1 : num >= max
       submit?.setAttribute('aria-disabled', String(max <= 0))
     }
@@ -114,16 +119,21 @@ export function windowView(d: Dialog): void {
   }
   const closeFrame = openFrame(div('ui-window', view), d.sweet ? 'pet/windowTip/sweetHeart/sweetHeart.png' : 'pet/windowTip/alert/bg.png')
   let refresher: ReturnType<typeof setInterval> | undefined
+  let closed = false
   const close = (): void => {
+    if (closed) return
+    closed = true
     if (refresher !== undefined) clearInterval(refresher)
     closeFrame()
+    d.onClose?.()
   }
   closeCurrent = close
   const refresh = (): void => {
     refreshQuantity()
-    if (typeof d.msg === 'function') message.replaceChildren(d.msg())
+    if (typeof d.msg === 'function') message.replaceChildren(d.msg(num))
   }
   submit = button('windowViewButSubmit', () => {
+    if (closed) return
     const selected = num
     refresh()
     // A changed live limit requires reviewing the new quantity before confirming.
@@ -139,4 +149,5 @@ export function windowView(d: Dialog): void {
       refresh()
     }, 1000)
   }
+  return close
 }

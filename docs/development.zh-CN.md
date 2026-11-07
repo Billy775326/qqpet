@@ -29,6 +29,8 @@ npm run dev
 
 可运行 `node --experimental-strip-types --test tests/inventory-mail.test.ts` 检查实时库存足量校验、过期数量、重复库存合并、邮件事务、失败重试、未知库存保留及旧版包裹导入。`npm run test:ui -- inventory` 使用隔离文件存档和真实界面，验证工具取消、888 种邮件附件、文件替换失败恢复、一次保存领取、旧按钮防重、新邮件实时显示、重载与四种视口；不向真实邮箱发送邮件，也不改真实宠物存档。
 
+`node --experimental-strip-types --test tests/fishing-stock.test.ts` 覆盖池塘批量投放的容量、资格、实时余额、独立编号、一次保存、失败重试与旧鱼存档。`npm run test:ui -- fishing` 使用原有池塘 SWF 和真实 Ruffle、静音的隔离实例，检查数量选择、取消、保存失败、普通／粉钻容量、失效按钮、三种视口，以及加载中关闭；不会移动物理鼠标或写入真实池塘。需要先执行 `npm run build` 提供 Ruffle 运行文件。
+
 若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
 
 界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口与设备缩放，并校验实际渲染尺寸。`display-matrix` 覆盖 1280×720、1366×768、1920×1080、2560×1440、3840×2160、3440×1440、2560×1080、1080×1920 八种物理尺寸，100%、125%、150%、175%、200%、250%、300% 七档缩放，以及任务栏隐藏和四边保留 48 DIP 的工作区；覆盖层另外保留 3 DIP 边带。五类界面共 1,400 组组合，报告保存在 `dist/display-matrix-results.json`。这是渲染器与工作区模拟验证，不能代替所有真实显示器与混合 DPI 多屏实测。

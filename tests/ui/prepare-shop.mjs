@@ -15,7 +15,7 @@ export async function prepareShop() {
     window.fixture={openShop,openSetup,
       timerCount:()=>timers.size,clock:ms=>{window.fixtureNow=ms},advance:seconds=>{window.fixtureNow+=seconds*1000},
       setMembership:patch=>Object.entries(patch).forEach(([key,value])=>setInfo(key,value)),
-      openQuantity:(max,sweet)=>windowView({max,sweet,msg:'托管费用：300元宝/一天',ok:(close,num)=>{window.quantitySubmitted=num;close()}}),
+      openQuantity:(max,sweet)=>void windowView({max,sweet,msg:'托管费用：300元宝/一天',ok:(close,num)=>{window.quantitySubmitted=num;close()}}),
       closeShop:()=>document.querySelector('.ui-shop .close')?.click(),
       closeSetup:()=>document.querySelector('.ui-setup .close')?.click(),
       balance:()=>info.yb,setBalance:yb=>setInfo('yb',yb),

@@ -1,13 +1,13 @@
 import { windowView } from '../ui/window-view'
 import FRIES from './data/fries.json'
-import { addInfo, info, save, setInfo, update } from './store'
+import { addInfo, commit, info, save, setInfo, update } from './store'
 
 const HOUR = 3600
 const FEED_PRICE = 10
 /** Harvests for the 养鱼大师 achievement. */
 const MASTER = 1000
 
-/** A fish as the pond SWF reads it; ids are the purchase time (unix seconds). */
+/** A fish as the pond SWF reads it; numeric IDs retain the original seconds-based shape. */
 interface Fish {
   id: number
   fryid: number
@@ -48,6 +48,7 @@ function load(): Pond {
 }
 
 const pond = load()
+let lastFishId = Math.max(0, ...pond.fishs.map(f => f.id))
 const store = (): void => update('saveJsonData', { fishs: JSON.stringify(pond) })
 const now = (): number => Math.floor(Date.now() / 1000)
 const ripe = (f: Fish): boolean => f.stage >= 3
@@ -110,15 +111,29 @@ function feed(id: number): Reply {
 // The SWF takes 20% off prices for pink diamond members; the price charged is the listed one.
 const shop = (): Reply => ({ fries: FRIES.map((f) => ({ ...f, price_yb: info.pinkDiamond ? f.price_yb / 0.8 : f.price_yb })), totalpage: 1 })
 
-function buy(paytype: number, fryid: number): Reply {
-  if (paytype !== 1) return { result: 1 }
-  if (pond.fishs.length >= (info.pinkDiamond ? 5 : 3)) return { result: 5, msg: '已经满了' }
-  const fry = FRIES.find((f) => f.fryid === fryid)!
-  if (info.yb < fry.price_yb) return { result: 1 }
-  setInfo('yb', info.yb - fry.price_yb)
+/** Current capacity and affordability, shared by the quantity picker and the actual purchase. */
+export function pondStockQuote(fryid: number, paytype = 1) {
+  const fry = FRIES.find(f => f.fryid === fryid)
+  const free = Math.max(0, (info.pinkDiamond ? 5 : 3) - pond.fishs.length)
+  const reason = paytype !== 1 ? '仅支持使用元宝投放' : !fry ? '没有找到这种鱼苗'
+    : save.petComputedlInfo.level < fry.level ? '宠物等级不足'
+    : fry.flag && !info.pinkDiamond ? '这种鱼苗需要粉钻'
+    : !free ? '池塘已经满了' : info.yb < fry.price_yb ? '元宝不足' : ''
+  return { fry, free, max: reason || !fry ? 0 : Math.min(free, Math.floor(info.yb / fry.price_yb)), reason }
+}
+
+function buy(paytype: number, fryid: number, count = 1): Reply {
+  const quote = pondStockQuote(fryid, paytype)
+  if (!Number.isSafeInteger(count) || count <= 0) return { result: 6, msg: '请选择有效的投放数量' }
+  if (!quote.max || count > quote.max) return { result: 6, msg: quote.reason || '空位或元宝不足，请重新选择数量' }
+  const fry = quote.fry!
   const t = now()
-  pond.fishs.push({
-    id: t,
+  // The SWF stores IDs as signed 32-bit integers. Keep born at the real time,
+  // but advance IDs within that range when multiple fish arrive in one second.
+  const firstId = Math.max(t, lastFishId + 1)
+  if (!Number.isSafeInteger(firstId) || firstId <= 0 || firstId + count - 1 > 0x7fffffff) return { result: 6, msg: '鱼苗编号超出范围，无法投放' }
+  const fishs = pond.fishs.concat(Array.from({ length: count }, (_, index) => ({
+    id: firstId + index,
     fryid,
     name: fry.name,
     stage: 1,
@@ -136,8 +151,10 @@ function buy(paytype: number, fryid: number): Reply {
     charm: 0,
     born: t,
     siLiao: 0,
-  })
-  store()
+  })))
+  commit({ petInfo: { yb: info.yb - fry.price_yb * count }, saveJsonData: { fishs: JSON.stringify({ ...pond, fishs }) } })
+  pond.fishs = fishs
+  lastFishId = firstId + count - 1
   return { result: 0 }
 }
 
@@ -181,20 +198,20 @@ function harvestAll(): Reply {
   return { result: 6, msg: '收获成功!' }
 }
 
-type Data = { id: number; paytype: number; fryid: number }
+export type PondData = { id: number; paytype: number; fryid: number; count?: number }
 
 /** The pond SWF's requests, by head.cmd. */
-const COMMANDS: Record<number, (d: Data) => Reply> = {
+const COMMANDS: Record<number, (d: PondData) => Reply> = {
   1: pondState,
   2: (d) => ({ id: d.id, ...feed(d.id) }),
   3: shop,
-  4: (d) => buy(d.paytype, d.fryid),
+  4: (d) => buy(d.paytype, d.fryid, d.count),
   5: (d) => ({ id: d.id, ...harvest(d.id) }),
   7: speedUp,
   8: harvestAll,
 }
 
-export function pondCommand(cmd: number, data: Data): Reply {
+export function pondCommand(cmd: number, data: PondData): Reply {
   return COMMANDS[cmd]?.(data) ?? { result: 5, msg: `未知指令~ cmd:${cmd}  data:${JSON.stringify(data)}` }
 }
 

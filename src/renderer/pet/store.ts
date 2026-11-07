@@ -10,12 +10,15 @@ export const info: PetInfo = save.petInfo
 
 /** Publish a multi-group change only after the synchronous disk write succeeds. */
 export function commit(patch: SavePatch): void {
+  const previousInfo = patch.petInfo ? { ...info } : undefined
   window.qqpet.save(patch)
   const target = save as unknown as Record<string, unknown>
   for (const [key, value] of Object.entries(patch)) {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) Object.assign(target[key] as object, value)
     else target[key] = value
   }
+  if (previousInfo) for (const key of Object.keys(patch.petInfo!) as (keyof PetInfo)[])
+    if (previousInfo[key] !== info[key]) for (const listener of listeners) listener(key, previousInfo[key])
 }
 
 

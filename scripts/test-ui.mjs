@@ -27,6 +27,8 @@ const { prepareToys } = await import('../tests/ui/prepare-toys.mjs')
 await prepareToys()
 const { prepareInventory } = await import('../tests/ui/prepare-inventory.mjs')
 await prepareInventory()
+const { prepareFishing } = await import('../tests/ui/prepare-fishing.mjs')
+await prepareFishing()
 const suites = JSON.parse(readFileSync(join(fixture, 'suites.json'), 'utf8'))
 if (!Array.isArray(suites) || suites.some(suite => typeof suite !== 'string')) throw Error('UI suite manifest must contain only suite names')
 let executable, packaged = false
