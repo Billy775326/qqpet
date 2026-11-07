@@ -96,6 +96,7 @@ app.whenReady().then(async () => {
   assert.ok(JSON.parse(disk.saveJsonData.task).milestones.claimed.includes('shifts-30'))
   assert.ok(disk.selfGoodDatas.food.includes('_100010037*2'), 'the work reward delivers its food')
   assert.ok(disk.selfGoodDatas.clean.includes('_102020003*2'), 'the same work bundle delivers its cleaning supplies')
+  assert.ok(disk.selfGoodDatas.toy.includes('_t0021*1'), 'the same growth goal also delivers its new toy')
   assert.equal(JSON.parse(disk.saveJsonData.task).taskList.growth[2].take, false, 'a permanent reward cannot claim a daily row')
   await click('.getResult .but_small')
   await click('[data-tab=ddw]')

@@ -25,6 +25,8 @@ npm run dev
 
 可运行 `npm run test:ui -- tasks` 使用隔离存档检查原有页签与布局、领奖对应、成长历程奖励防重、重载后已领取状态、面板刷新及关闭清理，并检查四种视口与缩放组合下的布局和实际奖励图标。
 
+可运行 `npm run test:ui -- toys` 检查新增玩具的商城分页、19 张实际图片、重复购买、库存使用与重载，以及三种视口下新增三页的显示。`node --experimental-strip-types --test tests/toy-catalog.test.ts tests/task-milestones.test.ts tests/care.test.ts` 覆盖玩具定义及来源、购买条件、使用收益、成长奖励防重、存档兼容和托管用品选择。
+
 若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
 
 界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口与设备缩放，并校验实际渲染尺寸。`display-matrix` 覆盖 1280×720、1366×768、1920×1080、2560×1440、3840×2160、3440×1440、2560×1080、1080×1920 八种物理尺寸，100%、125%、150%、175%、200%、250%、300% 七档缩放，以及任务栏隐藏和四边保留 48 DIP 的工作区；覆盖层另外保留 3 DIP 边带。五类界面共 1,400 组组合，报告保存在 `dist/display-matrix-results.json`。这是渲染器与工作区模拟验证，不能代替所有真实显示器与混合 DPI 多屏实测。
