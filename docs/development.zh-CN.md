@@ -25,7 +25,7 @@ npm run dev
 
 可运行 `npm run test:ui -- tasks` 使用隔离存档检查原有页签与布局、领奖对应、成长历程奖励防重、重载后已领取状态、面板刷新及关闭清理，并检查四种视口与缩放组合下的布局和实际奖励图标。
 
-可运行 `npm run test:ui -- toys` 检查新增玩具的商城分页、19 张实际图片、重复购买、库存使用与重载，以及三种视口下新增三页的显示；另用原图及高清图、三档视口缩放和四个商城页签进行 24 组截图对比，检查未选中上缘透出共用边框、选中爱心完整及点击区域。`node --experimental-strip-types --test tests/toy-catalog.test.ts tests/task-milestones.test.ts tests/care.test.ts` 覆盖玩具定义及来源、购买条件、使用收益、成长奖励防重、存档兼容和托管用品选择。
+可运行 `npm run test:ui -- toys` 检查新增玩具的商城分页、19 张实际图片、重复购买、库存使用与重载，以及三种视口下新增三页的显示；另按程序实际高清资源选择逻辑、三档视口缩放和四个商城页签进行 24 组截图对比，并检查 54 组子分类布局，覆盖原皮肤边框、选中爱心、两排对齐、文字居中及点击区域。`node --experimental-strip-types --test tests/toy-catalog.test.ts tests/task-milestones.test.ts tests/care.test.ts` 覆盖玩具定义及来源、购买条件、使用收益、成长奖励防重、存档兼容和托管用品选择。
 
 可运行 `node --experimental-strip-types --test tests/inventory-mail.test.ts` 检查实时库存足量校验、过期数量、重复库存合并、邮件事务、失败重试、未知库存保留及旧版包裹导入。`npm run test:ui -- inventory` 使用隔离文件存档和真实界面，验证工具取消、888 种邮件附件、文件替换失败恢复、一次保存领取、旧按钮防重、新邮件实时显示、重载与四种视口；不向真实邮箱发送邮件，也不改真实宠物存档。
 
@@ -42,6 +42,8 @@ Windows 真实任务栏验证需要先运行 `npm run build`，再显式执行 `
 农场商店和购买弹窗可单独运行 `node scripts/test-farm-popup.mjs`。先将 `QQPET_TEST_JAVA`、`QQPET_FFDEC_JAR` 和 `QQPET_TEST_BROWSER` 分别设为 Java、JPEXS FFDec JAR 和 Chrome/Chromium 可执行文件路径。测试仅在 `dist/` 中生成带测试入口的 Flash 副本，使用独立浏览器存储验证默认排序、余额变化时的位置稳定、目录及卡片复用、快速切换、滚轮边界、滚动位置、数量范围、连续点击及重复确认；不会操作真实农场存档或物理鼠标。报告和截图保存在输出的 `dist/farm-popup-*` 目录。优化前后测量与默认排序见[农场商店说明](farm-shop-performance.md)。
 
 ## 构建
+
+项目目前处于 0.x 初始开发阶段。新增面向用户的功能使用次版本发布，兼容修复使用修订版本；不把同一 0.x 主版本视为无条件兼容承诺。每次正式发布在版本说明中列出存档、配置和升级影响。
 
 ```bash
 npm run dist   # 类型检查 + 构建 + 打包当前平台安装包到 dist/

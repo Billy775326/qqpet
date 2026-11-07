@@ -150,4 +150,4 @@ Android 端以悬浮窗形式显示在桌面和其他应用上方，提供以下
 
 - 池塘与农场仍使用原 Flash 图形指针，显示分别受 24 FPS 和 20 FPS 限制，可能有跟手不顺的感觉。
 - 分辨率、DPI 与任务栏适配经过模拟组合验证，不能代替所有真实显示器和混合 DPI 多屏实测。
-- v0.2.0 未提供 Android APK；Android 工程可按[开发指南](development.zh-CN.md#android-构建与签名)自行构建。
+- Android APK 仅在配置发布签名时提供，以当前 Release 附件为准；Android 工程可按[开发指南](development.zh-CN.md#android-构建与签名)自行构建。

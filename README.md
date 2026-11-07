@@ -8,7 +8,7 @@ QQPet 是基于 Arctic Penguin T800 逆向重建的 QQ 宠物复刻项目，提�
 
 ## 下载安装
 
-当前正式版为 **[v0.2.0](https://github.com/Billy775326/qqpet/releases/tag/v0.2.0)**。从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的文件；同页提供 `SHA256SUMS.txt`，可用于核对下载文件的 SHA-256。
+当前正式版为 **[v0.3.0](https://github.com/Billy775326/qqpet/releases/tag/v0.3.0)**。从 [Releases](https://github.com/Billy775326/qqpet/releases/latest) 下载对应平台的文件；同页提供 `SHA256SUMS.txt`，可用于核对下载文件的 SHA-256。
 
 | 平台 | 下载文件 | 运行方式 |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ QQPet 是基于 Arctic Penguin T800 逆向重建的 QQ 宠物复刻项目，提�
 
 ### Android
 
-Android 工程要求 Android 11 及以上。**v0.2.0 没有 Android APK**，自行构建与签名见[开发指南](docs/development.zh-CN.md#android-构建与签名)。
+Android 工程要求 Android 11 及以上。Android APK 仅在仓库配置发布签名时提供，当前版本以 Release 附件为准；自行构建与签名见[开发指南](docs/development.zh-CN.md#android-构建与签名)。
 
 ### Windows 首次使用与升级
 
@@ -27,7 +27,7 @@ Android 工程要求 Android 11 及以上。**v0.2.0 没有 Android APK**，自�
 2. 在选蛋页领养宠物，也可导入已有存档；宠物和托盘图标提供日常操作入口。
 3. 升级时先退出 QQPet，备份整个旧目录，再把旧目录的整个 `data/` 复制到新版本目录，之后启动新版本。不要在运行中覆盖程序。
 
-`data/` 保存宠物存档、浏览器存储、加密凭据等应用数据。单独导出宠物 JSON 不能代替整个目录的备份。Windows 便携版不启用开机自启；数据与 API Key 的迁移规则见[使用指南](docs/user-guide.zh-CN.md#数据备份与-api-key)，本次兼容变化见 [v0.2.0 升级说明](docs/releases/v0.2.0.zh-CN.md)。
+`data/` 保存宠物存档、浏览器存储、加密凭据等应用数据。单独导出宠物 JSON 不能代替整个目录的备份。Windows 便携版不启用开机自启；数据与 API Key 的迁移规则见[使用指南](docs/user-guide.zh-CN.md#数据备份与-api-key)，本次兼容变化见 [v0.3.0 升级说明](docs/releases/v0.3.0.zh-CN.md)。
 
 <details>
 <summary>首次运行的系统提示与 Linux 安装命令</summary>
@@ -145,7 +145,7 @@ npm run dist
 | 文档 | 用途 |
 | --- | --- |
 | [使用指南](docs/user-guide.zh-CN.md) | 商城、粉钻与贴心宝贝、托管、任务和数据备份 |
-| [v0.2.0 升级说明](docs/releases/v0.2.0.zh-CN.md) | 本次版本变化、兼容范围与升级步骤 |
+| [v0.3.0 升级说明](docs/releases/v0.3.0.zh-CN.md) | 本次版本变化、兼容范围与升级步骤 |
 | [更新日志](CHANGELOG.md) | 按版本维护的用户可见变化 |
 | [成长任务奖励](docs/task-rewards.zh-CN.md) | 68 项永久目标的奖励明细 |
 | [农场商店说明](docs/farm-shop-performance.md) | 排序规则、性能改动与测量边界 |
