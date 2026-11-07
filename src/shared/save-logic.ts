@@ -103,6 +103,10 @@ const RULES: Record<string, Record<string, Rule>> = {
     careToyId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
     careAutoBuy: bool,
     careAutoDaily: bool,
+    careTrainingMode: (v) => v === 'balanced' ? 'balanced' : 'focused',
+    careStudySubject: (v) => typeof v === 'string' && /^(chinese|mathematics|politics|music|art|manner|pe|labouring|wushu)$/.test(v) ? v : 'chinese',
+    careWorkId: (v) => typeof v === 'string' && /^(?:[a-zA-Z0-9_-]{1,64})?$/.test(v) ? v : '',
+    careAutoFarm: bool,
   },
 }
 
@@ -181,6 +185,10 @@ function fresh(): SaveData {
       careToyId: '',
       careAutoBuy: false,
       careAutoDaily: false,
+      careTrainingMode: 'focused',
+      careStudySubject: 'chinese',
+      careWorkId: '',
+      careAutoFarm: false,
     },
   }
 }

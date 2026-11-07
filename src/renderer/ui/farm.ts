@@ -2,6 +2,7 @@ import { avatar, info, save, setInfo, update } from '../pet/store'
 import { refreshMilestones } from '../pet/tasks'
 import { SwfPlayer } from '../swf/player'
 import { readSol, writeSol, type Sol } from '../swf/sol'
+import { careFarm, hasFarmCare } from '../../shared/farm-care'
 import { openBox } from './box'
 import './css/farm.css'
 import { button, div, img } from './dom'
@@ -30,6 +31,9 @@ if (localStorage.getItem(MIGRATED) === null) {
 }
 
 let open = false
+
+const autoCareEnabled = (): boolean => save.settings.careAutoFarm === true && info.sweetHeart && info.sweetHeartOverTime > Date.now() / 1000
+  && !save.settings.paused && info.health > 0 && !document.documentElement.classList.contains('qqpet-cursor-hit')
 
 /** The save Farm.swf writes on its first run (FarmMain.locationInit). */
 function fresh(): Sol {
@@ -74,10 +78,23 @@ export function openFarm(): void {
     update('saveJsonData', { farm: JSON.stringify(user) })
     refreshMilestones()
   }
-  const timer = setInterval(settle, 500)
-
   const host = div('farm', div('avatar', img('penguin_breathe', avatar())))
   const player = new SwfPlayer(host)
+  let failedCareState: string | null | undefined
+  const timer = setInterval(() => {
+    settle()
+    if (!autoCareEnabled() || failedCareState === localStorage.getItem(KEY) || !hasFarmCare(readSol(KEY)?.user)) return
+    // Do not wait on a callback that may never arrive if the movie fails to load.
+    const care = (player.el as unknown as { farmAll?: (action: string) => unknown }).farmAll
+    if (typeof care !== 'function') return
+    try {
+      care.call(player.el, 'care')
+      settle()
+    } catch (error) {
+      failedCareState = localStorage.getItem(KEY)
+      console.warn('Could not automatically care for the open farm', error)
+    }
+  }, 500)
   // FarmlandControl.farmAll: the movie runs the action on every plot and shows the outcome itself.
   const all = (action: string) => async () => void (await player.callback('farmAll'))(action)
   const actions = div(
@@ -123,22 +140,30 @@ export async function farmNews(): Promise<{ ripe: number; pests: number } | null
   const times = await ripening
   const stored = save.saveJsonData.farm
   if (open || !stored) return null
-  const user: Sol = JSON.parse(stored)
+  let user: Sol = JSON.parse(stored)
   const now = Math.floor(Date.now() / 1000)
   const chance = 1 - Math.exp(-(now - Number(user.checked ?? now)) / PEST_TIME)
   const roll = (): boolean => Math.random() < chance
   let ripe = 0
   let pests = 0
-  for (const land of user.farmland as Land[]) {
+  const growing = new Set<number>()
+  const threatened = new Set<number>()
+  for (const [index, land] of (user.farmland as Land[]).entries()) {
     if (!land.crop || land.harvest !== undefined) continue
     if (now - Number(land.time) >= times[land.crop]) {
       ripe++
       continue
     }
+    if (Number.isFinite(times[land.crop]) && times[land.crop] > 0 && Number.isFinite(Number(land.time))) growing.add(index)
     if (land.grass === undefined && roll()) land.grass = 1
     if (land.worm === undefined && roll()) land.worm = 1
     if (land.farmland === 'FarmlandS' && roll()) land.farmland = 'FarmlandG'
-    if (land.grass !== undefined || land.worm !== undefined || land.farmland === 'FarmlandG') pests++
+    if (land.grass !== undefined || land.worm !== undefined || land.farmland === 'FarmlandG') { pests++; threatened.add(index) }
+  }
+  if (autoCareEnabled()) {
+    user = careFarm(user, growing).user
+    pests = (user.farmland as Land[]).filter((land, index) => threatened.has(index)
+      && (land.grass != null || land.worm != null || land.farmland === 'FarmlandG')).length
   }
   user.checked = now
   update('saveJsonData', { farm: JSON.stringify(user) })

@@ -57,6 +57,9 @@ app.whenReady().then(async () => {
   const setDaily = async enabled => {
     await evaluate(`(()=>{const e=document.querySelector('[data-setting=careAutoDaily]');e.checked=${enabled};e.dispatchEvent(new Event('change'));return true})()`)
   }
+  const setPolicy = async (mode, subject = 'music', job = 'hj', farm = true) => {
+    await evaluate(`(()=>{for(const [key,value] of ${JSON.stringify([['careTrainingMode', mode], ['careStudySubject', subject], ['careWorkId', job]])}){const e=document.querySelector('[data-setting='+key+']');e.value=value;e.dispatchEvent(new Event('change'))}const f=document.querySelector('[data-setting=careAutoFarm]');f.checked=${farm};f.dispatchEvent(new Event('change'));return true})()`)
+  }
   const original = await state(), balance = disk.petInfo.yb
   await evaluate('document.querySelector(".sweetHeartCareEntry").style.visibility="hidden";true')
   writeFileSync('dist/care-original-artwork.png', (await win.webContents.capturePage()).toPNG())
@@ -69,6 +72,8 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('select option[value="102010002"]').disabled`), true, 'locked food is not selectable')
   assert.equal(await evaluate(`document.querySelector('select option[value="10013006"]').disabled`), false, 'owned food remains usable even when not sold')
   assert.equal(await evaluate('document.querySelector("[data-setting=careAutoDaily]").checked'), false)
+  assert.equal(await evaluate('document.querySelector("[data-setting=careTrainingMode]").value'), 'focused')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careAutoFarm]").checked'), false)
   assert.equal(await evaluate('document.querySelectorAll(".careRow").length'), 3, 'all supplies are available on the same page')
   assert.equal(await evaluate('document.querySelectorAll(".careTab").length'), 0)
   assert.equal(await evaluate('document.querySelector(".careDaily [data-setting=careAutoBuy]")'), null, 'purchasing belongs to supplies, not daily tasks')
@@ -101,6 +106,8 @@ app.whenReady().then(async () => {
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
   await setDaily(true)
+  await setPolicy('balanced')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careStudySubject]").closest(".carePolicyRow").hidden'), true)
   await click('.careCancel')
   assert.deepEqual(await state(), original)
   await click('.sweetHeartCareEntry')
@@ -109,6 +116,7 @@ app.whenReady().then(async () => {
   await draft('clean', 65, '102020003', true)
   await draft('toy', 70, 't0002', true)
   await setDaily(true)
+  await setPolicy('balanced')
   await click('.careSave')
   assert.equal(disk.settings.careHungerPercent, 80)
   assert.equal(disk.settings.careFoodId, '102010003')
@@ -118,11 +126,16 @@ app.whenReady().then(async () => {
   assert.equal(disk.settings.careMoodPercent, 70)
   assert.equal(disk.settings.careToyId, 't0002')
   assert.equal(disk.settings.careAutoDaily, true)
+  assert.equal(disk.settings.careTrainingMode, 'balanced')
+  assert.equal(disk.settings.careStudySubject, 'music')
+  assert.equal(disk.settings.careWorkId, 'hj')
+  assert.equal(disk.settings.careAutoFarm, true)
   const saved = await state()
   assert.equal(disk.petInfo.yb, balance, 'editing policy never buys items')
   await click('.sweetHeartCareEntry')
   await draft('food', 90, '', false)
   await setDaily(false)
+  await setPolicy('focused', 'chinese', '', false)
   await draft('clean', 90, '', false)
   failSave = true
   await click('.careSave')
@@ -148,22 +161,26 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(`document.querySelector('.careRow[data-type=${type}] select').value`), item)
   }
   assert.equal(await evaluate('document.querySelector("[data-setting=careAutoDaily]").checked'), true, 'the automatic daily preference survives a reload')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careTrainingMode]").value'), 'balanced')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careWorkId]").value'), 'hj')
+  assert.equal(await evaluate('document.querySelector("[data-setting=careAutoFarm]").checked'), true)
   await click('.careRules summary')
   assert.equal(await evaluate('document.querySelector(".careRules").open'), true, 'rules can be expanded without dragging the frame')
   await click('.careRules summary')
   const layouts = []
   for (const [width, height, scale] of [[800,600,1],[480,540,1.5],[320,480,1.25],[320,240,2]]) {
     await resizeViewport(win, width, height, scale)
-    for (const expanded of [false, true]) {
+    for (const mode of ['focused', 'balanced']) for (const expanded of [false, true]) {
+      await setPolicy(mode)
       await evaluate(`document.querySelector('.careRules').open=${expanded};true`)
       await pause(80)
-      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] select`])]
+      const selectors = ['.sweetHeartCareSettings', '.careActions', '.careDaily', '.careRestocking', '.carePolicy', '[data-setting=careTrainingMode]', '.careFarm', ...['food','clean','toy'].flatMap(type => [`.careRow[data-type=${type}]`, `.careRow[data-type=${type}] .careRange`, `.careRow[data-type=${type}] select`])]
       const boxes = await evaluate(JSON.stringify(selectors) + '.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect();return{selector:s,x:r.x,y:r.y,right:r.right,bottom:r.bottom,clipped:e.scrollWidth>e.clientWidth+1}})')
       for (const b of boxes) {
         assert.ok(b.x >= 0 && b.y >= 0 && b.right <= width + .1 && b.bottom <= height + .1, JSON.stringify(b))
         assert.equal(b.clipped, false)
       }
-      layouts.push({ width, height, scale, expanded })
+      layouts.push({ width, height, scale, expanded, mode })
     }
   }
   await evaluate('document.querySelector(".careRules").open=false;true')

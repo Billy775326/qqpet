@@ -1,5 +1,6 @@
 import { amusePet } from '../ui/face'
 import { CARE_NEEDS, performCare } from './care'
+import { selectCareStudy, selectCareWork } from './care-policy'
 import { canStudyCourse, study, studyGoods, travel, work, workBlocked, workGoods } from './jobs'
 import { machine } from './pet'
 import { busy, info, save } from './store'
@@ -22,10 +23,10 @@ export function runDailyCare(): boolean {
     if (task.obj === 'Amusing' && amusePet()) return true
     if (info.mood <= 0) continue
     if (task.obj === 'Study') {
-      const course = studyGoods().find(canStudyCourse)
-      if (course && study(course, { automatic: true })) return true
+      const course = selectCareStudy(studyGoods(), save.studyInfo, save.settings.careTrainingMode ?? 'focused', save.settings.careStudySubject ?? 'chinese')
+      if (course && canStudyCourse(course) && study(course, { automatic: true })) return true
     } else if (task.obj === 'Work') {
-      const job = workGoods().filter(g => !workBlocked(g)).sort((a, b) => a.useTime! - b.useTime!)[0]
+      const job = selectCareWork(workGoods().filter(g => !workBlocked(g)), info, save.settings.careTrainingMode ?? 'focused', save.settings.careWorkId ?? '')
       if (job && work(job, { automatic: true })) return true
     } else if (task.obj === 'Travel1') {
       travel({ automatic: true })

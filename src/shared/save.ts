@@ -114,6 +114,13 @@ export interface Settings {
   careAutoBuy: boolean
   /** Perform supported daily tasks and claim their rewards while sweetheart is active. */
   careAutoDaily: boolean
+  /** Selection policy for lessons and shifts within the daily quota. */
+  careTrainingMode: 'focused' | 'balanced'
+  careStudySubject: keyof StudyInfo
+  /** Empty selects the eligible job with the best hourly income. */
+  careWorkId: string
+  /** Water, weed and remove insects without planting, harvesting or buying. */
+  careAutoFarm: boolean
 }
 
 export interface SaveData {

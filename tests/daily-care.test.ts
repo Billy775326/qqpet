@@ -37,7 +37,7 @@ async function dailyCare(kinds: string[], allDaily = false) {
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
   const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount,dailyTasks,milestones,resetTasks} from './tasks';export {advanceTask} from './activity';export {resumeTask,study,studyGoods} from './jobs';export {elapsed} from './activity';export {goodOf} from './data/goods';`
-  const allowed = ['./daily-care', './care', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
+  const allowed = ['./daily-care', './care', './care-policy', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
       if (!args.importer || allowed.includes(args.path) || args.path.endsWith('.json')) return
@@ -155,6 +155,7 @@ test('work, study and travel keep their real timers and do not replace a running
 
 test('promotion exams and minigames remain manual without blocking other supported tasks', async () => {
   const { save, api, state, run } = await dailyCare(['GameRound', 'Game', 'Study'])
+  save.settings.careTrainingMode = 'balanced'
   for (const key of Object.keys(save.studyInfo) as (keyof typeof save.studyInfo)[]) save.studyInfo[key] = 9
   assert.equal(run(), false, 'all primary courses await manual exams')
   assert.equal(state.exams, 0)
@@ -176,6 +177,37 @@ test('promotion exams and minigames remain manual without blocking other support
   api.addCount('Game')
   run()
   assert.equal(api.tasks('daily')[1].take, true)
+})
+
+test('focused exam waits and unavailable fixed jobs do not block other daily activities', async () => {
+  const first = await dailyCare(['Study', 'Work'])
+  first.save.studyInfo.chinese = 9
+  assert.equal(first.run(), true)
+  assert.equal(first.save.activeOption.study, null)
+  assert.equal(first.save.activeOption.work, 'bz')
+  assert.equal(first.state.exams, 0)
+  const second = await dailyCare(['Work', 'Study'])
+  second.save.settings.careWorkId = 'spg'
+  assert.equal(second.run(), true)
+  assert.equal(second.save.activeOption.work, null, 'unqualified target jobs remain pending')
+  assert.equal(second.save.activeOption.study, 'xx-chinese')
+  assert.equal(second.state.alerts, 0)
+})
+
+test('job policies replace perpetual bricklaying and honor real qualification and durations', async () => {
+  for (const mode of ['focused', 'balanced'] as const) {
+    const { save, run, api } = await dailyCare(['Work'])
+    save.petComputedlInfo.level = 6
+    Object.assign(save.studyInfo, { chinese: 10, manner: 10, art: 10, labouring: 10 })
+    Object.assign(save.petInfo, { intel: 100, charm: 0, strong: 100 })
+    save.settings.careTrainingMode = mode
+    assert.equal(run(), true)
+    assert.equal(save.activeOption.work, mode === 'balanced' ? 'hj' : 'mj')
+    api.advanceTask(29)
+    assert.equal(api.count('Work'), 0)
+    api.advanceTask(1)
+    assert.equal(api.count('Work'), 1)
+  }
 })
 
 test('amusement uses the existing interaction and old daily lists are not reused across 06:00', async () => {

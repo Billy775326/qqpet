@@ -73,6 +73,12 @@
 .careDaily {margin-top: 10px; padding-top: 9px; border-top: 1px solid #e5bfd0}
 .careDailyToggle {font-weight: 700}
 .careDaily .careHint {margin: 4px 0 0 20px}
+.carePolicy {margin: 6px 0 0 20px}
+.carePolicyRow {display:grid;grid-template-columns:60px minmax(0,1fr);gap:7px;align-items:center;margin:4px 0}
+.carePolicyRow[hidden] {display:none}
+.carePolicy .careHint {margin-left:0}
+.careFarm {margin-top:8px;padding-top:8px;border-top:1px solid #e5bfd0}
+.careFarm .careHint {margin-left:20px}
 .careRules {margin-top: 8px; font-size: 11px; color: #946d60}
 .careRules summary {width: fit-content; cursor: inherit}
 .careRules .careHint {padding-top: 4px}
