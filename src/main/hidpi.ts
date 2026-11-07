@@ -1,4 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { basename, dirname } from 'node:path'
+
+const ORIGINAL_LETTERED_BADGES = new Set(['h_up.png', 'h_down.png'])
 
 /**
  * Redrawn art ships as `name@2x.png` (PNG or APNG, exactly twice the size)
@@ -8,6 +11,9 @@ import { existsSync, readFileSync } from 'node:fs'
  * pixels. Undefined when the file has no @2x twin.
  */
 export function hidpiSvg(file: string): string | undefined {
+  // These @2x redraws have misaligned lettering. Old portable directories can
+  // retain them after upgrades, so explicitly keep serving the original art.
+  if (basename(dirname(file)) === 'stateInfo' && ORIGINAL_LETTERED_BADGES.has(basename(file))) return undefined
   const hi = file.replace(/\.(png|gif|bmp|jpg)$/i, '@2x.png')
   if (hi === file || !existsSync(hi)) return undefined
   const png = readFileSync(hi)

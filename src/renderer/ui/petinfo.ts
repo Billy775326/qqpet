@@ -92,10 +92,8 @@ export function openPetInfo(): void {
   const tired = Object.assign(document.createElement('span'), { title: '疲倦值越高，宠越容易生病', textContent: `疲倦值：${fatigue()}` })
   const birthday = small('birthDay', '生日：', formatDate(info.birthDay, 'YYYY-MM-DD'))
   birthday.title = `每月${formatDate(info.birthDay, 'DD')}日签到页面自动领取生日礼物`
-  const title = div('name toe')
-  const retitle = (): void => {
-    title.textContent = title.title = `${info.host}家的${info.name}`
-  }
+  const title = div('name toe fcc')
+  const retitle = (): void => void (title.textContent = `${info.host}家的${info.name}`)
   retitle()
   const diplomas = Object.entries(save.studyInfo)
     .map(([k, v]) => diploma(k, v))
@@ -116,7 +114,7 @@ export function openPetInfo(): void {
     pd,
     title,
     div('service fcc', heart),
-    div('luckyFatigue fcc', lucky, tired),
+    div('luckyFatigue toe fcc', lucky, '\u00a0\u00a0\u00a0\u00a0\u00a0', tired),
     nameRow('petName', '宠物昵称：', 'name', retitle),
     nameRow('hostName', '主人昵称：', 'host', retitle),
     small('sex', '性别：', info.sex),
