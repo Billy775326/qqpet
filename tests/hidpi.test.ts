@@ -22,3 +22,14 @@ test('other HD artwork still uses its high-resolution twin at the original layou
   const redraw = readFileSync(asset('Menu/ditu03@2x.png')).toString('base64')
   assert.ok(svg.includes(`data:image/png;base64,${redraw}`))
 })
+
+test('shop tabs keep their original aligned borders in HD mode while other shop artwork stays HD', () => {
+  for (const prefix of ['mall', 'mal']) for (const n of ['06', '07', '08', '09']) {
+    const original=asset(`shppingMall/menu/${prefix}_${n}.gif`)
+    assert.ok(readFileSync(original).length>0)
+    assert.ok(readFileSync(asset(`shppingMall/menu/${prefix}_${n}@2x.png`)).length>0)
+    assert.equal(hidpiSvg(original),undefined)
+  }
+  assert.ok(hidpiSvg(asset('shppingMall/menu/Sale_SubTag.png')))
+  assert.ok(hidpiSvg(asset('shppingMall/menu/mall_25.gif')),'inventory tabs keep their existing HD artwork')
+})

@@ -4,6 +4,7 @@ const { join, resolve } = require('node:path')
 const { pathToFileURL } = require('node:url')
 const assert = require('node:assert/strict')
 const { resizeViewport } = require('./viewport.cjs')
+const { hidpiSvg } = require(resolve('dist/ui-shop-hidpi.cjs'))
 const profile = mkdtempSync(resolve('dist/toys-profile-'))
 app.setPath('userData',profile);app.setPath('sessionData',profile);app.setAppLogsPath(join(profile,'logs'))
 const file = join(profile,'save.json')
@@ -31,23 +32,33 @@ app.whenReady().then(async()=>{
   const html=resolve('dist/toys-test.html')
   writeFileSync(html,'<!doctype html><meta charset="UTF-8"><base href="'+assetRoot+'"><style>'+prepared.css.replaceAll('url(/pet/','url('+assetRoot+'pet/')+'</style><body>')
   const win=new BrowserWindow({width:1000,height:700,useContentSize:true,show:false,webPreferences:{preload:join(__dirname,'shop-preload.cjs'),sandbox:true,contextIsolation:true,offscreen:true,backgroundThrottling:false}})
+  win.webContents.setAudioMuted(true)
   const evaluate=expression=>win.webContents.executeJavaScript(expression)
   const pause=ms=>new Promise(r=>setTimeout(r,ms))
   const boot='(async()=>{'+prepared.code+';fixture.openShop();return true})()'
   await win.loadFile(html);await resizeViewport(win,1000,700);await evaluate(boot)
   const click=selector=>evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing '+${JSON.stringify(selector)});e.click();return true})()`)
-  let tabCases=0
+  let tabCases=0,subtabCases=0
+  const menu='pet/shppingMall/menu/'
+  const artNames=['mall_06.gif','mall_07.gif','mall_08.gif','mall_09.gif','mal_06.gif','mal_07.gif','mal_08.gif','mal_09.gif','Sale_SubTag.png','Sale_SubTag_Selected.png']
+  const artwork=hd=>Object.fromEntries(artNames.map(name=>{const svg=hd&&hidpiSvg(resolve(process.env.QQPET_TEST_RESOURCES||'resources',menu,name));return [name,svg?'data:image/svg+xml;base64,'+Buffer.from(svg).toString('base64'):assetRoot+menu+name]}))
+  const applySkin=hd=>evaluate(`(async()=>{const assets=${JSON.stringify(artwork(hd))};for(const el of document.querySelectorAll('.rscb_t_onve,.rscb_dowmOnce')){const original=getComputedStyle(el).backgroundImage.slice(5,-2),name=new URL(original).pathname.split('/').at(-1);if(assets[name])el.style.backgroundImage='url(\"'+assets[name]+'\")';const image=new Image();image.src=getComputedStyle(el).backgroundImage.slice(5,-2);await image.decode()}return true})()`)
   for(const hd of [false,true]) for(const [w,h,dpr] of [[1000,700,1],[800,600,1.25],[640,480,2]]) {
     await resizeViewport(win,w,h,dpr)
     for(const selected of ['shopTj','shopWy','shopGN','shopZB']) {
       await click('.'+selected)
+      await applySkin(hd)
       const tabs=await evaluate(`(async()=>{const tabs=[...document.querySelectorAll('.rscb_t_onve')];
-        for(const el of tabs){if(${hd})el.style.backgroundImage=getComputedStyle(el).backgroundImage.replace('.gif','@2x.png');
+        for(const el of tabs){
           const image=new Image();image.src=getComputedStyle(el).backgroundImage.slice(5,-2);await image.decode()}
         return tabs.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,active:el.classList.contains('active'),hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height*0.7)===el}})
       })()`)
       await pause(40)
       const visible=await win.webContents.capturePage()
+      if(hd&&w===1000&&selected==='shopTj') {
+        const header=await evaluate("(()=>{const r=document.querySelector('.rightSelfHeadBk').getBoundingClientRect();return {x:Math.floor(r.x),y:Math.floor(r.y),width:Math.ceil(r.width),height:Math.ceil(r.height)}})()")
+        writeFileSync('dist/shop-header-fixed.png',(await win.webContents.capturePage(header)).toPNG())
+      }
       await evaluate("document.querySelectorAll('.rscb_t_onve').forEach(el=>el.style.visibility='hidden');true")
       await pause(40)
       const backdrop=await win.webContents.capturePage()
@@ -70,6 +81,22 @@ app.whenReady().then(async()=>{
           if(red<=3)writeFileSync('dist/shop-tabs-debug.png',visible.toPNG())
           assert.ok(red>3,JSON.stringify({hd,w,dpr,selected,red,reason:'selected heart remains visible above the inactive crop'}))
         }
+      }
+      const count=await evaluate("document.querySelectorAll('.rscb_dowmOnce').length")
+      for(let sub=0;sub<count;sub++){
+        await click('.rscb_dowmOnce:nth-child('+(sub+1)+')')
+        await applySkin(hd)
+        const geometry=await evaluate(`(()=>{const top=document.querySelector('.rscb_top').getBoundingClientRect(),row=document.querySelector('.rscb_dowm').getBoundingClientRect(),head=document.querySelector('.rightSelfHeadBk').getBoundingClientRect(),cards=document.querySelector('.rGoodList').getBoundingClientRect();const buttons=[...document.querySelectorAll('.rscb_dowmOnce')].map(el=>{const r=el.getBoundingClientRect(),text=el.firstElementChild.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,center:r.y+r.height/2,textCenter:text.y+text.height/2,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('.rscb_dowmOnce')===el}});return {gap:row.top-top.bottom,total:row.bottom-top.top,headHeight:head.height,headBottom:head.bottom,cardsTop:cards.top,buttons}})()`)
+        assert.ok(Math.abs(geometry.gap)<0.6,JSON.stringify({hd,w,dpr,selected,sub,geometry,reason:'no inline baseline gap between tab rows'}))
+        assert.ok(Math.abs(geometry.total-geometry.headHeight)<0.6,'the two rows fill the shared frame exactly')
+        assert.ok(geometry.headBottom<=geometry.cardsTop+0.6,'header never overlaps product cards')
+        for(let j=0;j<geometry.buttons.length;j++){
+          const b=geometry.buttons[j]
+          assert.ok(Math.abs(b.center-b.textCenter)<0.6,'subcategory text remains vertically centered')
+          assert.equal(b.hit,true)
+          if(j)assert.ok(b.x>=geometry.buttons[j-1].right-0.6,'subcategory buttons never overlap')
+        }
+        subtabCases++
       }
       tabCases++
     }
@@ -123,7 +150,7 @@ app.whenReady().then(async()=>{
   assert.equal(await evaluate("document.querySelector('.selfGoodName').textContent"),'羽毛')
   assert.ok(disk.selfGoodDatas.toy.includes('_t0009*1'))
   await click('.ui-shop .close')
-  writeFileSync('dist/toys-results.json',JSON.stringify({loaded:19,pages:4,purchaseAndUse:true,reload:true,tabEdgeCases:tabCases,dimensions},null,2))
-  console.log('Toy UI verified: 19 real images, three added pages, repeat purchase, inventory use, reload, nine viewport/page cases and '+tabCases+' skin/scale/tab edge checks')
+  writeFileSync('dist/toys-results.json',JSON.stringify({loaded:19,pages:4,purchaseAndUse:true,reload:true,tabEdgeCases:tabCases,subtabCases,dimensions},null,2))
+  console.log('Toy UI verified: 19 real images, three added pages, repeat purchase, inventory use, reload, nine viewport/page cases and '+tabCases+' skin/scale/tab edge checks and '+subtabCases+' aligned subcategory layouts')
   win.destroy();app.quit()
 }).catch(error=>{console.error(error);app.exit(1)})

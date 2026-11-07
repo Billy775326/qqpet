@@ -25,4 +25,6 @@ export async function prepareToys() {
   })
   const css = ['base.css','style.css','ui/css/shop.css','ui/css/window.css','ui/css/recharge.css'].map(p => readFileSync('src/renderer/'+p,'utf8')).join('\n')
   writeFileSync('dist/ui-toys-prepared.json', JSON.stringify({ code: result.outputFiles[0].text, css }))
+  const native=await build({stdin:{contents:"export {hidpiSvg} from './src/main/hidpi';",resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,format:'cjs',platform:'node'})
+  writeFileSync('dist/ui-shop-hidpi.cjs',native.outputFiles[0].text)
 }
