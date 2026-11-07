@@ -61,7 +61,7 @@ app.whenReady().then(async()=>{
   assert.equal(writes,1,'a retained confirmation cannot send twice')
   await click('.setupAction[aria-label="全物品领取"]')
   assert.equal(await evaluate("document.querySelectorAll('.ui-window').length"),1)
-  assert.match(await evaluate("document.querySelector('.windowView .msg').textContent"),/已有一封待领取/)
+  assert.match(await evaluate("document.querySelector('.windowView .msg').textContent"),/尚未收取/)
   await click('.windowViewButSubmit')
   assert.equal(writes,1,'the pending-mail notice only closes')
   assert.equal(await evaluate("document.querySelectorAll('.ui-window,.ui-email').length"),0,'acknowledging pending mail does not navigate')

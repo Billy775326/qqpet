@@ -5,6 +5,8 @@ import { button, div, img } from './dom'
 
 interface Dialog {
   title?: string
+  /** Local content layout; the original frame and buttons stay shared. */
+  className?: string
   msg: string | ((num: number) => string | HTMLElement)
   goods?: Pick<Good, 'url' | 'name'>[]
   /** Quantity range 1..max (initially max); a live limit of 0 disables purchasing. */
@@ -106,6 +108,7 @@ export function windowView(d: Dialog): () => void {
   }
 
   const view = div(d.sweet ? 'windowView sweetHeart' : 'windowView', ...(d.title ? [div('title', d.title)] : []), main)
+  if (d.className) view.classList.add(d.className)
   if (d.sweet && d.sweetSettings) {
     const entry = document.createElement('button')
     entry.type = 'button'

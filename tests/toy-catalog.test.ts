@@ -26,7 +26,7 @@ async function model(save = startSave(null)) {
     stdin: { contents: "export * from './items';export * from './goods';export * from './tasks';export * from './care';export * from './data/goods'", resolveDir: resolve('src/renderer/pet'), loader: 'ts' },
     bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-toys', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (!args.importer || ['./items','./goods','./inventory','./tasks','./milestones','./care','./data/goods'].includes(args.path) || args.path.endsWith('.json')) return
+        if (!args.importer || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || ['./items','./goods','./inventory','./tasks','./milestones','./care','./data/goods'].includes(args.path) || args.path.endsWith('.json')) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub }))

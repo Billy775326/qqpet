@@ -310,3 +310,17 @@
   filter: grayscale(1);
   pointer-events: none;
 }
+
+/* Keep all protection text visible inside the original alert frame. */
+.ui-window .itemUseConfirmation .main {
+  font-size: 12px;
+  line-height: 17px;
+  gap: 5px;
+}
+.ui-window .itemUseConfirmation .msg {
+  display: block;
+  overflow: auto;
+  max-height: 73px;
+  overflow-wrap: anywhere;
+  width: 100%;
+}

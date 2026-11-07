@@ -41,7 +41,7 @@ async function dailyCare(kinds: string[], allDaily = false) {
   const allowed = ['./daily-care', './care', './care-policy', './jobs', './items', './goods', './inventory', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
-      if (!args.importer || allowed.includes(args.path) || args.path.endsWith('.json')) return
+      if (!args.importer || ['./acquisition','../pet/acquisition','./data/task-definitions','./milestones','../../shared/save-logic'].includes(args.path) || allowed.includes(args.path) || args.path.endsWith('.json')) return
       return { path: args.path, namespace: 'stub' }
     })
     b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: stub }))

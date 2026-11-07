@@ -70,6 +70,12 @@ debug 包输出到 `android/app/build/outputs/apk/debug/`。CI 的 release 包�
 
 每次发布都必须用同一个 keystore，否则已安装的用户无法覆盖升级。
 
+## 物品获取与使用确认
+
+物品获取分类在 `src/renderer/pet/acquisition.ts`：汇总商城、随机奖励池、正常节日／生日邮件、每日任务、成长目标和新存档用品。`data/task-definitions.ts` 与任务执行共享同一套固定奖励定义；`save-logic.ts` 导出的新存档用品也由初始化直接复用。新增来源时同步维护这个索引，不导入有运行副作用的任务模块。辅助全物品邮件和导入不计入来源。`keep` 旅游任务完成一轮后可重置，并非整个存档只领一次。
+
+`node --experimental-strip-types --test tests/item-use.test.ts` 验证来源分类、手动使用、数量、库存变化、药品、取消、重复操作和托管；`node scripts/test-ui.mjs item-use inventory care quantity toys tasks` 检查原提示皮肤及相关界面。真实目录当前没有受保护条目，测试仅在构建隔离夹具时替换来源机会，生产目录和用户存档均不注入样例；界面用例使用隔离存档、静音窗口及 4 组尺寸／缩放组合。正式发布仍需执行项目发布回归。
+
 ## 改过的 SWF
 
 以下文件用 [JPEXS FFDec](https://github.com/jindrapetrik/jpexs-decompiler) 打过补丁，重新导入资源时不要覆盖：

@@ -1,5 +1,19 @@
 import type { SaveData, SavePatch, Sex } from './save'
 
+/** New-save supplies, also used by the acquisition audit. */
+export const INITIAL_GOODS: SaveData['selfGoodDatas'] = {
+  food: ['_10013006*2', '_102010001*3'],
+  clean: ['_10021008*2', '_10021005*2'],
+  medicine: ['_60001*2', '_50001*1'],
+  background: ['_b0000000*1', '_b0000001*1'],
+  service: [],
+  work: [],
+  study: [],
+  trip: [],
+  toy: ['_t0002*1'],
+  nums: [],
+}
+
 const now = (): number => Math.floor(Date.now() / 1000)
 const rand = (min: number, max: number) => (): number => Math.round(Math.random() * (max - min) + min)
 
@@ -148,18 +162,7 @@ function fresh(): SaveData {
     petComputedlInfo: { level: 1, upGrowth: 0, nextGrowth: 125, hungerMax: 1100, cleanMax: 1100, healthMax: 5, moodMax: 1000 },
     studyInfo: { chinese: 0, mathematics: 0, politics: 0, music: 0, art: 0, manner: 0, pe: 0, labouring: 0, wushu: 0 },
     activeOption: { work: null, study: null, trip: null, ill: null, die: null },
-    selfGoodDatas: {
-      food: ['_10013006*2', '_102010001*3'],
-      clean: ['_10021008*2', '_10021005*2'],
-      medicine: ['_60001*2', '_50001*1'],
-      background: ['_b0000000*1', '_b0000001*1'],
-      service: [],
-      work: [],
-      study: [],
-      trip: [],
-      toy: ['_t0002*1'],
-      nums: [],
-    },
+    selfGoodDatas: structuredClone(INITIAL_GOODS),
     selfGoodUseOption: { background: null, food: null, clean: null, toy: null },
     gameSaveDatas: { fishing_harvestfish: 0, travel_china: [], travel_china_num: 0, ddw: 0, yyds: 0 },
     illustrated: [],

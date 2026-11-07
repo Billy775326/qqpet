@@ -5,7 +5,7 @@ import { windowView } from './window-view'
 export function openInventoryGrant(): void {
   const pending = Object.values(readMails()).find(mail => !mail.e && !mail.r && mail.k === INVENTORY_GRANT_KEY)
   if (pending) {
-    windowView({ title: '全物品领取', msg: '邮箱中已有一封待领取的物品邮件，请自行打开邮箱收取附件。' })
+    windowView({ title: '全物品领取', msg: '物品已发送至邮箱，尚未收取。\n请在邮箱中领取附件。' })
     return
   }
   const count = inventoryGrantGoods().length
@@ -13,7 +13,9 @@ export function openInventoryGrant(): void {
   let error = ''
   windowView({
     title: '全物品领取',
-    msg: () => error || `食物、清洁用品、药品、玩具，每种 1 份，共 ${count} 种。确认后发送至邮箱，收取附件时加入背包。`,
+    msg: () => error || `食物、清洁用品、药品和玩具
+共 ${count} 种，每种 1 份。
+确认后寄至邮箱，请自行收取。`,
     ok: close => {
       if (finished) return
       try {
