@@ -32,6 +32,7 @@ export async function prepareShop() {
     export const listGoods=(type,page,size)=>({list:save.selfGoodDatas[type].slice((page-1)*size,page*size).map(g=>({...goodOf(type,g.id),num:g.num})),totalPage:Math.max(1,Math.ceil(save.selfGoodDatas[type].length/size))}),describe=()=>['隔离商品'],onGoodsChange=()=>{};
     export const price=g=>g.price,buy=()=>true,useItem=()=>{};
     export const expandEdgeMini=()=>false;
+    export const openInventoryGrant=()=>{};
   `
   const result = await build({
     stdin: { contents: entry, resolveDir: resolve('src/renderer/ui'), loader: 'ts' },

@@ -35,7 +35,7 @@ export async function prepareSweetHeart() {
     export const floatMood=async()=>{},DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
     export const addGood=()=>{},hasGood=()=>false,startTimed=()=>{},takeGood=()=>false,addCount=()=>{};
   `
-  const allowed = ['./pink-diamond','../../shared/pink-diamond','./petinfo','./sweetheart','./state','../pet/store','./store','../pet/vip','../pet/items','../../shared/sweetheart','./box','./dom','../ui/dom','./window-view','../ui/window-view','./frame','./progress','./date','./level','./care-settings','../pet/care','./data/goods','../pet/data/goods','./goods','./items']
+  const allowed = ['./pink-diamond','../../shared/pink-diamond','./petinfo','./sweetheart','./state','../pet/store','./store','../pet/vip','../pet/items','../../shared/sweetheart','./box','./dom','../ui/dom','./window-view','../ui/window-view','./frame','./progress','./date','./level','./care-settings','../pet/care','./data/goods','../pet/data/goods','./goods','./inventory','./items']
   const result = await build({
     stdin: { contents: entry, resolveDir: resolve('src/renderer/ui'), loader: 'ts' },
     bundle: true, write: false, format: 'esm',

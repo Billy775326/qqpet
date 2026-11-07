@@ -8,6 +8,16 @@ import { touch } from '../ui/dom'
 export const save: SaveData = await window.qqpet.load()
 export const info: PetInfo = save.petInfo
 
+/** Publish a multi-group change only after the synchronous disk write succeeds. */
+export function commit(patch: SavePatch): void {
+  window.qqpet.save(patch)
+  const target = save as unknown as Record<string, unknown>
+  for (const [key, value] of Object.entries(patch)) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) Object.assign(target[key] as object, value)
+    else target[key] = value
+  }
+}
+
 
 /** Applies a change to `save` and writes it to disk, acknowledged synchronously before returning. */
 export function update<K extends keyof SaveData>(key: K, value: SavePatch[K]): void {

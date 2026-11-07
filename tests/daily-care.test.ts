@@ -30,6 +30,7 @@ async function dailyCare(kinds: string[], allDaily = false) {
     export const save=state.save,info=save.petInfo,activity=key=>save.activeOption[key];
     export const busy=()=>Boolean(activity('work')||activity('study')||activity('trip'));
     export const update=(group,patch)=>{if(Array.isArray(patch))save[group]=patch;else Object.assign(save[group],patch)},setInfo=(key,value)=>info[key]=value,addInfo=(key,n)=>info[key]+=n,setActivity=(key,value)=>save.activeOption[key]=value,refreshTray=()=>{};
+    export const commit=patch=>Object.entries(patch).forEach(([key,value])=>update(key,value));
     export const machine={get idle(){return state.idle},get automationReady(){return state.idle||state.visualBlocked}};
     export const speak=(_line,_action,hooks={})=>{if(hooks.start){if(state.defer)state.pending.push(hooks.start);else hooks.start()}};
     export const amusePet=()=>{state.amused++;state.addCount('Amusing');return true};
@@ -37,7 +38,7 @@ async function dailyCare(kinds: string[], allDaily = false) {
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
   const entry = `export {runDailyCare} from './daily-care';export {tasks,count,addCount,dailyTasks,milestones,resetTasks} from './tasks';export {advanceTask} from './activity';export {resumeTask,study,studyGoods} from './jobs';export {elapsed} from './activity';export {goodOf} from './data/goods';`
-  const allowed = ['./daily-care', './care', './care-policy', './jobs', './items', './goods', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
+  const allowed = ['./daily-care', './care', './care-policy', './jobs', './items', './goods', './inventory', './tasks', './milestones', './activity', './data/goods', './vip', '../../shared/sweetheart']
   const bundle = await build({ stdin: { contents: entry, resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-daily-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
       if (!args.importer || allowed.includes(args.path) || args.path.endsWith('.json')) return

@@ -8,6 +8,7 @@ import { button, div, typeable } from './dom'
 import { expandEdgeMini } from './edge-mini'
 import { setFaceClick } from './face'
 import { readopt, setHidden } from './menu'
+import { openInventoryGrant } from './inventory-grant'
 
 type Option = { label: string; title?: string; hint?: string; group?: string; danger?: boolean; disabled?: () => boolean } & (
   | { type: 'radio'; on: () => boolean; run: () => void }
@@ -183,6 +184,7 @@ const TABS: { label: string; options: Option[] }[] = [
   {
     label: '工具',
     options: [
+      { type: 'button', group: '物品辅助', label: '全物品领取', hint: '食物、清洁用品、药品、玩具各 1 份，通过邮件附件领取；已有库存保留。', run: openInventoryGrant },
       { type: 'radio', group: '剪贴板', label: '播报复制的文字', hint: '开启后监听剪贴板，由宠物朗读复制的内容。', on: () => s.clip, run: () => update('settings', { clip: !s.clip }) },
     ],
   },

@@ -2,7 +2,7 @@ import { floatMood } from '../ui/float'
 import { windowView } from '../ui/window-view'
 import { goodOf, type Good, type TimedType } from './data/goods'
 import { DEAD, illOf } from './data/ills'
-import { addGood, hasGood, startTimed, takeGood } from './goods'
+import { addGood, hasGood, quantityOf, startTimed, takeGood } from './goods'
 import { speak } from './pet'
 import { activity, addInfo, info, save, setInfo } from './store'
 import { addCount, type Counter } from './tasks'
@@ -72,7 +72,7 @@ export function useItem(g: Good, free = false, text?: string): void {
       title: `使用-${g.name}`,
       msg: '选择使用数量',
       goods: [g],
-      max: g.num,
+      max: () => quantityOf(g.type, g.id),
       ok: (close, n) => {
         if (takeGood(g, n)) setInfo(key, Math.max(info[key] + n * g.value!, 0))
         close()

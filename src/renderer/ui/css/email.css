@@ -16,6 +16,7 @@
 .ui-email .email {border-bottom:1px solid rgba(203,203,203,.834);padding:5px 0}
 .ui-email .e_goodImgs {width:20px;height:20px}
 .ui-email .e_goodImgsBox {white-space:nowrap;width:100%;overflow:auto hidden}
+.ui-email .e_attachmentSummary {margin-bottom:3px;line-height:1.4;overflow-wrap:anywhere}
 .ui-email .rgetEmail {width:35px;height:20px;background-image:url(/pet/email/5.svg);background-size:100% 100%;background-repeat:no-repeat;margin-right:5px}
 .ui-email .rgetEmail:hover {background-image:url(/pet/email/9.svg)}
 .ui-email .rgetEmail:active {background-image:url(/pet/email/11.svg)}

@@ -9,7 +9,7 @@ export async function prepareToys() {
     import {allGoods} from '../pet/data/goods';
     window.fixture={openShop,save,info,setInfo,toys:allGoods('toy')};
   `
-  const allowed = ['./shop','../pet/store','./store','../pet/data/goods','./data/goods','./goods','../pet/goods','./items','../pet/items','./tasks','./milestones','./box','./dom','../ui/dom','./date','./recharge','../../shared/recharge','./level','./window-view','../ui/window-view','./goods.json','../pet/data/shop.json']
+  const allowed = ['./shop','../pet/store','./store','../pet/data/goods','./data/goods','./goods','./inventory','../pet/goods','./items','../pet/items','./tasks','./milestones','./box','./dom','../ui/dom','./date','./recharge','../../shared/recharge','./level','./window-view','../ui/window-view','./goods.json','../pet/data/shop.json']
   const result = await build({
     stdin: { contents: entry, resolveDir: resolve('src/renderer/ui'), loader: 'ts' }, bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'isolated-toy-shop', setup(b) {

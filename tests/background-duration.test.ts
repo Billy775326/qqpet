@@ -11,7 +11,7 @@ async function fixture(background: { id: string; left: number } | null = null) {
     bundle: true, write: false, format: 'cjs',
     plugins: [{ name: 'isolated-timed-goods', setup(b) {
       b.onResolve({ filter: /^\.\/store$/ }, args => ({ path: args.path, namespace: 'fixture' }))
-      b.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export const save=globalThis.state.save;export const update=(group,patch)=>Object.assign(save[group],patch);' }))
+      b.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export const save=globalThis.state.save;export const update=(group,patch)=>Object.assign(save[group],patch);export const commit=patch=>Object.entries(patch).forEach(([key,value])=>update(key,value));' }))
     } }],
   })
   const module = { exports: {} as any }

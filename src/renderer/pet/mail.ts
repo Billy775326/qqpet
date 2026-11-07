@@ -1,8 +1,10 @@
 import type { CalendarDay } from '../../shared/ipc'
 import { isBuddy, type Shot } from './album'
 import { allGoods, goodOf, type Good } from './data/goods'
+import { goodsCommitted } from './goods'
+import { inventoryPatch } from './inventory'
 import { rand } from './rand'
-import { info, save, update } from './store'
+import { commit, info, save } from './store'
 
 /** saveJsonData.email entries, keyed by `d` (unix seconds); a deleted mail keeps only its keys. */
 export interface Live {
@@ -22,8 +24,66 @@ export interface Live {
 }
 export type Mail = Live | { d: number; e: true; k?: string }
 
+const listeners = new Set<() => void>()
+export function onMailChange(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}
+const changed = (): void => listeners.forEach(listener => listener())
+
 export const readMails = (): Record<string, Mail> => JSON.parse(save.saveJsonData.email || '{}')
-export const writeMails = (mails: Record<string, Mail>): void => update('saveJsonData', { email: JSON.stringify(mails) })
+export const writeMails = (mails: Record<string, Mail>): void => {
+  commit({ saveJsonData: { email: JSON.stringify(mails) } })
+  changed()
+}
+
+export const INVENTORY_GRANT_KEY = 'inventory-grant-v1'
+export const INVENTORY_GRANT_TYPES = ['food', 'clean', 'medicine', 'toy'] as const
+/** Freeze the current registered catalogue into ordinary, compatible mail attachments. */
+export const inventoryGrantGoods = (): Good[] => INVENTORY_GRANT_TYPES.flatMap(type => allGoods(type))
+
+/** At most one unclaimed grant mail; retrying or double-clicking never queues duplicates. */
+export function mailInventoryGrant(): { created: boolean; count: number } {
+  const mails = readMails()
+  const pending = Object.values(mails).find((m): m is Live => !m.e && !m.r && m.k === INVENTORY_GRANT_KEY)
+  if (pending) return { created: false, count: pending.glb.length }
+  const glb = inventoryGrantGoods()
+  const d = slot(mails)
+  mails[d] = { d, k: INVENTORY_GRANT_KEY, l: '全物品领取', m: '[host]，全物品邮件的附件已经收进背包啦~', glb }
+  writeMails(mails)
+  return { created: true, count: glb.length }
+}
+
+/** Attachments, seen IDs and claim state reach disk together, or all remain unchanged. */
+export function claimMails(ids: readonly string[]): Live[] {
+  const mails = readMails()
+  const claimed: Live[] = []
+  for (const id of new Set(ids)) {
+    const mail = Object.hasOwn(mails, id) ? mails[id] : undefined
+    if (!mail || mail.e || mail.r) continue
+    mail.r = true
+    claimed.push(mail)
+  }
+  if (!claimed.length) return []
+  const goods = claimed.flatMap(mail => mail.glb)
+  commit({ ...inventoryPatch(save, goods), saveJsonData: { email: JSON.stringify(mails) } })
+  goodsCommitted(goods.map(g => g.type))
+  changed()
+  return claimed
+}
+
+/** Delete only already-claimed mail, retaining its original deduplication key. */
+export function deleteMails(ids: readonly string[]): void {
+  const mails = readMails()
+  let removed = false
+  for (const id of new Set(ids)) {
+    const mail = Object.hasOwn(mails, id) ? mails[id] : undefined
+    if (!mail || mail.e || !mail.r) continue
+    mails[id] = { d: mail.d, e: true, k: mail.k }
+    removed = true
+  }
+  if (removed) writeMails(mails)
+}
 
 /** n different goods of a type, 1-3 of each. */
 function some(type: 'food' | 'toy', n: number): Good[] {

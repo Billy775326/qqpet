@@ -17,6 +17,7 @@ async function model(save = startSave(null)) {
   const stub = `const s=globalThis.state;
     export const save=s.save, info=save.petInfo, activity=()=>null;
     export const update=(key,value)=>{if(Array.isArray(value))save[key]=value;else Object.assign(save[key],value);s.applyPatch(s.disk,{[key]:value})};
+    export const commit=patch=>{s.applyPatch(s.disk,patch);for(const [key,value]of Object.entries(patch)){if(Array.isArray(value))save[key]=value;else Object.assign(save[key],value)}};
     export const setInfo=(key,value)=>update('petInfo',{[key]:value}),addInfo=(key,n)=>setInfo(key,info[key]+n);
     export const speak=(_line,_action,hooks={})=>{if(hooks.start)s.pending.push(hooks.start)};
     export const floatMood=()=>{},windowView=()=>s.alerts++,loot=()=>[],rand=min=>min,dayStart=()=>1000;
@@ -25,7 +26,7 @@ async function model(save = startSave(null)) {
     stdin: { contents: "export * from './items';export * from './goods';export * from './tasks';export * from './care';export * from './data/goods'", resolveDir: resolve('src/renderer/pet'), loader: 'ts' },
     bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-toys', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
-        if (!args.importer || ['./items','./goods','./tasks','./milestones','./care','./data/goods'].includes(args.path) || args.path.endsWith('.json')) return
+        if (!args.importer || ['./items','./goods','./inventory','./tasks','./milestones','./care','./data/goods'].includes(args.path) || args.path.endsWith('.json')) return
         return { path: args.path, namespace: 'mock' }
       })
       b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: stub }))

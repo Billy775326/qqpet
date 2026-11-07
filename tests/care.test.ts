@@ -16,13 +16,14 @@ async function caring() {
     const state=globalThis.state;
     export const save=state.save,info=save.petInfo,activity=()=>null;
     export const update=(group,patch)=>{if(Array.isArray(patch))save[group]=patch;else Object.assign(save[group],patch)},setInfo=(key,value)=>info[key]=value,addInfo=(key,value)=>info[key]+=value;
+    export const commit=patch=>Object.entries(patch).forEach(([key,value])=>update(key,value));
     export const speak=(_line,_action,hooks={})=>{if(hooks.start){if(state.defer)state.pending.push(hooks.start);else hooks.start()}};
     export const windowView=()=>state.alerts++,floatMood=()=>{},addCount=()=>{state.uses++};
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}});
   `
   const built = await build({ stdin: { contents: "export {selfCare} from './care';export {useItem} from './items';export {goodOf} from './data/goods';", resolveDir: resolve('src/renderer/pet'), loader: 'ts' }, bundle: true, write: false, format: 'cjs', plugins: [{ name: 'isolated-care', setup(b) {
     b.onResolve({ filter: /.*/ }, args => {
-      if (!args.importer || ['./care', './data/goods', './goods', './items'].includes(args.path) || args.path.endsWith('.json')) return
+      if (!args.importer || ['./care', './data/goods', './goods', './inventory', './items'].includes(args.path) || args.path.endsWith('.json')) return
       return { path: args.path, namespace: 'stub' }
     })
     b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: stub }))

@@ -13,7 +13,7 @@ export async function prepareTasks() {
     window.fixtureResults=[];
     window.fixture={open:openTask,save,addCount,resetTasks,resetTour,timerCount:()=>timers.size};
   `
-  const allowed = ['./task', './result', './reward-icon', '../pet/tasks', './tasks', './milestones', '../pet/store', './store', './box', './dom', '../ui/dom', './level', './data/goods', '../pet/data/goods', './items', './goods', './vip', '../../shared/sweetheart']
+  const allowed = ['./task', './result', './reward-icon', '../pet/tasks', './tasks', './milestones', '../pet/store', './store', './box', './dom', '../ui/dom', './level', './data/goods', '../pet/data/goods', './items', './goods', './inventory', './vip', '../../shared/sweetheart']
   const stub = `export const speak=()=>{},floatMood=()=>{},resetFish=()=>{},loot=()=>[],rand=min=>min;
     export const DEAD={cure:{id:'0'}},illOf=()=>({cure:{id:'0'}}),windowView=()=>{};
     export const showResult=(_root,goods)=>window.fixtureResults.push(goods);`
