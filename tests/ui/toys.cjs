@@ -36,6 +36,48 @@ app.whenReady().then(async()=>{
   const boot='(async()=>{'+prepared.code+';fixture.openShop();return true})()'
   await win.loadFile(html);await resizeViewport(win,1000,700);await evaluate(boot)
   const click=selector=>evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing '+${JSON.stringify(selector)});e.click();return true})()`)
+  let tabCases=0
+  for(const hd of [false,true]) for(const [w,h,dpr] of [[1000,700,1],[800,600,1.25],[640,480,2]]) {
+    await resizeViewport(win,w,h,dpr)
+    for(const selected of ['shopTj','shopWy','shopGN','shopZB']) {
+      await click('.'+selected)
+      const tabs=await evaluate(`(async()=>{const tabs=[...document.querySelectorAll('.rscb_t_onve')];
+        for(const el of tabs){if(${hd})el.style.backgroundImage=getComputedStyle(el).backgroundImage.replace('.gif','@2x.png');
+          const image=new Image();image.src=getComputedStyle(el).backgroundImage.slice(5,-2);await image.decode()}
+        return tabs.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,active:el.classList.contains('active'),hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height*0.7)===el}})
+      })()`)
+      await pause(40)
+      const visible=await win.webContents.capturePage()
+      await evaluate("document.querySelectorAll('.rscb_t_onve').forEach(el=>el.style.visibility='hidden');true")
+      await pause(40)
+      const backdrop=await win.webContents.capturePage()
+      await evaluate("document.querySelectorAll('.rscb_t_onve').forEach(el=>el.style.visibility='');true")
+      const size=visible.getSize(),pixels=visible.toBitmap(),background=backdrop.toBitmap()
+      const pixel=(bytes,x,y)=>{const offset=(Math.floor(y*size.height/h)*size.width+Math.floor(x*size.width/w))*4;return bytes.subarray(offset,offset+4)}
+      for(const tab of tabs) {
+        assert.equal(tab.hit,true,'tab bodies remain clickable')
+        if(!tab.active) {
+          for(const fraction of [0.2,0.5,0.8]) {
+            const x=tab.x+tab.width*fraction,y=tab.y+tab.height*3/34
+            assert.ok(pixel(pixels,x,y).equals(pixel(background,x,y)),JSON.stringify({hd,w,dpr,selected,tab,fraction,reason:'inactive upper edge must reveal the shared frame'}))
+          }
+        } else {
+          let red=0
+          for(let y=1;y<=5;y++)for(let x=3;x<=32;x++) {
+            const heart=pixel(pixels,tab.x+tab.width*x/86,tab.y+tab.height*y/34)
+            if(heart[2]>heart[1]+30)red++
+          }
+          if(red<=3)writeFileSync('dist/shop-tabs-debug.png',visible.toPNG())
+          assert.ok(red>3,JSON.stringify({hd,w,dpr,selected,red,reason:'selected heart remains visible above the inactive crop'}))
+        }
+      }
+      tabCases++
+    }
+  }
+  await resizeViewport(win,1000,700,1)
+  await click('.shopTj')
+  await pause(40)
+  writeFileSync('dist/shop-tabs.png',(await win.webContents.capturePage()).toPNG())
   await click('.shopGN')
   assert.equal(await evaluate("document.querySelector('.rsfb_totalPage').textContent"),'4')
   const added=await evaluate('fixture.toys.filter(g=>Number(g.id.slice(1))>=9)')
@@ -81,7 +123,7 @@ app.whenReady().then(async()=>{
   assert.equal(await evaluate("document.querySelector('.selfGoodName').textContent"),'羽毛')
   assert.ok(disk.selfGoodDatas.toy.includes('_t0009*1'))
   await click('.ui-shop .close')
-  writeFileSync('dist/toys-results.json',JSON.stringify({loaded:19,pages:4,purchaseAndUse:true,reload:true,dimensions},null,2))
-  console.log('Toy UI verified: 19 real images, three added pages, repeat purchase, inventory use, reload and nine viewport/page cases')
+  writeFileSync('dist/toys-results.json',JSON.stringify({loaded:19,pages:4,purchaseAndUse:true,reload:true,tabEdgeCases:tabCases,dimensions},null,2))
+  console.log('Toy UI verified: 19 real images, three added pages, repeat purchase, inventory use, reload, nine viewport/page cases and '+tabCases+' skin/scale/tab edge checks')
   win.destroy();app.quit()
 }).catch(error=>{console.error(error);app.exit(1)})

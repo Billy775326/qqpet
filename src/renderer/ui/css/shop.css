@@ -263,6 +263,11 @@
   height: 34px;
   background-size: 100% 100%;
 }
+/* Inactive bitmaps include six rows of the original backdrop above the tab.
+   Reveal the shared frame there; selected tabs retain their full heart outline. */
+.ui-shop .rscb_t_onve:not(.active) {
+  clip-path: inset(6px 0 0);
+}
 .ui-shop .shopTj {
   background-image: url(/pet/shppingMall/menu/mall_06.gif);
 }

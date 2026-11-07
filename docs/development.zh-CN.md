@@ -25,7 +25,7 @@ npm run dev
 
 可运行 `npm run test:ui -- tasks` 使用隔离存档检查原有页签与布局、领奖对应、成长历程奖励防重、重载后已领取状态、面板刷新及关闭清理，并检查四种视口与缩放组合下的布局和实际奖励图标。
 
-可运行 `npm run test:ui -- toys` 检查新增玩具的商城分页、19 张实际图片、重复购买、库存使用与重载，以及三种视口下新增三页的显示。`node --experimental-strip-types --test tests/toy-catalog.test.ts tests/task-milestones.test.ts tests/care.test.ts` 覆盖玩具定义及来源、购买条件、使用收益、成长奖励防重、存档兼容和托管用品选择。
+可运行 `npm run test:ui -- toys` 检查新增玩具的商城分页、19 张实际图片、重复购买、库存使用与重载，以及三种视口下新增三页的显示；另用原图及高清图、三档视口缩放和四个商城页签进行 24 组截图对比，检查未选中上缘透出共用边框、选中爱心完整及点击区域。`node --experimental-strip-types --test tests/toy-catalog.test.ts tests/task-milestones.test.ts tests/care.test.ts` 覆盖玩具定义及来源、购买条件、使用收益、成长奖励防重、存档兼容和托管用品选择。
 
 可运行 `node --experimental-strip-types --test tests/inventory-mail.test.ts` 检查实时库存足量校验、过期数量、重复库存合并、邮件事务、失败重试、未知库存保留及旧版包裹导入。`npm run test:ui -- inventory` 使用隔离文件存档和真实界面，验证工具取消、888 种邮件附件、文件替换失败恢复、一次保存领取、旧按钮防重、新邮件实时显示、重载与四种视口；不向真实邮箱发送邮件，也不改真实宠物存档。
 
