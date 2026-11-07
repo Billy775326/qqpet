@@ -17,6 +17,8 @@ interface Dialog {
   onClose?: () => void
   /** OK button; without it OK just closes. `num` is the picked quantity. */
   ok?: (close: () => void, num: number) => void
+  /** A confirmation requires an explicit Cancel action, separate from the close icon. */
+  cancel?: boolean
   /** The sweetheart skin. */
   sweet?: boolean
   /** Settings hotspot in the sweetheart skin's baked-in text. */
@@ -33,7 +35,7 @@ export function windowView(d: Dialog): () => void {
   const count = div('content', String(num))
   const message = div('msg', typeof d.msg === 'function' ? d.msg(num) : d.msg)
   const main = div('main', message)
-  let submit: HTMLDivElement
+  let submit: HTMLDivElement | HTMLButtonElement
   let refreshQuantity = (): void => {}
   if (d.goods?.length)
     main.append(
@@ -135,7 +137,7 @@ export function windowView(d: Dialog): () => void {
     refreshQuantity()
     if (typeof d.msg === 'function') message.replaceChildren(d.msg(num))
   }
-  submit = button('windowViewButSubmit', () => {
+  const accept = (): void => {
     if (closed) return
     const selected = num
     refresh()
@@ -143,7 +145,22 @@ export function windowView(d: Dialog): () => void {
     if (d.max !== undefined && (num < 1 || num !== selected)) return
     if (d.ok) d.ok(close, num)
     else close()
-  })
+  }
+  if (d.cancel) {
+    view.classList.add('withCancel')
+    const action = (cls: string, label: string, run: () => void): HTMLButtonElement => {
+      const element = document.createElement('button')
+      element.type = 'button'
+      element.className = cls
+      element.setAttribute('aria-label', label)
+      element.title = label
+      element.addEventListener('pointerdown', event => event.stopPropagation())
+      element.addEventListener('click', run)
+      return element
+    }
+    submit = action('windowViewButSubmit', '确认', accept)
+    view.append(action('windowViewButCancel', '取消', close))
+  } else submit = button('windowViewButSubmit', accept)
   view.append(button('windowViewBut', close), submit)
   refresh()
   if (typeof d.max === 'function' || typeof d.msg === 'function') {

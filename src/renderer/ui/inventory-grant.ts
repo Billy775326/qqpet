@@ -13,6 +13,7 @@ export function openInventoryGrant(): void {
   let error = ''
   windowView({
     title: '全物品领取',
+    cancel: true,
     msg: () => error || `食物、清洁用品、药品和玩具
 共 ${count} 种，每种 1 份。
 确认后寄至邮箱，请自行收取。`,

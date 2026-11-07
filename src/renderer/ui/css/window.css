@@ -38,6 +38,37 @@
 .ui-window .windowViewButSubmit:active {
   background-image: url(/pet/windowTip/alert/btnok_02.png);
 }
+.ui-window .withCancel :is(.windowViewButSubmit, .windowViewButCancel) {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background-color: transparent;
+  cursor: inherit;
+}
+.ui-window .withCancel .windowViewButSubmit {
+  left: 48px;
+  right: auto;
+  transform: none;
+}
+.ui-window .windowViewButCancel {
+  position: absolute;
+  right: 48px;
+  bottom: 12px;
+  width: 82px;
+  height: 39px;
+  z-index: 99;
+  background: url(/pet/windowTip/alert/btncancel_00.png) center / 100% 100% no-repeat;
+}
+.ui-window .windowViewButCancel:hover {
+  background-image: url(/pet/windowTip/alert/btncancel_01.png);
+}
+.ui-window .windowViewButCancel:active {
+  background-image: url(/pet/windowTip/alert/btncancel_02.png);
+}
+.ui-window .withCancel :is(.windowViewButSubmit, .windowViewButCancel):focus-visible {
+  outline: 1px dotted #9a7b25;
+  outline-offset: 2px;
+}
 .ui-window .main {
   position: absolute;
   left: 15px;
