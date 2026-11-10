@@ -29,7 +29,7 @@ npm run dev
 
 可运行 `node --experimental-strip-types --test tests/inventory-mail.test.ts` 检查实时库存足量校验、过期数量、重复库存合并、邮件事务、失败重试、未知库存保留及旧版包裹导入。`npm run test:ui -- inventory` 使用隔离文件存档和真实界面，验证工具取消、888 种邮件附件、文件替换失败恢复、一次保存领取、旧按钮防重、新邮件实时显示、重载与四种视口；不向真实邮箱发送邮件，也不改真实宠物存档。
 
-`node --experimental-strip-types --test tests/fishing-stock.test.ts` 覆盖池塘批量投放的容量、资格、实时余额、独立编号、一次保存、失败重试与旧鱼存档。`npm run test:ui -- fishing` 使用原有池塘 SWF 和真实 Ruffle、静音的隔离实例，检查数量选择、取消、保存失败、普通／粉钻容量、失效按钮、三种视口，以及加载中关闭；不会移动物理鼠标或写入真实池塘。需要先执行 `npm run build` 提供 Ruffle 运行文件。
+`node --experimental-strip-types --test tests/fishing-stock.test.ts` 覆盖池塘批量投放的容量、资格、实时余额、独立编号、一次保存、失败重试与旧鱼存档。`npm run test:ui -- fishing` 使用实际池塘 SWF 和真实 Ruffle、静音的隔离实例，通过原生点击验证选鱼页内数量加减、单次支付确认和取消、无额外数量窗口、保存失败重试、确认期间余额变化、普通／粉钻容量、重复确认、选鱼重置、三种视口，以及加载中关闭和桥接清理；不会移动物理鼠标或写入真实池塘。需要先执行 `npm run build` 提供 Ruffle 运行文件。
 
 若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
 
@@ -84,7 +84,7 @@ debug 包输出到 `android/app/build/outputs/apk/debug/`。CI 的 release 包�
 
 | 文件 | 改动 |
 |---|---|
-| `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序、同等级鱼的出售单价升序排列，不计产量，移除特殊鱼置顶；可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁，角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用 |
+| `resources/pet/fishing/main.swf` | 鱼苗按满足等级及粉钻条件优先、组内等级升序、同等级鱼的出售单价升序排列，不计产量，移除特殊鱼置顶；可用 `node tools/fix-fishing-order.mjs` 重复应用排序补丁，角标字号与单行显示补丁可用 `node tools/fix-fishing-level.mjs` 重复应用。选鱼页内数量控件及携带数量的支付协议源码位于 `tools/fishing/src/`；设置 `QQPET_TEST_JAVA` 和 `QQPET_FFDEC_JAR` 后运行 `node tools/build-fishing.mjs`，只重新编译这两个类，保留其他素材与补丁 |
 | `resources/pet/mstx/qq_mstx.swf` | 隐藏需要联网的「兑换礼包」「魔法爱情石」按钮 |
 | `resources/pet/qqfarm/Farm.swf` | 允许在 `file://` 之外启动；「金币」改为「元宝」；商店按解锁状态、等级、出售单价和购买价稳定排序，余额只更新灰显及购买提示；复用目录、卡片和提示层，支持滚轮并保留购买前的滚动位置；商店、仓库和购买弹窗按缩放比例播放动画，购买弹窗防止重复打开和重复确认 |
 | `resources/pet/qqfarm/props.swf` | 素材中的「金币」文字改为「元宝」；原滚动条增加内容与滑块同步滚动接口 |

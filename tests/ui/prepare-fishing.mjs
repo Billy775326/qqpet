@@ -5,7 +5,7 @@ import {build} from 'esbuild'
 export async function prepareFishing(){
   const allowed=['./fishing','../pet/fishing','./store','../pet/store','./level','./data/goods','./dom','../ui/dom','./box','./window-view','../ui/window-view','../swf/player']
   const bundled=await build({stdin:{contents:`import {openFishing} from './fishing';import {save,info,setInfo,syncLevel} from '../pet/store';
-    window.fixture={openFishing,save,info,setInfo,syncLevel,purchase:(fryid=2,paytype=1)=>window.PETSendData(JSON.stringify({head:{cmd:4},data:{fryid,paytype}}))};`,resolveDir:resolve('src/renderer/ui'),loader:'ts'},bundle:true,write:false,format:'esm',plugins:[{name:'isolated-real-pond',setup(b){
+    window.fixture={openFishing,save,info,setInfo,syncLevel};`,resolveDir:resolve('src/renderer/ui'),loader:'ts'},bundle:true,write:false,format:'esm',plugins:[{name:'isolated-real-pond',setup(b){
       b.onResolve({filter:/.*/},args=>{if(!args.importer|| ['./rarity','./data/rarity','../pet/data/rarity'].includes(args.path) ||allowed.includes(args.path)||args.path.endsWith('.json'))return;return{path:args.path,namespace:'mock'}})
       b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:''}))
     }}]})

@@ -12,6 +12,7 @@ declare global {
     ChooseAPI: { ChooseSex(n: number): void }
     /** Called by fishing/main.swf: requests as `{head, data}` JSON, the pet's profile, and its close button (1). */
     PETSendData(json: string): void
+    QQPetPondStockQuote?: (fryid: number, paytype: number) => { max: number; free: number; price: number; reason: string }
     SNS_GetSelfPetInfo(): Record<string, unknown>
     close_game(n: number): void
     /** Called by mstx/main_qq_mstx.swf's close button. */
