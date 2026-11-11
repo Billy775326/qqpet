@@ -47,10 +47,35 @@ app.whenReady().then(async()=>{
   const attach=()=>evaluate(`(()=>{const send=window.PETSendData;window.PETSendData=json=>{const message=JSON.parse(json);if(message.head.cmd===4)window.stockRequests.push(message.data);send(json)};return true})()`)
   const requests=()=>evaluate('stockRequests')
   const noExtraWindow=async()=>assert.equal(await evaluate("document.querySelectorAll('.ui-window,.chooseNum').length"),0,'quantity belongs to the native selection screen')
-  const pay=()=>flashClick(313,265)
+  const layout=()=>evaluate("document.querySelector('ruffle-player')?.QQPetStockLayout?.() ?? null")
+  const layouts=[]
+  const stockClick=async(role,x,y)=>{
+    const measured=await layout()
+    if(measured?.visible){const r=measured.controls.find(c=>c.role===role);return flashClick((r.x+r.width/2)*411/measured.width,(r.y+r.height/2)*320/measured.height)}
+    return flashClick(x,y)
+  }
+  const checkLayout=async()=>{
+    if(process.env.QQPET_TEST_FISHING_LAYOUT!=='1')return
+    const measured=await layout()
+    assert.ok(measured?.visible,'the actual native shop must be visible')
+    assert.equal(measured.legacyVisible,false,'unused payment instructions and decoration must be hidden')
+    const controls=measured.controls.filter(c=>!['minus','plus'].includes(c.role)),p=measured.panel
+    for(const c of controls){
+      assert.ok(c.width>0&&c.height>0&&Number.isFinite(c.x)&&Number.isFinite(c.y),JSON.stringify(c))
+      assert.ok(c.x>=p.x-1&&c.y>=p.y-1&&c.x+c.width<=p.x+p.width+1&&c.y+c.height<=p.y+p.height+1,'control outside native panel: '+JSON.stringify(c))
+      if(c.text!==undefined)assert.ok(c.textWidth+4<=c.fieldWidth+0.5,'clipped text: '+JSON.stringify(c))
+    }
+    for(let i=0;i<controls.length;i++)for(const b of controls.slice(i+1)){
+      const a=controls[i],w=Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x),h=Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y)
+      assert.ok(w<=0.5||h<=0.5,'overlapping native controls: '+JSON.stringify({a,b}))
+    }
+    assert.match(controls.find(c=>c.role==='total').text,/^合计 \d+ 元宝$/)
+    layouts.push(measured)
+  }
+  const pay=()=>stockClick('payment',320,269)
   const confirm=()=>flashClick(180,180)
-  const add=()=>flashClick(324,240)
-  const minus=()=>flashClick(283,240)
+  const add=()=>stockClick('plus',168,237)
+  const minus=()=>stockClick('minus',125,237)
   const shop=async()=>{await flashClick(24,149);await pause(150)}
   await win.loadFile(html);await resizeViewport(win,800,600)
   await evaluate('(async()=>{'+prepared.code+';window.stockRequests=[];window.previousQuote=()=>({sentinel:true});window.QQPetPondStockQuote=previousQuote;fixture.openFishing();return true})()')
@@ -63,6 +88,7 @@ app.whenReady().then(async()=>{
   await pause(300)
   writeFileSync('dist/fishing-shop.png',(await win.webContents.capturePage()).toPNG())
   writeFileSync('dist/pond-layout-preview.png',(await win.webContents.capturePage({x:260,y:250,width:320,height:180})).toPNG())
+  await checkLayout()
   await noExtraWindow()
   assert.equal(await evaluate("document.querySelector('ruffle-player').ruffle().isPlaying"),true)
   await add();await add();await add() // The third click is disabled at the ordinary cap.
@@ -95,6 +121,7 @@ app.whenReady().then(async()=>{
     const r=await evaluate("(()=>{const r=document.querySelector('.ui-fishing').closest('.boxFrame').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()")
     assert.ok(r.x>=-1&&r.y>=-1&&r.right<=w+1&&r.bottom<=h+1)
     await noExtraWindow()
+    await checkLayout()
     writeFileSync('dist/fishing-inline-'+w+'.png',(await win.webContents.capturePage()).toPNG())
     cases.push({w,h,dpr})
   }
@@ -104,6 +131,7 @@ app.whenReady().then(async()=>{
   assert.equal(new Set(fish().map(f=>f.id)).size,3)
   await shop();await add();await pay();await pause(150)
   assert.equal(stockCommits,2,'a full ordinary pond cannot buy more fish')
+  await checkLayout()
   await noExtraWindow()
   writeFileSync('dist/fishing-stocked.png',(await win.webContents.capturePage()).toPNG())
   await evaluate("window.close_game(1);fixture.setInfo('pinkDiamond',true);fixture.setInfo('yb',1000);fixture.openFishing();true")
@@ -139,7 +167,7 @@ app.whenReady().then(async()=>{
   await pause(200)
   assert.equal(stockCommits,4)
   assert.deepEqual(runtimeErrors,[],'native controls must not introduce ActionScript runtime errors')
-  writeFileSync('dist/fishing-results.json',JSON.stringify({realRuffle:true,nativePurchaseEntry:true,inlineQuantity:true,extraQuantityWindow:false,ordinaryCapacity:3,vipCapacity:5,stockCommits,defaultOne:true,liveLimit:true,atomicFailure:true,duplicateConfirm:true,cancel:true,pendingClose:true,earlyClose:true,cases,requests:await requests()},null,2))
+  writeFileSync('dist/fishing-results.json',JSON.stringify({realRuffle:true,nativePurchaseEntry:true,inlineQuantity:true,extraQuantityWindow:false,ordinaryCapacity:3,vipCapacity:5,stockCommits,defaultOne:true,liveLimit:true,atomicFailure:true,duplicateConfirm:true,cancel:true,pendingClose:true,earlyClose:true,cases,layouts,requests:await requests()},null,2))
   console.log('Real pond UI verified: inline quantity without extra windows, native payment/cancel, live limits, atomic retry, 3/5 capacity, duplicate confirm, selection reset, bridge cleanup and close during load')
   win.destroy();app.quit()
 }).catch(error=>{console.error(error);app.exit(1)})

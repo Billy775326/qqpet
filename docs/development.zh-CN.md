@@ -33,6 +33,8 @@ npm run dev
 
 若本机通过独立的 Electron 测试运行时验证，可将该运行时放在忽略的 `dist/` 内，并设置 `QQPET_TEST_ELECTRON_RUNTIME` 为其可执行文件路径；测试会替换该测试运行时的 `resources/app.asar`。不要指定日常使用的程序目录。`QQPET_TEST_RESOURCES` 可指定美术资源根目录；默认使用仓库的 `resources/`。
 
+池塘原生布局另可运行 `node scripts/test-fishing-layout.mjs`，需设置 `QQPET_TEST_JAVA` 和 `QQPET_FFDEC_JAR`。脚本只在隔离 SWF 副本中注入检查接口，测量数量、费用和支付按钮的真实边界，检查重叠、文字裁切、越界以及旧支付图层的隐藏；并执行相同的投放流程与三种视口回归。报告见 `dist/fishing-results.json` 的 `layouts`。可附带已有提交哈希重建旧版选鱼类以复现缺陷，例如 `node scripts/test-fishing-layout.mjs b8da2d8`；该旧版预期在冗余图层可见检查处失败，不计为当前修复失败。
+
 界面测试使用隔离存档，通过 DevTools 指定测试 CSS 视口与设备缩放，并校验实际渲染尺寸。`display-matrix` 覆盖 1280×720、1366×768、1920×1080、2560×1440、3840×2160、3440×1440、2560×1080、1080×1920 八种物理尺寸，100%、125%、150%、175%、200%、250%、300% 七档缩放，以及任务栏隐藏和四边保留 48 DIP 的工作区；覆盖层另外保留 3 DIP 边带。五类界面共 1,400 组组合，报告保存在 `dist/display-matrix-results.json`。这是渲染器与工作区模拟验证，不能代替所有真实显示器与混合 DPI 多屏实测。
 
 可单独运行显示矩阵：`npm run test:ui -- display-matrix`。设置 `QQPET_DISPLAY_VIEWS` 为逗号分隔的 `menu,setup,shop,controls,mini` 子集，可缩小诊断范围。

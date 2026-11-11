@@ -1,0 +1,29 @@
+      // Injected into an isolated SWF only; never included in the production movie.
+      public function stockLayoutForTest() : Object
+      {
+         var entries:Array = [];
+         var row:Sprite = this.minus.parent as Sprite;
+         for(var i:int = 0; i < row.numChildren; i++)
+            entries.push({role:"quantity-" + i, element:row.getChildAt(i)});
+         entries.push({role:"total", element:this.totalText});
+         entries.push({role:"payment", element:this.paymentButton});
+         entries.push({role:"minus", element:this.minus});
+         entries.push({role:"plus", element:this.plus});
+         var controls:Array = [];
+         for each(var entry:Object in entries)
+         {
+            var bounds:Object = entry.element.getBounds(this.stage);
+            var value:Object = {role:entry.role,x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height};
+            if(entry.element is TextField)
+            {
+               value.text = entry.element.text;
+               value.textWidth = entry.element.textWidth;
+               value.fieldWidth = entry.element.width;
+            }
+            controls.push(value);
+         }
+         var panel:Object = this.ui.bg.getBounds(this.stage);
+         return {visible:this.visible,width:this.stage.stageWidth,height:this.stage.stageHeight,
+            legacyVisible:this.payPanel.getChildAt(0).visible || this.payPanel.getPayModeGroup().visible,
+            panel:{x:panel.x,y:panel.y,width:panel.width,height:panel.height},controls:controls};
+      }
