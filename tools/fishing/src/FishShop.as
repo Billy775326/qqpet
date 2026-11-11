@@ -19,6 +19,7 @@ package com.tencent.QQPet.FishSNS.View.fishshop
    import flash.events.TextEvent;
    import flash.external.ExternalInterface;
    import flash.geom.Point;
+   import flash.geom.Rectangle;
    import flash.text.TextField;
    import flash.text.TextFormat;
    import flash.utils.Timer;
@@ -62,6 +63,8 @@ package com.tencent.QQPet.FishSNS.View.fishshop
       private var plus:SimpleButton;
       private var countText:TextField;
       private var totalText:TextField;
+      private var availableText:TextField;
+      private var stockPay:SimpleButton;
       private var stockTimer:Timer = new Timer(500);
 
       public function FishShop()
@@ -92,19 +95,34 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.initQuantity();
       }
 
-      // Keep the entire original payment panel. Reuse original fish-card text
-      // and shop arrow button states for the compact quantity row on its right.
+      // Keep original Flash controls, skin and fonts while tightening the two rows.
       private function initQuantity() : void
       {
+         // Compress only the empty strip below the fish cards. Preserve the
+         // border corners, top artwork and lower divider at their original size.
+         var panelBounds:Object = this.ui.bg.getBounds(this.ui.bg);
+         this.ui.bg.scale9Grid = new Rectangle(panelBounds.x + 10,panelBounds.y + 103,
+            panelBounds.width - 20,Math.max(1,panelBounds.height - 137));
+         this.ui.bg.height -= 12;
+         this.payPanel.getPayModeGroup().visible = false;
+         for(var i:int = 0; i < this.payPanel.numChildren; i++)
+         {
+            var pane:ImmediateBuyPaneUI = this.payPanel.getChildAt(i) as ImmediateBuyPaneUI;
+            if(pane == null) continue;
+            this.stockPay = pane.paybtn;
+            for(var j:int = 0; j < pane.numChildren; j++)
+               if(pane.getChildAt(j) != this.stockPay) pane.getChildAt(j).visible = false;
+         }
+         this.addChild(this.stockPay);
          var row:Sprite = new Sprite();
-         row.x = 140;
-         row.y = this.payPanel.y + this.payPanel.getPayModeGroup().y;
+         row.x = 26;
+         row.y = 104;
          row.addChild(this.stockLabel("数量",0,34));
-         this.minus = this.stockButton(false,36,this.lessStock);
+         this.minus = this.stockButton(false,38,this.lessStock);
          this.plus = this.stockButton(true,82,this.moreStock);
          row.addChild(this.minus);
          row.addChild(this.plus);
-         this.countText = this.stockLabel("1",52,25);
+         this.countText = this.stockLabel("1",55,24);
          var centered:TextFormat = this.countText.defaultTextFormat;
          centered.align = "center";
          this.countText.defaultTextFormat = centered;
@@ -112,8 +130,11 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          row.addChild(this.countText);
          row.addChild(this.stockLabel("条",104,20));
          this.addChild(row);
-         this.totalText = this.stockLabel("",140,160);
-         this.totalText.y = row.y - 16;
+         this.availableText = this.stockLabel("",167,115);
+         this.availableText.y = row.y;
+         this.addChild(this.availableText);
+         this.totalText = this.stockLabel("",26,175);
+         this.totalText.y = 128;
          this.addChild(this.totalText);
          this.stockTimer.addEventListener(TimerEvent.TIMER,this.refreshQuantity);
          this.addEventListener(Event.ADDED_TO_STAGE,this.startQuantity);
@@ -123,12 +144,14 @@ package com.tencent.QQPet.FishSNS.View.fishshop
       private function stockLabel(text:String, x:Number, width:Number) : TextField
       {
          var field:TextField = new FUIFry().fname;
-         field.defaultTextFormat = field.getTextFormat();
+         var original:TextFormat = field.getTextFormat();
+         original.align = "left";
+         field.defaultTextFormat = original;
          field.text = text;
          field.x = x;
          field.y = 0;
          field.width = width;
-         field.height = 22;
+         field.height = 19;
          field.selectable = false;
          field.mouseEnabled = false;
          return field;
@@ -175,8 +198,14 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.plus.enabled = this.stockCount < this.stockMax;
          this.minus.alpha = this.minus.enabled ? 1 : 0.4;
          this.plus.alpha = this.plus.enabled ? 1 : 0.4;
-         this.totalText.text = quote == null ? "暂时无法投放" : this.stockMax == 0
-            ? String(quote.reason) : "合计 " + (int(quote.price) * this.stockCount) + " 元宝";
+         this.availableText.text = quote == null ? "暂时无法投放" : this.stockMax == 0
+            ? String(quote.reason) : "可投放 " + this.stockMax + " 条";
+         this.totalText.text = quote == null ? "" : "合计 " + (int(quote.price) * this.stockCount) + " 元宝";
+         var bounds:Object = this.stockPay.getBounds(this.stockPay);
+         this.stockPay.x = 282 - (bounds.x + bounds.width) * this.stockPay.scaleX;
+         this.stockPay.y = 130 - bounds.y * this.stockPay.scaleY;
+         this.stockPay.enabled = this.stockMax > 0;
+         this.stockPay.alpha = this.stockPay.enabled ? 1 : 0.4;
       }
 
       private function lessStock(event:MouseEvent) : void
@@ -313,7 +342,7 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          {
             if(this.stockMax == 0)
             {
-               this.errDialog.setInfo(this.totalText.text);
+               this.errDialog.setInfo(this.availableText.text);
                this.errDialog.show();
                return;
             }

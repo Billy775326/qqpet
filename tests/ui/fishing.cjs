@@ -47,10 +47,10 @@ app.whenReady().then(async()=>{
   const attach=()=>evaluate(`(()=>{const send=window.PETSendData;window.PETSendData=json=>{const message=JSON.parse(json);if(message.head.cmd===4)window.stockRequests.push(message.data);send(json)};return true})()`)
   const requests=()=>evaluate('stockRequests')
   const noExtraWindow=async()=>assert.equal(await evaluate("document.querySelectorAll('.ui-window,.chooseNum').length"),0,'quantity belongs to the native selection screen')
-  const pay=()=>flashClick(205,265)
+  const pay=()=>flashClick(321,256)
   const confirm=()=>flashClick(180,180)
-  const add=()=>flashClick(302,240)
-  const minus=()=>flashClick(255,240)
+  const add=()=>flashClick(179,228)
+  const minus=()=>flashClick(132,228)
   const shop=async()=>{await flashClick(24,149);await pause(150)}
   await win.loadFile(html);await resizeViewport(win,800,600)
   await evaluate('(async()=>{'+prepared.code+';window.stockRequests=[];window.previousQuote=()=>({sentinel:true});window.QQPetPondStockQuote=previousQuote;fixture.openFishing();return true})()')
