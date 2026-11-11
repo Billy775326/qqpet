@@ -47,10 +47,10 @@ app.whenReady().then(async()=>{
   const attach=()=>evaluate(`(()=>{const send=window.PETSendData;window.PETSendData=json=>{const message=JSON.parse(json);if(message.head.cmd===4)window.stockRequests.push(message.data);send(json)};return true})()`)
   const requests=()=>evaluate('stockRequests')
   const noExtraWindow=async()=>assert.equal(await evaluate("document.querySelectorAll('.ui-window,.chooseNum').length"),0,'quantity belongs to the native selection screen')
-  const pay=()=>flashClick(205,265)
+  const pay=()=>flashClick(313,265)
   const confirm=()=>flashClick(180,180)
-  const add=()=>flashClick(302,240)
-  const minus=()=>flashClick(255,240)
+  const add=()=>flashClick(324,240)
+  const minus=()=>flashClick(283,240)
   const shop=async()=>{await flashClick(24,149);await pause(150)}
   await win.loadFile(html);await resizeViewport(win,800,600)
   await evaluate('(async()=>{'+prepared.code+';window.stockRequests=[];window.previousQuote=()=>({sentinel:true});window.QQPetPondStockQuote=previousQuote;fixture.openFishing();return true})()')
@@ -62,6 +62,7 @@ app.whenReady().then(async()=>{
   await shop()
   await pause(300)
   writeFileSync('dist/fishing-shop.png',(await win.webContents.capturePage()).toPNG())
+  writeFileSync('dist/pond-layout-preview.png',(await win.webContents.capturePage({x:260,y:250,width:320,height:180})).toPNG())
   await noExtraWindow()
   assert.equal(await evaluate("document.querySelector('ruffle-player').ruffle().isPlaying"),true)
   await add();await add();await add() // The third click is disabled at the ordinary cap.
