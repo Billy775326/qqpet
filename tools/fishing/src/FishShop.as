@@ -32,9 +32,6 @@ package com.tencent.QQPet.FishSNS.View.fishshop
 
       private const PAY_MODE_POS:Point = new Point(12,120);
 
-      // The original grid has three 83px FryItem cards with two 3px gaps.
-      private const CARD_ROW_WIDTH:Number = 3 * 83 + 2 * 3;
-
       private var list:BaseGridList;
 
       public var prevpagebtn:SimpleButton;
@@ -65,7 +62,6 @@ package com.tencent.QQPet.FishSNS.View.fishshop
       private var plus:SimpleButton;
       private var countText:TextField;
       private var totalText:TextField;
-      private var paymentButton:SimpleButton;
       private var stockTimer:Timer = new Timer(500);
 
       public function FishShop()
@@ -96,27 +92,28 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.initQuantity();
       }
 
-      // Use the original art in two aligned rows: method/quantity, total/payment.
+      // Keep the entire original payment panel. Reuse original fish-card text
+      // and shop arrow button states for the compact quantity row on its right.
       private function initQuantity() : void
       {
          var row:Sprite = new Sprite();
-         this.paymentButton = (this.payPanel.getChildAt(0) as ImmediateBuyPaneUI).paybtn;
-         row.x = 172;
+         row.x = 140;
          row.y = this.payPanel.y + this.payPanel.getPayModeGroup().y;
-         row.addChild(this.stockLabel("数量",0,30));
-         this.minus = this.stockButton(false,32,this.lessStock);
-         this.plus = this.stockButton(true,72,this.moreStock);
+         row.addChild(this.stockLabel("数量",0,34));
+         this.minus = this.stockButton(false,36,this.lessStock);
+         this.plus = this.stockButton(true,82,this.moreStock);
          row.addChild(this.minus);
          row.addChild(this.plus);
-         this.countText = this.stockLabel("1",47,22);
+         this.countText = this.stockLabel("1",52,25);
          var centered:TextFormat = this.countText.defaultTextFormat;
          centered.align = "center";
          this.countText.defaultTextFormat = centered;
          this.countText.setTextFormat(centered);
          row.addChild(this.countText);
-         row.addChild(this.stockLabel("条",94,16));
+         row.addChild(this.stockLabel("条",104,20));
          this.addChild(row);
-         this.totalText = this.stockLabel("",this.LIST_POS.x,170);
+         this.totalText = this.stockLabel("",140,160);
+         this.totalText.y = row.y - 16;
          this.addChild(this.totalText);
          this.stockTimer.addEventListener(TimerEvent.TIMER,this.refreshQuantity);
          this.addEventListener(Event.ADDED_TO_STAGE,this.startQuantity);
@@ -126,9 +123,7 @@ package com.tencent.QQPet.FishSNS.View.fishshop
       private function stockLabel(text:String, x:Number, width:Number) : TextField
       {
          var field:TextField = new FUIFry().fname;
-         var format:TextFormat = field.getTextFormat();
-         format.align = "left";
-         field.defaultTextFormat = format;
+         field.defaultTextFormat = field.getTextFormat();
          field.text = text;
          field.x = x;
          field.y = 0;
@@ -182,12 +177,6 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.plus.alpha = this.plus.enabled ? 1 : 0.4;
          this.totalText.text = quote == null ? "暂时无法投放" : this.stockMax == 0
             ? String(quote.reason) : "合计 " + (int(quote.price) * this.stockCount) + " 元宝";
-         // PayPanel recenters its button when the selected fish changes. Apply
-         // the footer alignment after it updates, using the card row's right edge.
-         this.paymentButton.x = this.LIST_POS.x + this.CARD_ROW_WIDTH
-            - this.payPanel.x - this.paymentButton.width;
-         this.totalText.y = this.payPanel.y + this.paymentButton.y
-            + (this.paymentButton.height - this.totalText.textHeight) * 0.5 - 2;
       }
 
       private function lessStock(event:MouseEvent) : void
