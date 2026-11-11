@@ -30,7 +30,8 @@ app.whenReady().then(async()=>{
   const html=join(root,'index.html'),ruffle=pathToFileURL(resolve('out/renderer/ruffle/ruffle.js')).href,base=pathToFileURL(root+'/').href
   writeFileSync(html,'<!doctype html><meta charset="UTF-8"><script src="'+ruffle+'"></script><style>'+prepared.css.replaceAll('url(/pet/','url('+base+'pet/')+'</style><body>')
   const win=new BrowserWindow({width:800,height:600,useContentSize:true,show:false,webPreferences:{preload:join(__dirname,'shop-preload.cjs'),sandbox:true,contextIsolation:true,offscreen:true,backgroundThrottling:false}})
-  win.webContents.on('console-message',event=>{if(event.level==='error'||event.level===3||/Error|Exception/.test(event.message||''))console.log('Pond renderer:',event.message.slice(0,1200))})
+  const runtimeErrors=[]
+  win.webContents.on('console-message',event=>{if(/Error #|TypeError|ReferenceError|VerifyError/.test(event.message||''))runtimeErrors.push(event.message);if(event.level==='error'||event.level===3||/Error|Exception/.test(event.message||''))console.log('Pond renderer:',event.message.slice(0,1200))})
   win.webContents.setAudioMuted(true)
   const evaluate=code=>win.webContents.executeJavaScript(code)
   const pause=ms=>new Promise(r=>setTimeout(r,ms))
@@ -48,8 +49,8 @@ app.whenReady().then(async()=>{
   const noExtraWindow=async()=>assert.equal(await evaluate("document.querySelectorAll('.ui-window,.chooseNum').length"),0,'quantity belongs to the native selection screen')
   const pay=()=>flashClick(205,265)
   const confirm=()=>flashClick(180,180)
-  const add=()=>flashClick(179,239)
-  const minus=()=>flashClick(123,239)
+  const add=()=>flashClick(302,240)
+  const minus=()=>flashClick(255,240)
   const shop=async()=>{await flashClick(24,149);await pause(150)}
   await win.loadFile(html);await resizeViewport(win,800,600)
   await evaluate('(async()=>{'+prepared.code+';window.stockRequests=[];window.previousQuote=()=>({sentinel:true});window.QQPetPondStockQuote=previousQuote;fixture.openFishing();return true})()')
@@ -136,6 +137,7 @@ app.whenReady().then(async()=>{
   assert.equal(await evaluate("document.querySelectorAll('.ui-window,.ui-fishing').length"),0)
   await pause(200)
   assert.equal(stockCommits,4)
+  assert.deepEqual(runtimeErrors,[],'native controls must not introduce ActionScript runtime errors')
   writeFileSync('dist/fishing-results.json',JSON.stringify({realRuffle:true,nativePurchaseEntry:true,inlineQuantity:true,extraQuantityWindow:false,ordinaryCapacity:3,vipCapacity:5,stockCommits,defaultOne:true,liveLimit:true,atomicFailure:true,duplicateConfirm:true,cancel:true,pendingClose:true,earlyClose:true,cases,requests:await requests()},null,2))
   console.log('Real pond UI verified: inline quantity without extra windows, native payment/cancel, live limits, atomic retry, 3/5 capacity, duplicate confirm, selection reset, bridge cleanup and close during load')
   win.destroy();app.quit()

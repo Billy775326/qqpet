@@ -19,7 +19,6 @@ package com.tencent.QQPet.FishSNS.View.fishshop
    import flash.events.TextEvent;
    import flash.external.ExternalInterface;
    import flash.geom.Point;
-   import fl.controls.Button;
    import flash.text.TextField;
    import flash.text.TextFormat;
    import flash.utils.Timer;
@@ -59,8 +58,8 @@ package com.tencent.QQPet.FishSNS.View.fishshop
       private var confirmedFry:int = 0;
       private var confirmedCount:int = 0;
       private var buying:Boolean = false;
-      private var minus:Button;
-      private var plus:Button;
+      private var minus:SimpleButton;
+      private var plus:SimpleButton;
       private var countText:TextField;
       private var totalText:TextField;
       private var stockTimer:Timer = new Timer(500);
@@ -93,34 +92,29 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.initQuantity();
       }
 
-      // Keep the original payment button and its handler, replacing unsupported
-      // payment choices with quantity controls in the same shop, not a new window.
+      // Keep the entire original payment panel. Reuse original fish-card text
+      // and shop arrow button states for the compact quantity row on its right.
       private function initQuantity() : void
       {
-         var paymentUI:ImmediateBuyPaneUI = this.payPanel.getChildAt(0) as ImmediateBuyPaneUI;
-         this.payPanel.addChild(paymentUI.paybtn);
-         paymentUI.visible = false;
-         this.payPanel.getPayModeGroup().visible = false;
          var row:Sprite = new Sprite();
-         row.x = 12;
-         row.y = 118;
+         row.x = 140;
+         row.y = this.payPanel.y + this.payPanel.getPayModeGroup().y;
          row.addChild(this.stockLabel("数量",0,34));
-         this.minus = this.stockButton("-",36,this.lessStock);
-         this.plus = this.stockButton("+",92,this.moreStock);
+         this.minus = this.stockButton(false,36,this.lessStock);
+         this.plus = this.stockButton(true,82,this.moreStock);
          row.addChild(this.minus);
          row.addChild(this.plus);
-         row.graphics.lineStyle(1,0x68b9cc);
-         row.graphics.beginFill(0xffffff,0.9);
-         row.graphics.drawRoundRect(61,0,27,21,4,4);
-         row.graphics.endFill();
-         this.countText = this.stockLabel("1",62,26);
+         this.countText = this.stockLabel("1",52,25);
          var centered:TextFormat = this.countText.defaultTextFormat;
          centered.align = "center";
          this.countText.defaultTextFormat = centered;
+         this.countText.setTextFormat(centered);
          row.addChild(this.countText);
-         this.totalText = this.stockLabel("",122,173);
-         row.addChild(this.totalText);
+         row.addChild(this.stockLabel("条",104,20));
          this.addChild(row);
+         this.totalText = this.stockLabel("",140,160);
+         this.totalText.y = row.y - 16;
+         this.addChild(this.totalText);
          this.stockTimer.addEventListener(TimerEvent.TIMER,this.refreshQuantity);
          this.addEventListener(Event.ADDED_TO_STAGE,this.startQuantity);
          this.addEventListener(Event.REMOVED_FROM_STAGE,this.stopQuantity);
@@ -128,10 +122,11 @@ package com.tencent.QQPet.FishSNS.View.fishshop
 
       private function stockLabel(text:String, x:Number, width:Number) : TextField
       {
-         var field:TextField = new TextField();
-         field.defaultTextFormat = new TextFormat("微软雅黑",12,0x054967);
+         var field:TextField = new FUIFry().fname;
+         field.defaultTextFormat = field.getTextFormat();
          field.text = text;
          field.x = x;
+         field.y = 0;
          field.width = width;
          field.height = 22;
          field.selectable = false;
@@ -139,13 +134,17 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          return field;
       }
 
-      private function stockButton(label:String, x:Number, handler:Function) : Button
+      private function stockButton(next:Boolean, x:Number, handler:Function) : SimpleButton
       {
-         var button:Button = new Button();
-         button.label = label;
-         button.x = x;
-         button.setSize(23,21);
-         button.setStyle("textFormat",new TextFormat("微软雅黑",12,0x054967));
+         var source:ListPaneUI = new ListPaneUI();
+         var button:SimpleButton = next ? source.nextpagebtn : source.prevpagebtn;
+         // Library arrows have registration offsets; align their visible bounds,
+         // rather than their timeline origins, with the small quantity label.
+         var bounds:Object = button.getBounds(button);
+         button.scaleX = button.scaleY = 16 / bounds.height;
+         button.x = x - bounds.x * button.scaleX;
+         button.y = 2 - bounds.y * button.scaleY;
+         button.visible = true;
          button.addEventListener(MouseEvent.CLICK,handler);
          return button;
       }
@@ -174,8 +173,10 @@ package com.tencent.QQPet.FishSNS.View.fishshop
          this.countText.text = String(this.stockCount);
          this.minus.enabled = this.stockCount > 1;
          this.plus.enabled = this.stockCount < this.stockMax;
+         this.minus.alpha = this.minus.enabled ? 1 : 0.4;
+         this.plus.alpha = this.plus.enabled ? 1 : 0.4;
          this.totalText.text = quote == null ? "暂时无法投放" : this.stockMax == 0
-            ? String(quote.reason) : "合计 " + (int(quote.price) * this.stockCount) + " 元宝（最多" + this.stockMax + "条）";
+            ? String(quote.reason) : "合计 " + (int(quote.price) * this.stockCount) + " 元宝";
       }
 
       private function lessStock(event:MouseEvent) : void
