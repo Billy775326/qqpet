@@ -114,7 +114,10 @@ export function openFishing(): void {
     open = false
   }
 
-  void player.load('pet/fishing/main.swf').catch(error => {
+  // The default wgpu/WebGL path compiles expensive shader pipelines on each
+  // instance. This small SWF uses the direct WebGL renderer; leave other games
+  // and the pet's renderer selection unchanged.
+  void player.load('pet/fishing/main.swf', undefined, { preferredRenderer: 'webgl' }).catch(error => {
     console.error('Pond movie failed to load:', error)
     if (!closed) window.close_game(1)
   })
